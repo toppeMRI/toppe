@@ -45,7 +45,7 @@ In addition, avoid loading the {\tt slice}$=0$ slot with data.
 
 We recommend displaying your sequence in Matlab using \texttt{playseq.m} before attempting to play it on the scanner, to verify that the correct modules are played out in the intended order.
 \texttt{playseq.m} attempts to reproduce the exact module timing seen on the scanner, using CV values in the file \texttt{timing.txt}.
-For examples of how to use \texttt{playseq.m}, see the readme file in the {\tt examples} folder in the Matlab repository (\url{https://github.com/toppeMRI/matlab}).
+For examples of how to use \texttt{playseq.m}, see the readme file in the {\tt examples} folder in the Matlab repository (\url{https://github.com/toppeMRI/toppe}).
 %\begin{lstlisting}
 %\end{lstlisting}
 
@@ -133,7 +133,7 @@ In addition, remember the following recommendations, which have been determined 
 
 \section{Known bugs and limitations}
 \begin{itemize}
-	\item Data may be saved in \textbf{reverse order} (due to oeff and eeff flags), so keep an eye out for this. INSPECT YOUR RAW DATA. %be sure to account for this if you use a script other than \texttt{loaddat\_ge.m} to load raw data from Pfile. (\texttt{loaddat\_ge.m} resides in the \texttt{matlab} folder in this distribution). 
+	\item Data may be saved in \textbf{reverse order} (due to oeff and eeff flags), so keep an eye out for this. INSPECT YOUR RAW DATA.
 	\item We have observed empirically that data for the last slice is sometimes flipped.
 	\item B1 scaling across multiple RF pulses has not been verified. May need to expand \texttt{rfpulse} struct.
 	\item \toppe~ does not support cardiac/respiratory gating at the moment. If other groups have a need for this we believe gating can be easily added.

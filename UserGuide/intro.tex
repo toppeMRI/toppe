@@ -7,9 +7,9 @@
 Implementing research pulse sequences on GE MR scanners requires EPIC programming, a time-consuming and error-prone task with a steep learning curve.
 Moreover, pulse sequences need to be recompiled after each scanner software upgrade, which is sometimes problematic.
 
-This user guide describes the ``toppe.e'' pulse sequence for GE scanners, which allows the entire sequence to be specified with a set of external files created with a high-level software tool such as Matlab.
+This user guide describes the ``toppe.e'' pulse sequence for GE scanners, which allows the entire sequence to be specified with a set of files created with a high-level software tool such as Matlab.
 This makes it possible to play arbitrary sequences of RF pulses and gradient waveforms, which enables \textbf{rapid prototyping of sequences without the need for low-level EPIC programming}.
-With \toppe, the task of pulse programming a GE scanner becomes one of creating the various external files that define the sequence.
+With \toppe, the task of pulse programming a GE scanner becomes one of creating the various files that define the sequence.
 
 \myfigure{overview}{0.95}{
 Overview of pulse sequence programming with \toppe.
@@ -30,7 +30,7 @@ See Chapter~\ref{ch:pulseq} for more information about using \toppe~as a GE ``in
 %Finally, if you are interesting in joining the development team, we'd love to hear from you.
 
 
-\section{Required external files}
+\section{Required files}
 In addition to the {\tt toppe} and {\tt toppe.psd.o} executables, the following files are needed to run a particular scan (see Fig.~\ref{fig:files}):
 
 \subsection{ {\tt $\star$.mod} files}
@@ -144,29 +144,19 @@ For detailing sequence timing information, see Ch.~\ref{ch:timing}.
 
 TOPPE is open-source and is available at the following sites:
 
-\subsection{https://github.com/toppeMRI/matlab}
+\subsection{https://github.com/toppeMRI/toppe}
 
 Matlab scripts for creating and viewing TOPPE files. Also contains complete sequence examples.
 To access the code, you can either browse the website, or copy the entire repository to local disk as follows:
 
 \begin{lstlisting}
-git clone https://github.com/toppemri/matlab
+git clone git@github.com:toppeMRI/toppe.git
 \end{lstlisting}
 
 
 \subsection{Binary executable (driver/interpreter}
 
 See \url{https://toppemri.github.io/} for more info.
-
-
-\subsection{https://github.com/toppeMRI/UserGuide}
-
-Latex source files for this user guide.
-To access, browse the website or copy the entire repository to local disk as follows:
-\begin{lstlisting}
-git clone https://github.com/toppemri/UserGuide
-\end{lstlisting}
-
 
 
 \subsection{https://toppemri.github.io/}
