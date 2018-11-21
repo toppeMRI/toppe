@@ -1,0 +1,24 @@
+
+\chapter{Using toppe.e as an interpreter module for Pulseq files}
+\label{ch:pulseq}
+
+\section{Pulseq}
+An effort is currently underway to make \toppe~compatible with Pulseq, an open file format for compactly describing MR sequences.
+The Pulseq file specification, along with supporting Matlab and C\texttt{++} libraries, is available at
+\begin{center}
+\url{http://pulseq.github.io/}
+\end{center}
+Pulseq relies on vendor-dependent ``interpreter modules'' to load a Pulseq (.seq) file onto a particular scanner platform.
+\toppe~can serve as the interpreter module for GE scanners.
+Interpreters currently also exist for Siemens and Bruker scanners, enabling truly platform-independent MR pulse programming.
+The following publication has more information about the Pulseq platform and philosophy: \url{http://onlinelibrary.wiley.com/doi/10.1002/mrm.26235/abstract}.
+
+
+\section{Using \toppe~to play .seq files}
+To use\toppe~as a GE interpreter module for Pulseq files, use the Matlab script {\tt \bf seq2ge.m} in the {\tt pulseq} directory in the beta distribution (v0.9).
+{\tt seq2ge.m} takes as input a .seq file and outputs the various files needed by\toppe~({\tt modules.txt}, {\tt scanloop.txt}, and .mod files).
+For an example, see \texttt{main.m} in the \texttt{pulseq} directory.
+%{\tt seq2ge.m} has so far been tested only with a simple 2D gradient-echo sequence ({\tt gre.seq}been does not support all Pulseq features, and we will have more to say here in the future as the script is updated.
+
+%\section{Tools for Pulseq file creation}
+%Pulseq 

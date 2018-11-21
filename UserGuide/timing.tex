@@ -1,0 +1,25 @@
+
+\chapter{Controlling sequence timing}
+\label{ch:timing}
+
+The default module duration is set to the value specified in \texttt{modules.txt}, however the duration can be extended in real-time by setting the value of the 'textra' column in {\tt scanloop.txt} to a non-zero value.
+This allows the sequence timing to be controlled dynamically, e.g., for the purpose of varying TE or TR during a scan.
+
+If the minimum module duration exceeds the prescribed duration in {\tt modules.txt}, the minimum module duration is used (without warning).
+It is therefore perfectly fine to set the module duration in {\tt modules.txt} to '0', since this guarantees that the minimum duration will be used which is often the desired behavior.
+
+Figure~\ref{fig:timing} shows detailed timing information for the three module types: gradients-only, RF excitation, and data acquisition.
+For gradients-only modules, the minimum module duration is equal to the waveform duration plus the controls variables (CVs) 'start\_core', 'timetrwait', and 'timessi'.
+These have been determined empirically, and are currently set to 224us, 64us, and 100us, respectively.
+For RF and acquisition modules, the module duration must be extended by 'myrfdel' and 'daqdel', respectively, to account for gradient delays with respect to RF transmission and data acquisition, respectively.
+%
+\myfigure{timing}{0.75}{
+Detailed timing diagram for the three module types:
+(a) gradients-only, (b) RF excitation, and (c) data acquisition.
+The labels correspond to Control Variables (CVs) in{\toppe}.
+Note that \texttt{playseq.m} uses timing values in \texttt{timing.txt} (see sequence examples in the Matlab repository) to reproduce the precise sequence timing one should expect to observe on the scanner.
+}
+%
+
+
+

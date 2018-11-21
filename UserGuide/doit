@@ -1,0 +1,15 @@
+#!/bin/sh
+
+CMD=pdflatex
+
+$CMD main
+bibtex main
+$CMD main
+bibtex main
+$CMD main
+
+rm -rf *.aux
+rm -rf *.log
+
+mv main.pdf TOPPE_UserGuide.pdf
+
