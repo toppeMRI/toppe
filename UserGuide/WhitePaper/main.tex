@@ -1,0 +1,117 @@
+% $Id: main.tex,v 1.36 2016/12/07 19:46:36 jfnielse Exp $
+
+\documentclass[11pt,titlepage]{report}
+\usepackage{cite,caption,amsmath,graphicx}
+\usepackage{lipsum,verbatim,wrapfig}
+\usepackage[framed]{seqcode}	% Also includes listings package
+\usepackage[toc,page]{appendix}
+
+%\usepackage{filecontents}
+
+\usepackage[bookmarks=true,ocgcolorlinks=true,plainpages=false, breaklinks=true, bookmarksopen=true, bookmarksnumbered=true]{hyperref}
+\hypersetup{linkcolor=blue, citecolor=magenta,urlcolor=blue} % electronic
+\hypersetup{colorlinks=true}
+\hypersetup{
+    pdftitle={Open file format for MR sequences},    % title
+    pdfauthor={Kelvin Layton},                     % author
+    pdfsubject={Specification for NMR and MRI sequences},                        % subject of the document
+    pdfkeywords={Magnetic Resonance Imaging,spectroscopy,MRI,NMR,MR,open format}, % list of keywords
+    }
+
+\usepackage{mdwlist}   % suspend enumerated list
+
+\usepackage[yyyymmdd]{datetime}
+%\renewcommand{\dateseparator}{-}
+
+\usepackage[left=1in,top=1in,right=1in,nohead,nofoot]{geometry}
+\footskip = 0.5in
+%\pagestyle{fancy}  % don't print page numbers 
+\parindent 0.0in
+\parskip 4pt 
+
+% Different font in captions. from http://dcwww.camd.dtu.dk/~schiotz/comp/LatexTips/LatexTips.html
+\newcommand{\captionfonts}{\em\small}             % set figure caption font here
+\makeatletter  % Allow the use of @ in command names
+\long\def\@makecaption#1#2{%
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{{\captionfonts #1: #2}}%
+  \ifdim \wd\@tempboxa >\hsize
+    {\captionfonts #1: #2\par}
+  \else
+    \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
+  \fi
+  \vskip\belowcaptionskip}
+\makeatother   % Cancel the effect of \makeatletter
+
+%\usepackage[english]{babel}   % accents, umlat
+
+%	--- Changes to use Helvetica ---  
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[scaled=0.92]{helvet}   % 0.92, baselinestretch 0.97 looks good
+\renewcommand{\baselinestretch}{0.97}  
+
+\newcommand{\mywrapfigure}[4]
+{
+\begin{wrapfigure}{#2}{#3\textwidth}
+	\vspace{-0pt}
+	\begin{center}
+		\includegraphics[width=#3\textwidth]{figs/#1}
+		\vspace{-20pt}
+		\caption{#4}
+		\label{fig:#1}
+	\end{center}
+	\vspace{-10pt}
+\end{wrapfigure}
+}
+
+\newcommand{\myfigure}[3]
+{
+\begin{figure}[h] %{#3\textwidth}
+	\vspace{-0pt}
+	\begin{center}
+		\includegraphics[width=#2\textwidth]{figs/#1}
+		\vspace{-10pt}
+		\caption{#3}
+		\label{fig:#1}
+	\end{center}
+	\vspace{-2pt}
+\end{figure}
+}
+
+\newcommand\toppeversion{2.0}
+\newcommand\toppe{{\tt toppev2.e}}
+\newcommand\psdname{toppev2}
+\newcommand\matrep{\url{https://github.com/toppeMRI/matlab/}}
+\newcommand\toppeweb{\url{https://toppemri.github.io/}}
+
+%tipdowncore ia_tipdown ia_th max_pg_iamp max_pg_iamp max_pg_iamp dabslice dabecho dabview daboff 0 irfphase irfphase textra rffreq waveform
+\newcommand\modulenum{1}
+\newcommand\rfamp{2}
+\newcommand\thetaamp{3}
+\newcommand\gxamp{4}
+\newcommand\gyamp{5}
+\newcommand\gzamp{6}
+\newcommand\dabslice{7}
+\newcommand\dabecho{8}
+\newcommand\dabview{9}
+\newcommand\dabmode{10}
+\newcommand\inplanerot{11}
+\newcommand\txphase{12}
+\newcommand\recphase{13}
+\newcommand\textra{14}
+\newcommand\rffreq{15}
+\newcommand\waveformnum{16}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\include{title}
+\tableofcontents
+\thispagestyle{empty}
+\input{intro}
+%\input{timing} 
+\end{document}
+
+% EOF

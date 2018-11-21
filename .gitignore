@@ -6,8 +6,9 @@
 !*.h
 !*.c
 !*.cpp
-!*.txt
 !*.md
+!*.tex
+!*.svg
 
 # even if in sub-dirs
 !*/

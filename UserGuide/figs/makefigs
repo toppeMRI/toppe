@@ -1,0 +1,3 @@
+inkscape -A overview.pdf overview.svg
+inkscape -A files.pdf files.svg
+inkscape -A timing.pdf timing.svg

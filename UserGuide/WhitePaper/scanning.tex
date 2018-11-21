@@ -1,0 +1,143 @@
+
+\chapter{Using the toppe sequence}
+
+\section{Getting started: running an example sequence}
+
+The MATLAB code repository contains several complete pulse sequence examples, such as 3D spoiled gradient-echo (SPGR) and stack-of-spirals echo-shifted dynamic imaging (PRESTO fMRI). 
+We recommend starting by running of these sequences.
+See the TOPPE website (\url{https://toppemri.github.io/}) for details.
+
+
+
+\section{Creating .mod files}
+\label{sec:cmf}
+The TOPPE MATLAB repository (\matrep) includes the Matlab script {\tt \bf mat2mod.m} that writes rho, theta, gx, gy, and gz waveforms for a module to a .mod file.
+Important notes and caveats:
+\begin{itemize}
+	\item All waveforms in a module must have the same length, i.e., they must be padded with zeroes as needed.
+	\item In each module (.mod file), all gradient waveforms must begin and end at 0.
+	\item Even if the module is not an RF excitation module, you must create a non-zero 'dummy' RF pulse to ensure that the .mod file will be loaded correctly on the scanner (hopefully this bug will be fixed in future releases). A simple hard RF pulse of low amplitude (e.g., 0.01 Gauss) seems to work well.
+	\item If the module is a readout module, data will be acquired every 4~$\mu$s for the entire duration of the waveforms in the .mod file. Depending on your readout trajectory, you may therefore need to discard some of the data (near the beginning and/or end of the module) before reconstructing.
+	\item If more than one readout .mod file is used, they must all be the same length (readout windows of different widths are not permitted).
+	\item For backward compatibility, the following must be done (this may change in future releases):
+	\begin{itemize}
+		\item One of the readout .mod files must be named {\tt \bf readout.mod} 
+		\item One of the RF excitation .mod files must be named {\tt \bf tipdown.mod} 
+	\end{itemize}
+\end{itemize}
+For some tips on waveform design, see Appendix~\ref{app:design}.
+
+
+\section{Creating modules.txt}
+{\tt modules.txt} can simply be created by hand, as specified above.
+Columns are tab-separated.
+
+
+\section{Creating scanloop.txt}
+The {\tt examples} folder in the TOPPE MATLAB repository (\matrep) contains several examples of how {\tt scanloop.txt} can be created.
+Specifically, this is done in each example with the script {\tt \bf writeloop.m}.
+
+We have determined empirically that to avoid data corruption, the number of slices should be even.
+In addition, avoid loading the {\tt slice}$=0$ slot with data. 
+
+
+\section{Pre-viewing your sequence with {\tt playseq.m} }
+
+We recommend displaying your sequence in Matlab using \texttt{playseq.m} before attempting to play it on the scanner, to verify that the correct modules are played out in the intended order.
+\texttt{playseq.m} attempts to reproduce the exact module timing seen on the scanner, using CV values in the file \texttt{timing.txt}.
+For examples of how to use \texttt{playseq.m}, see the readme file in the {\tt examples} folder in the Matlab repository (\url{https://github.com/toppeMRI/matlab}).
+%\begin{lstlisting}
+%\end{lstlisting}
+
+\myfigure{scansim}{1.0}{
+Example sequence display created with \texttt{playseq.m}.
+The sequence shown is a Bloch-Siegert B1 transmit mapping sequence with a 3D Cartesian readout.
+Like the \texttt{toppe} and \texttt{toppe.psd.o} executables on the scanner, \texttt{playseq.m} loads \texttt{modules.txt} and the .mod files listed therein, and \texttt{scanloop.txt}.
+In addition, \texttt{playseq.m} obtains exact sequence timing information from the file \texttt{timing.txt}.
+}
+
+
+%\section{Example scan included in the toppe distribution}
+%The {\tt example} folder in the toppe distribution contains an example scan that combines Bloch-Siegert mapping and several SPGR acquisitions with different flip angle and TR, into one long scan. 
+
+
+\section{Compiling the toppe pulse sequence}
+
+The current version of \toppe~has been compiled for DV26, and has been tested on a GE Discovery MR750 3T scanner.
+
+To compile, follow the usual EPIC compilation steps.
+First, check compiler version:
+\vspace{-10pt}
+\begin{lstlisting}
+ which psdqmake
+\end{lstlisting}
+
+Then prepare directory for compilation and compile:
+\vspace{-10pt}
+\begin{lstlisting}
+ prep_psd_dir
+ psdqmake hw
+\end{lstlisting}
+This will create two executables: {\tt \psdname} and {\tt \psdname.psd.o}.
+
+
+
+
+\section{Step-by-step scanner instructions}
+
+Follow these steps to prescribe and run the toppe sequence:
+\begin{enumerate}
+	\item Copy {\tt \psdname} and {\tt \psdname.psd.o} to /usr/g/bin/ on the scanner host computer (console). This only needs to be done once per scanner software upgrade.
+	\item Copy {\tt modules.txt}, {\tt scanloop.txt}, and all .mod files to /usr/g/bin/.
+	\item Required files:
+	\begin{itemize}
+		\item Make sure one of the readout (acquisition) .mod files is named {\tt readout.mod}.
+		\item Make sure one of the RF excitation .mod files is named {\tt tipdown.mod}.
+	\end{itemize}
+	\item Prescribe the toppe sequence:
+\begin{itemize}
+	\item Select Axial 2D pulse sequence; Family: 'Gradient Echo'; pulse: 'GRE'; PSD Name: '\psdname'; click 'Accept'. (Fig.~\ref{fig:Rx1})
+	\item Prescribe a number of slices that is larger than the maximum 'slice' value in scanloop.txt.
+	\item Other settings do not matter but must be specified. Suggested values are: Slice thickness 3, slice spacing 0.
+\end{itemize}
+	\item Save and download the sequence, and run autoprescan.
+	\item Click scan button. This will create a Pfile in /usr/g/mrraw/.
+	\item To run a different TOPPE scan, simply overwrite modules.txt and scanloop.txt and make sure the new .mod files for the next sequence exist in /usr/g/bin/. Then download the sequence (right-click) and hit Scan button. You do not need to prescribe a new sequence every time you load a new set of external files.
+\end{enumerate}
+
+\myfigure{Rx1}{0.98}{
+Scanner prescription, screenshot 1.
+}
+\myfigure{Rx2}{0.98}{
+Scanner prescription, screenshot 2.
+}
+\myfigure{Rx3}{0.98}{
+Scanner prescription, with manual prescan window.
+}
+
+
+\section{Checklist}
+
+\begin{itemize}
+	\item One of the RF files must be named {\tt tipdown.mod} 
+	\item One of the readout files must be named {\tt readout.mod}
+	\item Make sure your .mod files comply with the requirements listed in Section~\ref{sec:cmf}.
+\end{itemize}
+
+In addition, remember the following recommendations, which have been determined empirically:
+\begin{itemize}
+	\item It seems that the number of 'slices' should be even to avoid corrupt data.
+	\item It seems safest to avoid storing data in the {\tt slice}$=$0 slot (in \texttt{loaddab()}), since data frames (``views'') for this slot are often flipped (reversed) with respect to the rest of the Pfile.
+\end{itemize}
+
+
+\section{Known bugs and limitations}
+\begin{itemize}
+	\item Data may be saved in \textbf{reverse order} (due to oeff and eeff flags), so keep an eye out for this. INSPECT YOUR RAW DATA. %be sure to account for this if you use a script other than \texttt{loaddat\_ge.m} to load raw data from Pfile. (\texttt{loaddat\_ge.m} resides in the \texttt{matlab} folder in this distribution). 
+	\item We have observed empirically that data for the last slice is sometimes flipped.
+	\item B1 scaling across multiple RF pulses has not been verified. May need to expand \texttt{rfpulse} struct.
+	\item \toppe~ does not support cardiac/respiratory gating at the moment. If other groups have a need for this we believe gating can be easily added.
+	\item \toppe~does not currently do any checks for SAR, PNS, or gradient heating.
+	%\item Logical coordinate-frame transformations
+\end{itemize}
+
