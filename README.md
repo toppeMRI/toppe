@@ -1,3 +1,8 @@
+# TOPPE Matlab files and user guide
+
+TOPPE development is being done in a private repo at the U of Michigan fMRI lab; this repo tries to stay up to date with that.
+
+
 ## +toppe
 
 Matlab package (namespace) with basic toppe functions such as writemod.m, plotmod.m, playseq.m.
@@ -8,12 +13,8 @@ Matlab package (namespace) with basic toppe functions such as writemod.m, plotmo
 
 +toppe/+utils/+rf/: make slice-selective SLR pulse with makeslr.m
 
+
 ## ./pulseq/
 
 Matlab scripts for converting to/from Pulseq file format. WIP.
-
-## ./epic/
-
-EPIC .e source code
-
 
