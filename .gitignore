@@ -1,0 +1,19 @@
+*
+
+# except
+!.gitignore
+!*.m
+!*.h
+!*.c
+!*.cpp
+!*.txt
+!*.md
+
+# even if in sub-dirs
+!*/
+
+# but never in these folders
+*back/
+*arch/
+*.vscode/
+
