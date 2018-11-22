@@ -2,6 +2,8 @@
 
 TOPPE development is being done in a private repo at the U of Michigan fMRI lab; this repo tries to stay up to date with that.
 
+**TODO: add examples ** (contact jfnielse@umich.edu if you need something soon!)
+
 
 ## +toppe
 
