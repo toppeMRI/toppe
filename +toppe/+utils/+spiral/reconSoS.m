@@ -48,7 +48,7 @@ L = 6;
 
 % do IFT along kz, then in-plane nufft on a slice-by-slice basis
 dat = sub_iftz(dat);
-ims = zeros([imsize ncoils]);
+ims = zeros([imsize nz ncoils]);
 for icoil = 1:ncoils
 	for iz = 1:nz
 		if ~isempty(arg.zmap)    % do nufft with fieldmap correction

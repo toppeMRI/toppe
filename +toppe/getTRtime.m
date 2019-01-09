@@ -71,10 +71,8 @@ end
 %% loop through scan, and tally scan duration
 dt = 4e-6;    % duration of one gradient/rf sample (sec)
 dur = 0;
-fprintf('Calculation duration between lines %d and lines %d...',LineStart,LineEnd);
 for ii = LineStart:LineEnd
 	rho = toppe.plotseq(ii, ii, 'loopArr', loopArr, 'mods', mods, 'doDisplay', false, 'system', arg.system);
 	dur = dur + size(rho,1)*dt;
 end
-fprintf(' done\n');
 

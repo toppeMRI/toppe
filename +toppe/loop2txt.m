@@ -25,6 +25,9 @@ function loop2txt(d)
 %
 % $Id: loop2txt.m,v 1.2 2018/10/24 10:44:49 jfnielse Exp $
 
+import toppe.*
+import toppe.utils.*
+
 nt = size(d,1);              % number of startseq() calls   
 maxslice = max(d(:,7));
 maxecho = max(d(:,8));
@@ -37,4 +40,19 @@ fprintf(fid, 'Core ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview dabon 
 fclose(fid);
 dlmwrite(fname, d, '-append', 'delimiter', '\t', 'precision', 8);  % precision=8 needed to avoid large numbers written in scientific notation
 
+%% BETA FEATURE
+%% Add in scan time automatically
+dur = toppe.getscantime; % Time in seconds
+udur = round(dur * 1e6); % Time in microseconds
+
+% Define format for second line of scanloop.txt
+lineformat = '%d\t%d\t%d\t%d\t%d\n';
+newParams = [nt maxslice maxecho maxview udur];
+
+% Replace second line in scanloop.txt with one that contains our time
+fid = fopen(fname,'r+'); % Reopen scanloop.txt
+fgetl(fid);           % Move file position marker to second line
+fseek(fid,0,'cof');
+fprintf(fid, lineformat, newParams); % Replace line
+fclose(fid);
 return;

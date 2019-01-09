@@ -8,9 +8,10 @@ function playseq(nModPerTR,varargin)
 % Options:
 %    nTRskip            Display only every nTRskip TRs (for speeding up loop) (default: 0)
 %    loopFile           Default: 'scanloop.txt'
-%    moduleListFile    Default: 'modules.txt'
-%    system 				system struct. Default calls systemspecs.m.
-%    tpause             Delay before displaying next TR (sec) (default: 0)
+%    moduleListFile     Default: 'modules.txt'
+%    system 			System struct. Default calls systemspecs.m.
+%    tpause             Delay before displaying next TR (sec) (Default: 0)
+%    drawpause          Display pauses (zeros at end of plot) (Default: 1)
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
@@ -45,9 +46,10 @@ end
 % Default values 
 arg.nTRskip         = 0;
 arg.loopFile        = 'scanloop.txt';
-arg.moduleListFile = 'modules.txt';
+arg.moduleListFile  = 'modules.txt';
 arg.system          = toppe.systemspecs();
 arg.tpause          = 0.01; 
+arg.drawpause       = 1;
 
 % Substitute varargin values as appropriate
 arg = toppe.utils.vararg_pair(arg, varargin);
@@ -61,7 +63,7 @@ modules = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
 
 % display
 for ii = 1 : ((1+arg.nTRskip)*nModPerTR) : size(loopArr,1)
-	toppe.plotseq(ii, ii+nModPerTR-1, 'loopArr', loopArr, 'mods', modules, 'system', arg.system);
+	toppe.plotseq(ii, ii+nModPerTR-1, 'loopArr', loopArr, 'mods', modules, 'system', arg.system, 'drawpause', arg.drawpause);
 	subplot(511); title(num2str(ii));
-	pause(arg.tpause);     % to allow display to refresh
+	drawnow; pause(arg.tpause);     % Force display update and pause
 end

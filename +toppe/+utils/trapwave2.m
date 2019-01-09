@@ -16,6 +16,14 @@ function waveform = trapwave2(area, mxg, mxs, rasterTime)
 
 area = area*1e3;  % G/cm*msec
 
+% Do all calculations as positive then flip at end if negative
+if area < 0
+    area = -area;
+    invertarea = 1;
+else
+    invertarea = 0;
+end
+
 import toppe.*
 import toppe.utils.*
 
@@ -54,6 +62,10 @@ waveform = [0  waveform 0];
 
 % duration must be on 4 sample (16 us) boundary (TOPPE convention)
 waveform = makeGElength(waveform(:))';
+
+if invertarea
+    waveform = -waveform;
+end
 
 return;
 
