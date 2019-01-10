@@ -42,33 +42,37 @@ rfmodnum = 1;           % module index, i.e., line number in modules.txt
 readoutmodnum = 2;
 rfphs = 0;              % radians
 rf_spoil_seed_cnt = 0;
-rf_spoil_seed = 117;      % degrees
+rf_spoil_seed = 117;    % degrees
+ii = 0;                 % counts number of module executions
+ny = matrix(2);
+nz = matrix(3);
 for iz = 0:matrix(3)    % We'll use iz=0 for approach to steady-state
 	for iy = 1:matrix(2)
+
 		% rf excitation
+		ii = ii + 1;
 		loop{ii}.module = rfmod;   
 		loop{ii}.flip = 10;        % can't exceed design flip angle ('flip')
 		loop{ii}.gxscale = 0;
 		loop{ii}.gyscale = 0;
-		loop{ii}.gzscale = 1;      % full amplitude (range is [-1 1])
+		loop{ii}.gzscale = 1.0;      % full amplitude (range is [-1 1])
 		rfphs = rfphs + (rf_spoil_seed/180 * pi)*rf_spoil_seed_cnt;  % radians
+		rf_spoil_seed_cnt = rf_spoil_seed_cnt + 1;
 		loop{ii}.rfphs == angle(exp(1i*(rfphs)));
 
+		% readout
+		ii = ii + 1;
+		loop{ii}.gxscale = 1.0;
+		loop{ii}.gyscale = ((iy-1+0.5)-ny/2)/(ny/2);   % phase-encode amplitude
+		loop{ii}.gzscale = ((iz-1+0.5)-nz/2)/(nz/2);   % partition-encode amplitude
+      ia_gz = 2*round( max_pg_iamp*(((iz-1+0.5)-nz/2)/(nz/2)) /2);   % z phase-encode amplitude
+		loop{ii}.gzscale = 
+		
       ia_gz = 2*round( max_pg_iamp*(((iz-1+0.5)-nz/2)/(nz/2)) /2);   % z phase-encode amplitude
       else   % discarded acquisitions (disdaqs)
          ia_gz = 0;
       end
       dabslice = max(iz, 0);
-
-      for il = 1:nl
-         dabview = il;    % skip baseline (0) view as usual
-         phi = round(2*pi*(il-1)/nl/pi*max_pg_iamp);
-
-         % phase for rf spoiling
-         rfphase = rfphase + (rf_spoil_seed/180 * pi)*rf_spoil_seed_cnt;  % radians
-         rf_spoil_seed_cnt = rf_spoil_seed_cnt + 1;
-         rfphasetmp = atan2(sin(rfphase), cos(rfphase));      % wrap phase to (-pi,pi) range
-         irfphase = 2*round(rfphasetmp/pi*max_pg_iamp/2);     % short int 
 
 	end
 end
