@@ -35,13 +35,15 @@ ftype = 'min';              % minimum-phase SLR pulse (good for 3D imaging)
 tbw = 8;                    % time-bandwidth product of SLR pulse 
 toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncyclesspoil*matrix(3), ...
                        'ftype', ftype, 'ofname', ofname, 'system', sys);
-toppe.plotmod(ofname);
+%toppe.plotmod(ofname);
 
 %% Create readout.mod
 ofname = 'readout.mod';     % output file name
 toppe.utils.makegre(fov(1), matrix(1), fov(3)/matrix(3), ... 
                     'system', sys, 'ofname', ofname, 'ncycles', ncyclesspoil); 
-toppe.plotmod(ofname);
+%toppe.plotmod(ofname);
+
+%% Create scanloop.txt
 
 return;
 
