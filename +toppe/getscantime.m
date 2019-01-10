@@ -30,7 +30,7 @@ function dur = getscantime(varargin)
 %
 % You should have received a copy of the GNU Library General Public License
 % along with TOPPE. If not, see <http://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>.
-% 
+%
 % (c) 2018 The Regents of the University of Michigan
 % Jon-Fredrik Nielsen, jfnielse@umich.edu
 %
@@ -41,7 +41,7 @@ import toppe.*
 import toppe.utils.*
 
 %% parse inputs
-% Default values 
+% Default values
 arg.loopFile       = 'scanloop.txt';
 arg.moduleListFile = 'modules.txt';
 arg.system         = toppe.systemspecs();
@@ -56,18 +56,9 @@ loopArr = toppe.utils.tryread(@toppe.readloop, arg.loopFile);
 % read module content
 mods = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
 
-%% loop through scan, and tally scan duration
+%% Call plotseq with 'doTimeOnly' argument to get the length of rho quickly
 dt = 4e-6;    % duration of one gradient/rf sample (sec)
-dur = 0;
-fprintf('Looping through scan and tallying scan duration...');
-for ii = 1:size(loopArr,1)
-	if ~mod(ii,10000)
-		fprintf('.');
-	end
-	rho = toppe.plotseq(ii, ii, 'loopArr', loopArr, 'mods', mods, 'doDisplay', false, 'system', arg.system);
-	dur = dur + size(rho,1)*dt;
-end
-fprintf(' done\n');
+rho = toppe.plotseq(1, size(loopArr,1), 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true, 'system', arg.system);
+dur = size(rho,1)*dt;
 dur = round(dur);
 fprintf('Total scan time: %dm %ds\n', floor(dur/60), dur - 60*floor(dur/60) );
-

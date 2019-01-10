@@ -9,7 +9,7 @@ function writemod(varargin)
 % >> writemod('rf', rho.*exp(1i*theta), 'gz', gzwaveform, 'nomflip', 30);
 % >> writemod('gz', gzwaveform, 'desc', 'my spoiler gradient');
 % >> lims = toppe.systemspecs('maxGrad', 130, 'gradUnit', 'mT/m');
-% >> writemod('rf, myrf, 'gx', gzwav, 'system', lims);
+% >> writemod('rf', myrf, 'gx', gzwav, 'system', lims);
 %
 % Input options:
 %   rf            Complex RF waveform, [ndat nrfpulses]
@@ -76,11 +76,6 @@ for ii = 1:length(fields)
 	eval(cmd);
 end
 
-%% Check against system hardware limits
-if ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
-	error('Waveforms failed system hardware checks -- exiting');
-end
-
 %% Convert to Gauss and Gauss/cm
 if strcmp(arg.rfUnit, 'mT')
 	rf = rf/100;   % Gauss
@@ -89,6 +84,11 @@ if strcmp(arg.gradUnit, 'mT/m')
 	gx = gx/10;    % Gauss/cm
 	gy = gy/10;
 	gz = gz/10;
+end
+
+%% Check against system hardware limits
+if ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
+	error('Waveforms failed system hardware checks -- exiting');
 end
 
 %% Force all waveform arrays to have the same dimensions (required by toppev2.e)

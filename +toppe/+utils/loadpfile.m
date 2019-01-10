@@ -1,7 +1,11 @@
-function [dat, rdb_hdr] = loadpfile(pfile,echo)
-% function [dat, rdb_hdr] = loadpfile(pfile,[echo])
+function [dat, rdb_hdr] = loadpfile(pfile,echo,slicestart)
+% function [dat, rdb_hdr] = loadpfile(pfile,[echo,slicestart])
 %
 % Load data for one echo (or all) from Pfile, EXCEPT dabslice=0 slot (which can contain corrupt data).
+%
+% Input options:
+%  echo          only get data for this echo (default: load all echoes)
+%  slicestart    get data starting from this slice index (1:N slices, default: 2)
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
@@ -30,7 +34,6 @@ rdbm_rev = str2double(str);
 fseek(fid,0,'bof');                 % NB!
 rdb_hdr = read_rdb_hdr(fid,rdbm_rev);
 
-
 %% Header parameters
 ndat    = rdb_hdr.frame_size;
 nslices = rdb_hdr.nslices;
@@ -39,11 +42,14 @@ nechoes = rdb_hdr.nechoes;
 nviews  = rdb_hdr.nframes;
 ncoils  = rdb_hdr.dab(2)-rdb_hdr.dab(1)+1;
 
-%% Determine which echoes to load in
-if exist('echo','var')
+%% Determine which echoes to load
+if exist('echo','var') & ~isempty(echo)
 	ECHOES = echo;
 else
 	ECHOES = 1:nechoes;
+end
+if nargin < 3
+	slicestart = 2;
 end
 
 %% Calculate size of data chunks. See pfilestruct.jpg, and rhrawsize calculation in .e file.
@@ -54,37 +60,73 @@ coilres  = nslices*sliceres;                % number of data points per receive 
 pfilesize = rdb_hdr.off_data + 2*ptsize*ncoils*nslices*nechoes*(nviews+1)*ndat;   % this should match the Pfile size exactly
 pfilename=dir(pfile);
 
+% File size check for integrity
 if pfilesize ~= pfilename.bytes
     warning('Expected %0.1fMB file but read in %0.1fMB file.\n',pfilesize,pfilename.bytes/1e6)
     fprintf('Press enter to continue anyway...');
     input('');
 end
 
-fprintf(1,'\nndat = %d, nslices = %d, nechoes = %d, nviews = %d, ncoils = %d\n', ndat, nslices, nechoes, nviews, ncoils);
+% Check if second view is empty
+% This happens when there's only one view, but the scanner sets nviews = 2
+if nviews == 2
+    fseek(fid, rdb_hdr.off_data+(2*ptsize*(sliceres + 2*ndat)), 'bof'); % Seek to view slice 2, echo 1, view 2, coil 1
+    view2tmp = fread(fid, 2*ndat, 'int16=>int16');
+    if all(view2tmp==0)
+        nviews = 1; % Set nviews to 1 so we don't read in all the empty data
+        warning('off','backtrace'); % Turn off backtrace lines for cleaner output
+        warning('View 2 appears to be empty, only loading view 1.');
+    end
+end
+
+% Try to check how much free memory we have (linux implementation) and warn if
+% we are going to exceed it. If we exceed free RAM we may cause a system
+% freeze due to attempted mem swap
+
+try
+    % Check predicted size of output vs free memory
+    memneeded = 16*ndat*ncoils*(nslices-slicestart+1)*numel(ECHOES)*nviews; %16 bytes per complex value;
+    
+    % Pull available memory using linux system command
+    [~,out]=system('cat /proc/meminfo | grep "MemAvailable:"');
+    memfree=sscanf(out,'MemAvailable: %f'); % Available memory in kB
+    mempercentuse = (memneeded/1000) / memfree;
+    if mempercentuse > 1
+        warning('Loading data (%0.1fGB) may exceed available RAM. This could end up freezing your computer!!',memneeded/1e9);
+        fprintf('Press enter to continue anyway...');
+        input('');
+    elseif mempercentuse > 0.9 % Check if we are going to use 90% of memory and warn
+        warning('Loading data (%0.1fGB) is going to use %0.1f%% of your available RAM. Proceed with caution!',memneeded/1e9,100*mempercentuse);
+    end
+catch
+end
+
+fprintf(1,'ndat = %d, nslices = %d, nechoes = %d, nviews = %d, ncoils = %d\n', ndat, nslices, nechoes, nviews, ncoils);
 
 %% Read data from file
-datr = int16(zeros(ndat,ncoils,nslices-1,numel(ECHOES),nviews));
+datr = int16(zeros(ndat,ncoils,nslices-slicestart+1,numel(ECHOES),nviews));
 dati = datr;
 textprogressbar('Loading data: ');
 for icoil = 1:ncoils
     textprogressbar(icoil/ncoils*100);
-    for islice = 2:nslices   % skip first slice (sometimes contains corrupted data)
+    for islice = slicestart:nslices   % skip first slice (sometimes contains corrupted data)
         for iecho = ECHOES % Load every element in ECHOES
             for iview = 1:nviews
                 offsetres = (icoil-1)*coilres + (islice-1)*sliceres + (iecho-1)*echores + iview*ndat;
                 offsetbytes = 2*ptsize*offsetres;
                 fseek(fid, rdb_hdr.off_data+offsetbytes, 'bof');
                 dtmp = fread(fid, 2*ndat, 'int16=>int16');
-                datr(:,icoil,islice-1,iecho,iview) = dtmp(1:2:end); %Real data
-                dati(:,icoil,islice-1,iecho,iview) = dtmp(2:2:end); %Imag
+                sliceind = islice-slicestart+1;
+                datr(:,icoil,sliceind,iecho,iview) = dtmp(1:2:end); %Real data
+                dati(:,icoil,sliceind,iecho,iview) = dtmp(2:2:end); %Imag
             end
         end
     end
 end
+
 %Combine real+imag in one step. This ends up using 2 times as much memory
 %since the complex data exists twice (datr+dati and dat) but is faster
-%since complex function is vectorized. May cause issues if your computer is
-%RAM limited...
+%since complex function is vectorized.
 
 dat = complex(datr,dati); % Combine data in one step
 clearvars datr dati % Free up some memory

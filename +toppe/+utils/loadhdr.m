@@ -3,8 +3,6 @@ function [rdb_hdr] = loadhdr(pfile)
 %
 % Calls read_rdb_hdr on pfile.
 %
-% $Id: loadhdr.m,v 1.2 2018/10/25 13:14:40 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/loadhdr.m,v $
 
 import toppe.utils.*
 

@@ -31,7 +31,7 @@ wi = zeros(nk, 1);
 getV = @(inds)v(inds,:);
 x = cellfun(getV, c, 'UniformOutput', false);
 
-parforWarning();
+%parforWarning();
 parfor ii = 1:nk % parfor ii = 1:nk
   try [~, wi(ii)] = convhulln(x{ii});
   catch % x{ii} gen'ed w/ voronoi thus must be convex, here deals inf case
