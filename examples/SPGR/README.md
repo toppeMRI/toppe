@@ -1,4 +1,4 @@
-## 3D SPGR sequence
+## 3D SPGR sequence example
 
 Complete example, including:
 
