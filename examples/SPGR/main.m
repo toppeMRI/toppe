@@ -74,7 +74,6 @@ for iz = 0:matrix(3)    % We'll use iz=0 for approach to steady-state
 end
 
 
-
 scanloop
 
 return;
