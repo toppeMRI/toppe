@@ -59,7 +59,7 @@ for iz = 0:nz           % We'll use iz=0 for approach to steady-state
 		loop{ii}.gzscale = 1.0;      % full amplitude (range is [-1 1])
 		rfphs = rfphs + (rf_spoil_seed/180 * pi)*rf_spoil_seed_cnt;  % radians
 		rf_spoil_seed_cnt = rf_spoil_seed_cnt + 1;
-		loop{ii}.rfphs == angle(exp(1i*(rfphs)));
+		loop{ii}.rfphs = angle(exp(1i*(rfphs)));
 
 		% readout
 		ii = ii + 1;
@@ -77,18 +77,11 @@ for iz = 0:nz           % We'll use iz=0 for approach to steady-state
 			loop{ii}.dabecho = 0;
 			loop{ii}.dabview = 0;
 		end
-				  	
-		
-      else   % discarded acquisitions (disdaqs)
-         ia_gz = 0;
-      end
-      dabslice = max(iz, 0);
-
+		loop{ii}.recphs = loop{ii}.rfphs;
 	end
 end
 
-
-scanloop
+toppe.loopstruct2txt(loop);
 
 return;
 
