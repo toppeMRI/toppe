@@ -47,19 +47,23 @@ ii = 0;                 % counts number of module executions
 ny = matrix(2);
 nz = matrix(3);
 
+dabmode = dabon;   % best to leave acquisition on even during disdaqs so auto-prescan gets a signal (?)
+waveform = 1;
+textra = 0;        % add delay at end of module (int, microseconds)
+
 for iz = 0:nz           % We'll use iz=0 for approach to steady-state
 	for iy = 1:ny
 
 		% rf excitation
 		ii = ii + 1;
-		loop{ii}.module = rfmod;   
-		loop{ii}.flip = 10;        % can't exceed design flip angle ('flip')
-		loop{ii}.gxscale = 0;
-		loop{ii}.gyscale = 0;
-		loop{ii}.gzscale = 1.0;      % full amplitude (range is [-1 1])
+		module = rfmod;   
+		rfscale = 1.0;               % full amplitude (range is [-1 1]) 
+		gxscale = 0;
+		gyscale = 0;
+		gzscale = 1.0;      %
 		rfphs = rfphs + (rf_spoil_seed/180 * pi)*rf_spoil_seed_cnt;  % radians
 		rf_spoil_seed_cnt = rf_spoil_seed_cnt + 1;
-		loop{ii}.rfphs = angle(exp(1i*(rfphs)));
+		d(icnt,:) = [tipdowncore ia_tipdown ia_th max_pg_iamp max_pg_iamp max_pg_iamp dabslice dabecho dabview daboff 0 irfphase irfphase textra rffreq waveform]; 
 
 		% readout
 		ii = ii + 1;
