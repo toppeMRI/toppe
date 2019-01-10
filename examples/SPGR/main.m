@@ -38,16 +38,17 @@ toppe.utils.makegre(fov(1), matrix(1), fov(3)/matrix(3), ...
 %toppe.plotmod(ofname);
 
 %% Create scanloop.txt
-rfmodnum = 1;           % module index, i.e., line number in modules.txt
-readoutmodnum = 2;
+rfmod = 1;           % module index, i.e., line number in modules.txt
+readoutmod = 2;
 rfphs = 0;              % radians
 rf_spoil_seed_cnt = 0;
 rf_spoil_seed = 117;    % degrees
 ii = 0;                 % counts number of module executions
 ny = matrix(2);
 nz = matrix(3);
-for iz = 0:matrix(3)    % We'll use iz=0 for approach to steady-state
-	for iy = 1:matrix(2)
+
+for iz = 0:nz           % We'll use iz=0 for approach to steady-state
+	for iy = 1:ny
 
 		% rf excitation
 		ii = ii + 1;
@@ -62,13 +63,22 @@ for iz = 0:matrix(3)    % We'll use iz=0 for approach to steady-state
 
 		% readout
 		ii = ii + 1;
+		loop{ii}.module = readoutmod;   
 		loop{ii}.gxscale = 1.0;
-		loop{ii}.gyscale = ((iy-1+0.5)-ny/2)/(ny/2);   % phase-encode amplitude
-		loop{ii}.gzscale = ((iz-1+0.5)-nz/2)/(nz/2);   % partition-encode amplitude
-      ia_gz = 2*round( max_pg_iamp*(((iz-1+0.5)-nz/2)/(nz/2)) /2);   % z phase-encode amplitude
-		loop{ii}.gzscale = 
+		loop{ii}.gyscale = ((iy-1+0.5)-ny/2)/(ny/2);   % phase-encode amplitude scaling
+		if iz > 0
+			loop{ii}.gzscale = ((iz-1+0.5)-nz/2)/(nz/2);   % partition-encode amplitude scaling
+			loop{ii}.dabslice = max(iz,0);    % Convention: skip dabslice=0 
+			loop{ii}.dabecho = 0;
+			loop{ii}.dabview = iy;            % Convention: skip baseline (0) view
+		else
+			loop{ii}.gzscale = 0;    % approach to steady-state
+			loop{ii}.dabslice = 0;
+			loop{ii}.dabecho = 0;
+			loop{ii}.dabview = 0;
+		end
+				  	
 		
-      ia_gz = 2*round( max_pg_iamp*(((iz-1+0.5)-nz/2)/(nz/2)) /2);   % z phase-encode amplitude
       else   % discarded acquisitions (disdaqs)
          ia_gz = 0;
       end
