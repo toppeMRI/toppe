@@ -29,9 +29,6 @@ function [moduleArr loopStructArr] = seq2ge(seqarg, varargin)
 %   >> seq2ge(seq);
 %
 % See https://toppemri.github.io/ for more info on TOPPE.
-%
-% $Id: seq2ge.m,v 1.26 2018/11/05 18:15:57 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/pulseq/seq2ge.m,v $
 
 %% parse inputs
 % Defaults

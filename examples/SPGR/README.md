@@ -10,3 +10,6 @@ Usage:
 ```
 >> main;
 ```
+
+Issue:
+If b2rf is not found, use b2rf.m in +toppe/+utils/+rf/+jpauly/matlab/ instead.
