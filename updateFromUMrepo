@@ -1,0 +1,5 @@
+# Update this repo with the latest changes from the (private) TOPPE repo at the U of Michigan fMRI lab
+
+cd +toppe
+rsync -avz ~/gitlab/toppe/+toppe/ .
+cd ..
