@@ -49,18 +49,10 @@ dabmode = dabon;   % best to leave acquisition on even during disdaqs so auto-pr
 waveform = 1;
 textra = 0;        % add delay at end of module (int, microseconds)
 
-loop = containers.Map;
-
 for iz = 0:nz           % We'll use iz=0 for approach to steady-state
 	for iy = 1:ny
 
 		% rf excitation block (usage of 'block' here parallels its usage in Pulseq)
-		%block = {'module', rfmod, ...
-		%	'rfscale', 1.0, ...           % full amplitude (range is [-1 1]) 
-		%	'gxscale', 0, ...
-		%	'gyscale', 0, ...
-		%	'gzscale', 1.0, ...
-		%	'rfphs',   rfphs};
 		block = [];
 		block.module = rfmod;
 		block.rfscale = 1.0;
@@ -82,7 +74,7 @@ for iz = 0:nz           % We'll use iz=0 for approach to steady-state
 		block.dabecho = 0; 
 		block.dabview = iy;                          % Convention: skip baseline (0) view
 		block.recphs = angle(exp(1i*rfphs));         % radians
-		d(ii,:) = sub_block2vec(block);
+		d(ii,:) = toppe.blockstruct2vec(block);
 		ii = ii + 1;
 
 		% update rf/rec phase
@@ -101,79 +93,4 @@ toppe.loop2txt(d);
 %playseq(2,0);
 
 return;
-
-% Convert paired cell array to a [1 16] line entry in scanloop.txt
-function d = sub_block2vec(block)
-% Input:
-%  block     {'field 1', value1, 'field2', value2, ...} paired cell array containing TOPPE settings for the execution of one module
-% Output:
-% d          [1 16] vector containing values to be written to scanloop.txt. See TOPPE manual for details.
-%            [tipdowncore ia_tipdown ia_th max_pg_iamp max_pg_iamp max_pg_iamp dabslice dabecho dabview daboff rot irfphase irfphase textra rffreq waveform]; 
-
-max_pg_iamp = 2^15-2;    % max amplitude in hardware units
-dabon = 1;
-
-% initialize
-d = zeros(1,16);
-
-% replace with those values that are provided
-try
-	d(1) = block.module;
-catch
-	error('module number must be specified');
-end
-if isfield(block, 'rfscale')
-	d(2) = 2*round(max_pg_iamp * block.rfscale/2);   % force even amp
-end
-if isfield(block, 'thscale')
-	d(3) = 2*round(max_pg_iamp * block.thscale/2);
-else
-	d(3) = max_pg_iamp;
-end
-if isfield(block, 'gxscale')
-	d(4) = 2*round(max_pg_iamp * block.gxscale/2);
-end
-if isfield(block, 'gyscale')
-	d(5) = 2*round(max_pg_iamp * block.gyscale/2);
-end
-if isfield(block, 'gzscale')
-	d(6) = 2*round(max_pg_iamp * block.gzscale/2);
-end
-if isfield(block, 'dabslice')
-	d(7) = block.dabslice;
-end
-if isfield(block, 'dabecho')
-	d(8) = block.dabecho;
-end
-if isfield(block, 'dabview')
-	d(9) = block.dabview;
-end
-if isfield(block, 'dabmode')
-	d(10) = block.dabmode;
-else
-	d(10) = dabon;
-end
-if isfield(block, 'rot')
-	d(11) = 2*round(max_pg_iamp * block.rot/2);
-end
-if isfield(block, 'rfphs')
-	d(12) = 2*round(max_pg_iamp * block.rfphs/2);
-end
-if isfield(block, 'recphs')
-	d(13) = 2*round(max_pg_iamp * block.recphs/2);
-end
-if isfield(block, 'textra')
-	d(14) = block.textra;
-end
-if isfield(block, 'rffreq')
-	d(15) = block.rffreq;
-end
-if isfield(block, 'wavnum')
-	d(16) = block.wavnum;
-else
-	d(16) = 1;
-end
-
-return;
-
 
