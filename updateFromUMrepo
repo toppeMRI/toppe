@@ -8,4 +8,8 @@ cd pulseq
 rsync -avz ~/gitlab/toppe/pulseq/ .
 cd ..
 
+cd UserGuide
+rsync -avz ~/gitlab/toppe/UserGuide/ .
+cd ..
+
 # git add <all changed/new files>; git commit; git push;
