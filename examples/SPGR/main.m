@@ -68,7 +68,7 @@ for iz = 0:nz           % We'll use iz=0 for approach to steady-state
 		block.gyscale = 0;
 		block.gzscale = 1.0;
 		block.rfphs = angle(exp(1i*rfphs));   % radians
-		d(ii,:) = sub_block2vec(block);
+		d(ii,:) = toppe.blockstruct2vec(block);
 		ii = ii + 1;
 
 		% readout
@@ -134,10 +134,10 @@ if isfield(block, 'gxscale')
 	d(4) = 2*round(max_pg_iamp * block.gxscale/2);
 end
 if isfield(block, 'gyscale')
-	d(5) = 2*round(max_pg_iamp * block.gxscale/2);
+	d(5) = 2*round(max_pg_iamp * block.gyscale/2);
 end
 if isfield(block, 'gzscale')
-	d(6) = 2*round(max_pg_iamp * block.gxscale/2);
+	d(6) = 2*round(max_pg_iamp * block.gzscale/2);
 end
 if isfield(block, 'dabslice')
 	d(7) = block.dabslice;
