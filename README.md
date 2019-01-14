@@ -18,7 +18,7 @@ Matlab package (namespace) with basic toppe functions such as writemod.m, plotmo
 +toppe/+utils/+spiral/: create stack-of-spirals readout module, and reconstruct with reconSoS.m
 
 
-## +examples 
+## examples 
 
 Complete examples to help you get started.
 
