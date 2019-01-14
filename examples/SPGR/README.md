@@ -3,7 +3,8 @@
 Complete example, including:
 
 + Create .mod files using the TOPPE Matlab library
-+ Matlab script that writes the scanloop file (scanloop.txt)
++ Create scanloop.txt
++ Display the sequence in movie (loop) mode
 
 Usage:
 ```
