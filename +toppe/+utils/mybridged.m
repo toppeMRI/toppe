@@ -8,12 +8,7 @@ function g = mybridged(area_target,g0,mxg,mxs)
 %   g0    - edge value (G/cm)
 %   mxg   - G/cm
 %   mxs   - G/cm/sec
-%
-% $Id: mybridged.m,v 1.1 2018/10/27 23:22:50 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/+epi/mybridged.m,v $
 
-%mxg = 4.9;        % G/cm
-%mxs = 10e3;       % G/cm/sec
 dt  = 4e-6;       % sample duration (sec)
 s = mxs * dt;     % max change in g per sample (G/cm)
 if area_target < 0

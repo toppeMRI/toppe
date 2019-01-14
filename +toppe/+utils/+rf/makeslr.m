@@ -28,8 +28,6 @@ function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, va
 %  >> sys = systemspecs('maxGrad', 3, 'maxSlew', 10);
 %  >> [rf,g] = toppe.utils.rf.makeslr(180, 0.5, 8, 8, 4, 'type', 'se', 'system', sys);
 %
-% $Id: makeslr.m,v 1.27 2018/11/15 14:26:50 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/+rf/makeslr.m,v $
 
 import toppe.*
 import toppe.utils.*
@@ -58,14 +56,13 @@ end
 
 %% Design pulse and gradients
 
-% multiply by 0.99 so gradients will pass checkwaveforms()
-mxg = 0.99*arg.system.maxGrad;          
+mxg = arg.system.maxGrad;          
 if strcmp(arg.system.gradUnit, 'mT/m')
 	mxg = mxg/10;     % Gauss/cm
 end
-mxs = 0.99*arg.system.maxSlew;
+mxs = arg.system.maxSlew;
 if strcmp(arg.system.slewUnit, 'T/m/s')
-	mxs = mxs/10;     % Gauss/cm
+	mxs = mxs/10;     % Gauss/cm/ms
 end
 
 dorfmask    = arg.dorfmask;

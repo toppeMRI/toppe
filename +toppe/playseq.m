@@ -10,7 +10,7 @@ function playseq(nModPerTR,varargin)
 %    loopFile           Default: 'scanloop.txt'
 %    moduleListFile     Default: 'modules.txt'
 %    system 			System struct. Default calls systemspecs.m.
-%    tpause             Delay before displaying next TR (sec) (Default: 0)
+%    tpause             Delay before displaying next TR (sec) (Default: 0.01)
 %    drawpause          Display pauses (zeros at end of plot) (Default: 1)
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.

@@ -27,9 +27,9 @@ end
 import toppe.*
 import toppe.utils.*
 
-% reduced peak amp/slew so it passes hardware checks
-mxg = 0.99*mxg;
-mxs = 0.99*mxs;
+% reduce peak amp/slew so it passes hardware checks
+mxg = 0.995*mxg;
+mxs = 0.995*mxs;
 
 % construct trapezoid
 dt = rasterTime;           % ms

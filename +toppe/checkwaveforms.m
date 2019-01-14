@@ -1,7 +1,7 @@
 function isValid = checkwaveforms(varargin)
 % Check rf/gradient waveforms against system limits.
 %
-% function isValid = checkwaveforms(sys, varargin)
+% function isValid = checkwaveforms(varargin)
 %
 % Inputs:
 % Options 
@@ -13,9 +13,6 @@ function isValid = checkwaveforms(varargin)
 %
 % Output
 %  isValid    boolean/logical (true/false)
-%
-% $Id: checkwaveforms.m,v 1.10 2018/11/13 17:56:29 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/checkwaveforms.m,v $
 
 import toppe.*
 import toppe.utils.*

@@ -6,6 +6,8 @@
 
 function h = dzmp(n,tb,d1,d2)
 
+import toppe.utils.rf.jpauly.*
+
 n2 = 2*n-1;
 di = 0.5*dinf(2*d1,0.5*d2.*d2);
 w = di/tb;

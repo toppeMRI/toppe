@@ -8,7 +8,7 @@ function sys = systemspecs(varargin)
 %
 % Input options:
 %   maxGrad         Default: 5 Gauss/cm
-%   gradUnit        mT/m (default) or Gauss/cm. 
+%   gradUnit        Gauss/cm (default) or mT/m 
 %   maxSlew         20 Gauss/cm/ms
 %   slewUnit        Gauss/cm/ms (default) or T/m/s
 %   maxRf           Default: 0.25 Gauss
@@ -32,9 +32,6 @@ function sys = systemspecs(varargin)
 % Usage examples:
 %  >> sys = systemspecs();                   % use default values
 %  >> sys = system('maxSlice', 50);          % sets maxSlice to 50; otherwise contains default values
-%
-% $Id: systemspecs.m,v 1.10 2018/11/12 20:20:33 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/systemspecs.m,v $
 
 %% Defaults
 sys.maxGrad  = 5;

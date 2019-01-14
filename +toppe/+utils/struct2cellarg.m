@@ -23,9 +23,6 @@ function c = struct2cellarg(s)
 %  >> opts.ofname = 'mytoppemodule.mod';
 %  >> opts = struct2cellarg(opts);
 %  >> writemod(opts{:});
-%
-% $Id: struct2cellarg.m,v 1.2 2018/10/24 10:44:50 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/struct2cellarg.m,v $
 
 fields = fieldnames(s);
 vals = struct2cell(s);

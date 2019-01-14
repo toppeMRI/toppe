@@ -62,7 +62,7 @@ pfilename=dir(pfile);
 
 % File size check for integrity
 if pfilesize ~= pfilename.bytes
-    warning('Expected %0.1fMB file but read in %0.1fMB file.\n',pfilesize,pfilename.bytes/1e6)
+    warning('Expected %0.1fMB file but read in %0.1fMB file.\n',pfilesize/1e6,pfilename.bytes/1e6)
     fprintf('Press enter to continue anyway...');
     input('');
 end

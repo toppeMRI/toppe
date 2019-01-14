@@ -9,6 +9,8 @@
 
 function hmp = fmp(h)
 
+import toppe.utils.rf.jpauly.*
+
 l = length(h);
 if rem(l,2) == 0,
    disp('filter length must be odd');

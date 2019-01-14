@@ -4,7 +4,7 @@ function loop2txt(d)
 % function loop2txt(d)
 %
 % Input:
-%  d      [nt 16] array. See 'writeloop.m' functions in the examples.
+%  d      [nt 16] array. See the TOPPE manual, and 'writeloop.m' functions in the examples.
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
@@ -22,8 +22,6 @@ function loop2txt(d)
 % 
 % (c) 2016 The Regents of the University of Michigan
 % Jon-Fredrik Nielsen, jfnielse@umich.edu
-%
-% $Id: loop2txt.m,v 1.2 2018/10/24 10:44:49 jfnielse Exp $
 
 import toppe.*
 import toppe.utils.*
