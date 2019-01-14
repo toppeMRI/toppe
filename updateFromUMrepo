@@ -3,3 +3,9 @@
 cd +toppe
 rsync -avz ~/gitlab/toppe/+toppe/ .
 cd ..
+
+cd pulseq
+rsync -avz ~/gitlab/toppe/pulseq/ .
+cd ..
+
+# git add <all changed/new files>; git commit; git push;
