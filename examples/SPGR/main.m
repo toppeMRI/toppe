@@ -1,5 +1,7 @@
 function main
 % 3D SPGR sequence example
+%
+% To use the +toppe Matlab package, include the (root) folder containing the +toppe folder in your Matlab path.
 
 %% Set system limits
 % Good to back off a bit on slew to avoid PNS (even if scanner can slew at higher rate).
