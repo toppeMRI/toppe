@@ -87,10 +87,8 @@ end
 toppe.loop2txt(d);
 
 %% Play sequence in loop (movie) mode
-%system('rm scan,spgr.tgz');
-%system('tar czf scan,spgr.tgz modules.txt scanloop.txt *.mod *.m ');
-%figure; toppe.plotseq(5000,5010); subplot(511); title('SPGR');
-%playseq(2,0);
+nModulesPerTR = 2;
+toppe.playseq(nModulesPerTR, 'nTRskip', 10);
 
 return;
 
