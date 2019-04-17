@@ -1,4 +1,5 @@
 function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
+% function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
 %
 % Make gradients for 3D spin-warp (cartesian gradient-echo) readout
 %
@@ -58,7 +59,7 @@ npixro = npix*decimation;
 
 % readout gradient
 gxro = g*ones(1,npixro);        % plateau 
-s = mxs*dt;                     % max change in gradient per sample
+s = 0.995*mxs*dt;                     % max change in gradient per sample
 ramp = 0:s:g;
 
 % x prewinder.
@@ -149,7 +150,7 @@ end
 %end
 hdrints = [npre npixro iref];    % some useful numbers for recon
 hdrfloats = [arg.oprbw];
-writemod('gx', gx(:), 'gy', gy(:), 'gz', gz(:), 'ofname', arg.ofname, ...
+writemod('gx', gx(:), 'gy', gy(:), 'gz', gz(:), 'ofname', arg.ofname, 'system', arg.system, ...
          'desc', '3D spin-warp (GRE) waveform', 'hdrints', hdrints, 'hdrfloats', hdrfloats);
 
 if arg.extrafiles
@@ -167,6 +168,8 @@ if arg.extrafiles
 		writemod('gx', gx(:), 'gz', gz(:), 'ofname', fname, 'desc', 'spoiler');
 	end
 end
+
+fname = arg.ofname;
 
 return;
 

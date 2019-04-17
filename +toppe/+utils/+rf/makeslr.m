@@ -108,7 +108,6 @@ if arg.forBlochSiegert
 end
 
 % slice offset frequency
-gamma = 4.257e3;  % Hz/Gauss
 gplateau = gex(end/2);
 freq = arg.system.gamma*gplateau*sliceOffset; % Hz
 
@@ -171,7 +170,7 @@ return;
 
 
 %% create RF pulse with slice-select gradient
-function [rf,gss,irep,iref,gplateau,areaprep,idep,arearep] = sub_myslrrf(dur, tbw, type, slthick, mxg, mxs, ftype, isBalanced, sys)
+function [rf,gex,irep,iref,gplateau,areaprep,idep,arearep] = sub_myslrrf(dur, tbw, type, slthick, mxg, mxs, ftype, isBalanced, sys)
 % function [rf,gss,irep,iref,gplateau] = myslrrf(dur,tbw,type,slthick,isBalanced,type,ftype)
 %
 % INPUTS:
@@ -211,7 +210,7 @@ rf = resample(rf, res, nrf);
 
 % scale to Gauss
 switch type
-	case {'ex','sat'};
+	case {'ex','sat'}
 		flip = pi/2;
 	case {'se','inv'}
 		flip = pi;
@@ -228,28 +227,29 @@ iref = find(rf==max(rf));              % center of RF pulse
 
 %% make slice-select gradient waveform 
 bw = tbw / dur;                    % kHz
-g = bw / (gamma * slthick);      % slice-select gradient amplitude (G/cm)
-gplateau = g;
+gplateau = bw / (gamma * slthick);      % slice-select gradient amplitude (G/cm)
 
-if g > mxg
+if gplateau > mxg
 	error('gradient exceeds mxg');
 end
 
 % slice-select trapezoid 
-gss = g*ones(1,npix);                             % plateau of slice-select gradient
-s = mxs * dt;                                     % max change in g per sample (G/cm)
-ramp = [0:s:g];
-gss = [ramp gss fliplr(ramp)]; 
-iref = iref + numel(ramp);
+gss = gplateau*ones(1,npix);   % plateau of slice-select gradient
+s = mxs * dt * 0.999;   % max change in g per sample (G/cm), slightly decreased to avoid floating point eror
+gss_ramp = [s:s:gplateau];
+
+if gplateau-gss_ramp(end) % Fix the boundary of ramp and plateau when g is not a multiple of s
+    gss_ramp = [gss_ramp (gplateau+gss_ramp(end))/2];
+end
+
+gss_trap = [gss_ramp gss fliplr(gss_ramp)]; 
+iref = iref + numel(gss_ramp);
 
 % slice-select rephaser gradient
 switch type
 	case {'ex', 'st', 'sat'}
-		%midpoint = find(rf==max(rf(:)));                          % center of main lobe
-		%area = sum(gss((midpoint+1):end)) * dt * 1e-3  ;          % G/cm*s
-		arearep = sum([gss((iref+1):end)]) * dt * 1e-3;            % G/cm*s
+		arearep = sum(gss_trap((iref+1):end)) * dt * 1e-3;            % G/cm*s
 		gzrep = -trapwave2(arearep, mxg, mxs, dt);
-		%gzrep = [gzrep zeros(1,mod(length(gzrep),2)) ];            % make length even
 	case 'se'
 		gzrep = [];
 	case 'inv'
@@ -260,9 +260,8 @@ end
 switch type
 	case {'ex', 'st', 'sat'}
 		%area = sum(gss( ((length(ramp)+1):(length(ramp)+midpoint)):end)) * dt * 1e-3             % G/cm*s
-		areaprep = sum([gss(1:iref)]) * dt * 1e-3;            % G/cm*s
+		areaprep = sum([gss_trap(1:iref)]) * dt * 1e-3;            % G/cm*s
 		gzprep = -trapwave2(areaprep, mxg, mxs, dt);
-		gzprep = [gzprep zeros(1,mod(length(gzprep),2)) ];            % make length even
 	case 'se'
 		gzprep = [];
 	case 'inv'
@@ -274,16 +273,16 @@ if ~isBalanced
 	gzprep = [];
 end
 
-irep = length([gzprep gss]);
+irep = length([gzprep gss_trap]);
 iref = iref + numel(gzprep);
-gss = [gzprep gss gzrep];
+gex = [gzprep gss_trap gzrep];
 idep = numel(gzprep);
 
 % make gss and rf the same length. 
-rf = [0*gzprep(:); zeros(length(ramp),1); rf; zeros(length(ramp)+length(gzrep),1)];
+rf = [0*gzprep(:); zeros(length(gss_ramp),1); rf; zeros(length(gss_ramp)+length(gzrep),1)];
 
 % ensure that duration is on a 16 us (4 sample) boundary
 rf = makeGElength(rf(:));
-gss = makeGElength(gss(:));
+gex = makeGElength(gex(:));
 
 return;

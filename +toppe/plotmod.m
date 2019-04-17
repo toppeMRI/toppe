@@ -1,4 +1,4 @@
-function sub_plotmod(fname)
+function plotmod(fname)
 % Plot TOPPE .mod file.
 %
 % function sub_plotmod(fname)

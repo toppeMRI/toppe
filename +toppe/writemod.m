@@ -38,12 +38,6 @@ function writemod(varargin)
 %
 % You should have received a copy of the GNU Library General Public License
 % along with TOPPE. If not, see <http://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>.
-% 
-% (c) 2017-18 The Regents of the University of Michigan
-% Jon-Fredrik Nielsen, jfnielse@umich.edu
-%
-% $Id: writemod.m,v 1.10 2018/11/13 18:07:29 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/writemod.m,v $
 
 import toppe.*
 import toppe.utils.*
@@ -136,8 +130,8 @@ end
 %% Optional header arrays
 [paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, system);
 if ~isempty(arg.hdrfloats)
-	if length(arg.hdrfloats) > 30
-		error('max number of ints in .mod file header is 30');
+	if length(arg.hdrfloats) > 12
+		error('max number of extra floats in .mod file header is 12');
 	end
 	paramsfloat(20:(19+length(arg.hdrfloats))) = arg.hdrfloats;  % populate header with custom floats 
 end

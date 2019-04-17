@@ -1,4 +1,4 @@
-function [dat, rdb_hdr] = loadpfile(pfile,echo,slicestart)
+function [dat, rdb_hdr] = loadpfile(pfile,echo,slicestart,sliceend,varargin)
 % function [dat, rdb_hdr] = loadpfile(pfile,[echo,slicestart])
 %
 % Load data for one echo (or all) from Pfile, EXCEPT dabslice=0 slot (which can contain corrupt data).
@@ -6,7 +6,11 @@ function [dat, rdb_hdr] = loadpfile(pfile,echo,slicestart)
 % Input options:
 %  echo          only get data for this echo (default: load all echoes)
 %  slicestart    get data starting from this slice index (1:N slices, default: 2)
-
+%  sliceend      "" except ending slice (default: N)
+%
+% Output dimensions of dat:
+%  [ndat,ncoil,nslice,nechos,nview]
+%
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
 % TOPPE is free software: you can redistribute it and/or modify
@@ -26,6 +30,11 @@ function [dat, rdb_hdr] = loadpfile(pfile,echo,slicestart)
 
 import toppe.utils.*
 
+%% Load input arguments
+% Set defaults and parse varargin
+arg.quiet        = false;
+arg = vararg_pair(arg, varargin);
+
 %% Loadpfile code
 fid = fopen(pfile,'r','l');
 ver = fread(fid,1,'float32');
@@ -43,13 +52,17 @@ nviews  = rdb_hdr.nframes;
 ncoils  = rdb_hdr.dab(2)-rdb_hdr.dab(1)+1;
 
 %% Determine which echoes to load
-if exist('echo','var') & ~isempty(echo)
+if exist('echo','var') && ~isempty(echo)
 	ECHOES = echo;
 else
 	ECHOES = 1:nechoes;
 end
 if nargin < 3
 	slicestart = 2;
+end
+
+if nargin < 4
+    sliceend = nslices;
 end
 
 %% Calculate size of data chunks. See pfilestruct.jpg, and rhrawsize calculation in .e file.
@@ -74,8 +87,10 @@ if nviews == 2
     view2tmp = fread(fid, 2*ndat, 'int16=>int16');
     if all(view2tmp==0)
         nviews = 1; % Set nviews to 1 so we don't read in all the empty data
-        warning('off','backtrace'); % Turn off backtrace lines for cleaner output
-        warning('View 2 appears to be empty, only loading view 1.');
+        if ~arg.quiet
+            warning('off','backtrace'); % Turn off backtrace lines for cleaner output
+            warning('View 2 appears to be empty, only loading view 1.');
+        end
     end
 end
 
@@ -85,7 +100,7 @@ end
 
 try
     % Check predicted size of output vs free memory
-    memneeded = 16*ndat*ncoils*(nslices-slicestart+1)*numel(ECHOES)*nviews; %16 bytes per complex value;
+    memneeded = 16*ndat*ncoils*(sliceend-slicestart+1)*numel(ECHOES)*nviews; %16 bytes per complex value;
     
     % Pull available memory using linux system command
     [~,out]=system('cat /proc/meminfo | grep "MemAvailable:"');
@@ -101,15 +116,17 @@ try
 catch
 end
 
+if ~arg.quiet
 fprintf(1,'ndat = %d, nslices = %d, nechoes = %d, nviews = %d, ncoils = %d\n', ndat, nslices, nechoes, nviews, ncoils);
+end
 
 %% Read data from file
-datr = int16(zeros(ndat,ncoils,nslices-slicestart+1,numel(ECHOES),nviews));
+datr = int16(zeros(ndat,ncoils,sliceend-slicestart+1,numel(ECHOES),nviews));
 dati = datr;
-textprogressbar('Loading data: ');
+if ~arg.quiet; textprogressbar('Loading data: '); end
 for icoil = 1:ncoils
-    textprogressbar(icoil/ncoils*100);
-    for islice = slicestart:nslices   % skip first slice (sometimes contains corrupted data)
+    if ~arg.quiet; textprogressbar(icoil/ncoils*100); end
+    for islice = slicestart:sliceend   % skip first slice (sometimes contains corrupted data)
         for iecho = ECHOES % Load every element in ECHOES
             for iview = 1:nviews
                 offsetres = (icoil-1)*coilres + (islice-1)*sliceres + (iecho-1)*echores + iview*ndat;
@@ -132,5 +149,5 @@ dat = complex(datr,dati); % Combine data in one step
 clearvars datr dati % Free up some memory
 dat = double(dat);  % Convert to double in place
 fclose(fid);
-textprogressbar(' done.');
+if ~arg.quiet; textprogressbar(' done.'); end
 return

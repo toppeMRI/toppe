@@ -87,6 +87,9 @@ TPARAMS = cell2mat(c(2:end));
 if arg.doTimeOnly
     nsamples = 0;
     arg.doDisplay = false;
+    for ic = 1:size(cores,2) % Compute table of core durations
+    core_size(ic) = size(cores{ic}.gx(:,1),1);
+    end
 end
 
 %% build sequence. each sample is 4us.
@@ -123,8 +126,7 @@ for it = nstart:nstop
     waveform = loopArr(it,16);
     
     if arg.doTimeOnly % Calculate the length of one waveform and add it to our sample counter
-        gxit = cores{ic}.gx(:,waveform);
-        gxlength = round((start_core)/dt) + size(gxit,1) + round((timetrwait+timessi+coredel)/dt);
+        gxlength = round((start_core)/dt) + core_size(ic) + round((timetrwait+timessi+coredel)/dt);
         nsamples = nsamples + gxlength + round(tdelay/dt);
     else % Calculate RF and gradients as normal
         % get gradients and apply in-plane (xy) rotation

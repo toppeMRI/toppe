@@ -17,7 +17,9 @@ function [imsos ims dcf] = reconSoS(dat, kx, ky, fov, imsize, varargin)
 %   dcf         density compensation function
 %   zmap        [imsize nz] 3D image volume with field map values (Hz). Matrix size must match imsize. See Gmri.m.
 %   ti          sample times
-%   useParallel do recon using parpool (requires parallel toolbox)
+%   useParallel do recon in parallel (requires parallel toolbox)
+%   CC          Use coil compression (see ir_mri_coil_compress) in parallel
+%   quiet       Surpress output messages (default: false)
 %
 % $Id: reconSoS.m,v 1.8 2018/11/12 13:38:46 jfnielse Exp $
 % $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/+spiral/reconSoS.m,v $
@@ -29,7 +31,9 @@ arg.zmap         = [];
 arg.ti           = [];
 arg.spatialShift = [0 0];
 arg.dcf          = [];
-arg.useParallel = false;
+arg.useParallel  = false;
+arg.CC           = [];
+arg.quiet        = false;
 arg = vararg_pair(arg, varargin);
 
 [ndat nleafs nz ntp ncoils] = size(dat);
@@ -47,7 +51,8 @@ npix = imsize(1);
 %xinit = zeros(npix^2,1);
 Ny = npix;
 Nx = npix;
-nufft_args = {[Ny,Nx],[6,6],[2*Ny,2*Nx],[Ny/2,Nx/2],'table',2^11,'minmax:kb'};
+%nufft_args = {[Ny,Nx],[6,6],[2*Ny,2*Nx],[Ny/2,Nx/2],'table',2^12,'minmax:kb'};
+nufft_args = {[Ny,Nx],[6,6],[2*Ny,2*Nx],[Ny/2,Nx/2],'minmax:kb'};
 mask = logical(ones(Ny,Nx)); % Mask for support
 L = 6;
 
@@ -59,6 +64,10 @@ for iz = 1:nz
         end
         
         % Initialize a Gmri object for every slice location
+        % This isn't the best implementation because Gmri has a function to
+        % update zmap on the fly. Should first check if all in-plane
+        % trajectories are the same and if so, can use the same Gmri object
+        
         A{iz} = Gmri([fov(1)*kx(:) fov(2)*ky(:)], mask, ...
             'ti', arg.ti, 'zmap', 1i*2*pi*arg.zmap(:,:,iz), 'L', L, 'nufft', nufft_args);
     else
@@ -66,41 +75,64 @@ for iz = 1:nz
     end
 end
 
-% Do IFT along kz, then in-plane nufft per slice and per timepoint
-dat = sub_iftz(dat);
-ims = zeros([imsize nz ntp ncoils]);
+% Do IFT along kz
+if size(dat,3) > 1
+    dat = fftshift(ifft(ifftshift(dat,3),[],3),3);
+end
+
+if arg.CC > 0
+    ims = zeros([imsize nz ntp arg.CC]); % Initialize with number of virtual coils
+else
+    ims = zeros([imsize nz ntp ncoils]); % Initialize with nominal dimensions
+end
 if arg.useParallel
-    fprintf('Reconstructing in parallel... ');
+    if ~arg.quiet; fprintf('Reconstructing in parallel... '); end
     parfor icoil = 1:ncoils
         for itp = 1:ntp
             for iz = 1:nz
                 d2d = squeeze(dat(:,:,iz,itp,icoil));   % [ndat nleafs]
-                imtmp = A{iz}'*(d2d(:).*dcf);
+                %imtmp = A{iz}'*(d2d(:).*dcf);
+                imtmp = A{iz}'*(d2d(:).*dcf(:));
                 ims(:,:,iz,itp,icoil) = reshape(imtmp, imsize(1:2));
             end
         end
     end
-    fprintf('done.\n');
-else
-    toppe.utils.textprogressbar('Reconstructing: ');
+    if ~arg.quiet; fprintf('done.\n'); end
+elseif arg.CC > 0 % Use coil compression in parallel
+    if ~arg.quiet
+        fprintf('Using %d virtual coils.\n',arg.CC);
+        fprintf('Reconstructing... ');
+    end
+    parfor itp = 1:ntp
+        for iz = 1:nz
+            ims_temp = zeros(size(mask(:),1),ncoils);
+            for icoil = 1:ncoils
+                d2d = squeeze(dat(:,:,iz,itp,icoil));   % [ndat nleafs]
+                %imtmp = A{iz}'*(d2d(:).*dcf);
+                imtmp = A{iz}'*(d2d(:).*dcf(:));
+                %ims_temp(:,:,iz,icoil) = reshape(imtmp, imsize(1:2)); % coil images
+                ims_temp(:,icoil) = imtmp;
+            end
+            ims(:,:,:,itp,:) = reshape(ir_mri_coil_compress(ims_temp,'ncoil',arg.CC),[imsize(1:2) arg.CC]);
+        end
+    end
+    if ~arg.quiet; fprintf(' done.\n'); end
+else % Regular recon
+    if ~arg.quiet; toppe.utils.textprogressbar('Reconstructing: '); end
     for icoil = 1:ncoils
         for itp = 1:ntp
-            toppe.utils.textprogressbar(100*(itp+((icoil-1)*ntp))/(ntp*ncoils));
+            if ~arg.quiet; toppe.utils.textprogressbar(100*(itp+((icoil-1)*ntp))/(ntp*ncoils)); end
             for iz = 1:nz
                 d2d = squeeze(dat(:,:,iz,itp,icoil));   % [ndat nleafs]
-                imtmp = A{iz}'*(d2d(:).*dcf);
+                %imtmp = A{iz}'*(d2d(:).*dcf);
+                imtmp = A{iz}'*(d2d(:).*dcf(:));
                 ims(:,:,iz,itp,icoil) = reshape(imtmp, imsize(1:2));
             end
         end
     end
-    toppe.utils.textprogressbar(' done.');
+    if ~arg.quiet; toppe.utils.textprogressbar(' done.'); end
 end
 imsos = sqrt(sum(abs(ims).^2,5)); % Do root-sum-of-squares coil combination
 
 return;
-
-function x = sub_iftz(y)
-n = size(y,3);
-n = 1;
-x = fftshift(ifft(ifftshift(y,3), [], 3), 3 )*n;
-return;
+end

@@ -7,8 +7,9 @@ function gcrush = makecrusher(ncycles,opslthick,gzarea,mxs,mxg)
 %   gzarea      -- half-area of slice-select gradient [G/cm*sec]. Default: 0.
 %   mxs         -- max slew rate [G/cm/msec]. Default: 10.
 %   mxg         -- max gradient [G/cm]. Default: 4.
-% 
-% $Id: makecrusher.m,v 1.7 2018/11/15 14:26:55 jfnielse Exp $
+%
+% This file is part of the TOPPE development environment for platform-independent MR pulse programming.
+% University of Michigan 2019
 
 import toppe.utils.*
 

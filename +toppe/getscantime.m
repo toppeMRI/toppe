@@ -5,10 +5,14 @@ function dur = getscantime(varargin)
 %
 %
 % Input options:
-%   loopFile       Default: 'scanloop.txt'
-%   moduleListFile        Default: 'modules.txt'
+%   loopFile           Default: 'scanloop.txt'
+%   moduleListFile     Default: 'modules.txt'
 %   system             struct specifying hardware system info, see systemspecs.m
 %                      Default: arg.system = systemspecs();
+%
+%   loopArr            Directly specify contents of loopFile   
+%   mods               Directly specify contents of module list
+%
 %   In addition, the .mod files listed in 'moduleListFile' must be present in the current (working) folder.
 %
 % Output:
@@ -45,20 +49,29 @@ import toppe.utils.*
 arg.loopFile       = 'scanloop.txt';
 arg.moduleListFile = 'modules.txt';
 arg.system         = toppe.systemspecs();
+arg.loopArr        = [];
+arg.mods           = [];
 
 % Substitute varargin values as appropriate
 arg = toppe.utils.vararg_pair(arg, varargin);
 
 %% read scan files
-% read scanloop
-loopArr = toppe.utils.tryread(@toppe.readloop, arg.loopFile);
+if isempty(arg.loopArr)
+    loopArr = toppe.utils.tryread(@toppe.readloop, arg.loopFile); % read scanloop
+else
+    loopArr = arg.loopArr;
+end
 
 % read module content
-mods = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+if isempty(arg.mods)
+   mods = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+else
+   mods = arg.mods;
+end
 
 %% Call plotseq with 'doTimeOnly' argument to get the length of rho quickly
 dt = 4e-6;    % duration of one gradient/rf sample (sec)
 rho = toppe.plotseq(1, size(loopArr,1), 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true, 'system', arg.system);
 dur = size(rho,1)*dt;
-dur = round(dur);
-fprintf('Total scan time: %dm %ds\n', floor(dur/60), dur - 60*floor(dur/60) );
+%dur = round(dur);
+%fprintf('Total scan time: %dm %ds\n', floor(dur/60), dur - 60*floor(dur/60) );

@@ -199,8 +199,8 @@ while r0 < rmax
 	if (rem(count,100)==0)
 		tt = sprintf('%d points, |k|=%f',count,r0);
 		%disp(tt);
-	end;
-end;
+    end
+end
 
 r = r(oversamp/2:oversamp:count);
 theta = theta(oversamp/2:oversamp:count);
@@ -235,23 +235,23 @@ s = s(1:length(k));
 % ========= Plot gradients and slew rates. ==========
 
 
-subplot(2,2,1);
-plot(real(k),imag(k));
-title('k_y vs k_x');
-axis('square');
-
-subplot(2,2,2);
-plot(time,real(k),'r--',time,imag(k),'b--',time,abs(k),'k-');
-title('k vs t');
-ylabel('k (cm^{-1})');
-
-subplot(2,2,3);
-plot(time,real(g),'r--',time,imag(g),'b--',time,abs(g),'k-');
-title('g vs t');
-ylabel('G (G/cm)');
-
-subplot(2,2,4);
-plot(time,real(s),'r--',time,imag(s),'b--',time,abs(s),'k-');
-title('s vs t');
-ylabel('Slew Rate (G/cm/s)');
+% subplot(2,2,1);
+% plot(real(k),imag(k));
+% title('k_y vs k_x');
+% axis('square');
+% 
+% subplot(2,2,2);
+% plot(time,real(k),'r--',time,imag(k),'b--',time,abs(k),'k-');
+% title('k vs t');
+% ylabel('k (cm^{-1})');
+% 
+% subplot(2,2,3);
+% plot(time,real(g),'r--',time,imag(g),'b--',time,abs(g),'k-');
+% title('g vs t');
+% ylabel('G (G/cm)');
+% 
+% subplot(2,2,4);
+% plot(time,real(s),'r--',time,imag(s),'b--',time,abs(s),'k-');
+% title('s vs t');
+% ylabel('Slew Rate (G/cm/s)');
 
