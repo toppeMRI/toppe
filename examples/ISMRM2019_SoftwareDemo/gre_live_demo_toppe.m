@@ -10,7 +10,8 @@ step = 4;
 
 % Define FOV and resolution
 n = 128;
-matrix = [n n];          % image matrix size (2D or 3D)
+nz = 1;
+matrix = [n n nz];
 sliceThickness = 0.5;    % cm
 fov  = 25.6;             % cm
 
@@ -18,7 +19,7 @@ fov  = 25.6;             % cm
 alpha = 30;              % excitation angle (degrees)
 TE = 10;                 % msec
 TR = 20;
-ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x and z)
+ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x)
 
 % set system limits
 sys = toppe.systemspecs('maxSlew', 130, 'slewUnit', 'T/m/s', 'maxGrad', 25, 'gradUnit', 'mT/m');  
@@ -32,33 +33,31 @@ toppe.utils.rf.makeslr(alpha, sliceThickness, tbw, dur, ncyclesspoil, ...
                        'ftype', ftype, 'ofname', ofname, 'system', sys);
 %toppe.plotmod(ofname);
 
-%% Create readout.mod
+% Create readout.mod
 ofname = 'readout.mod';     % output file name
-toppe.utils.makegre(fov(1), matrix(1), 100, ... 
+zres = 10*n/matrix(1);      % 'dummy' z resolution since we're only doing 2D here. Just needs to be larger than in-plane resolution.
+toppe.utils.makegre(fov, matrix(1), zres, ... 
                     'system', sys, 'ofname', ofname, 'ncycles', ncyclesspoil); 
 toppe.plotmod(ofname);
-return;
 
 %% Create scanloop.txt
-rfmod = 1;           % module index, i.e., line number in modules.txt
-readoutmod = 2;
 rfphs = 0;              % radians
 rf_spoil_seed_cnt = 0;
 rf_spoil_seed = 117;    % degrees
 ii = 1;                 % counts number of module executions
-ny = matrix(2);
-nz = matrix(3);
 
 dabon = 1;
 daboff = 0;
-dabmode = dabon;   % best to leave acquisition on even during disdaqs so auto-prescan gets a signal (?)
+dabmode = dabon;
 waveform = 1;
 textra = 0;        % add delay at end of module (int, microseconds)
 
-for iz = 0:nz           % We'll use iz=0 for approach to steady-state
-	for iy = 1:ny
+write2loop('setup');
+for iy = -10:n   % We'll use iy<1 for approach to steady-state
 
-		% rf excitation block (usage of 'block' here parallels its usage in Pulseq)
+	% rf excitation block (usage of 'block' here parallels its usage in Pulseq)
+	write2loop('tipdown.mod', 'RFphase', rfphs);
+	write2loop('readout.mod', 'AcqPhase', rfphs, 'view', min(iy,1));
 		block = [];
 		block.module = rfmod;
 		block.rfscale = 1.0;
