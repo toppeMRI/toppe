@@ -4,120 +4,97 @@
 % 2 ... Refocus in phase
 % 3 ... Vary RF phase quasi-randomly
 % 4 ... Make receiver phase follow transmitter phase
-step = 3;
+step = 4;
 
-% Create a new sequence object
-seq=mr.Sequence();
+% To use the +toppe Matlab package, include the (root) folder containing the +toppe folder in your Matlab path.
 
 % Define FOV and resolution
-fov = 256e-3;
-sliceThickness = 5e-3;
-Nx = 128;
-Ny = Nx;
+n = 128;
+matrix = [n n];          % image matrix size (2D or 3D)
+sliceThickness = 0.5;    % cm
+fov  = 25.6;             % cm
 
 % Define sequence parameters
-TE = 10e-3;
-TR = 20e-3;
-alpha=30;
+alpha = 30;              % excitation angle (degrees)
+TE = 10;                 % msec
+TR = 20;
+ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x and z)
 
 % set system limits
-sys = mr.opts('MaxGrad',25,'GradUnit','mT/m',...
-    'MaxSlew',130,'SlewUnit','T/m/s',...
-    'rfRingdownTime', 20e-6, 'rfDeadtime', 100e-6);
+sys = toppe.systemspecs('maxSlew', 130, 'slewUnit', 'T/m/s', 'maxGrad', 25, 'gradUnit', 'mT/m');  
 
-% Create 20 degree slice selection pulse and gradient
-[rf, gz] = mr.makeSincPulse(alpha*pi/180, 'Duration', 4e-3,...
-    'SliceThickness', sliceThickness, 'apodization', 0.5,'timeBwProduct', 4, ...
-    'system' ,sys);
+% Create slice selection pulse and gradient ('tipdown.mod')
+ofname = 'tipdown.mod';     % Output file name
+dur = 2;                    % RF pulse duration (msec)
+ftype = 'min';              % minimum-phase SLR pulse (good for 3D imaging)
+tbw = 8;                    % time-bandwidth product of SLR pulse 
+toppe.utils.rf.makeslr(alpha, sliceThickness, tbw, dur, ncyclesspoil, ...
+                       'ftype', ftype, 'ofname', ofname, 'system', sys);
+%toppe.plotmod(ofname);
 
-% Define other gradients and ADC events
-deltak = 1/fov;
-gx = mr.makeTrapezoid('x', 'FlatArea', Nx*deltak, 'FlatTime', 6.4e-3);
-adc = mr.makeAdc(Nx, 'Duration', gx.flatTime, 'Delay', gx.riseTime);
-gxPre = mr.makeTrapezoid('x', 'Area', -gx.area/2, 'Duration', 2e-3);
-gzReph = mr.makeTrapezoid('z', 'Area', -gz.area/2, 'Duration', 2e-3);
-phaseAreas = ((0:Ny-1)-Ny/2)*deltak;
+%% Create readout.mod
+ofname = 'readout.mod';     % output file name
+toppe.utils.makegre(fov(1), matrix(1), 100, ... 
+                    'system', sys, 'ofname', ofname, 'ncycles', ncyclesspoil); 
+toppe.plotmod(ofname);
+return;
 
+%% Create scanloop.txt
+rfmod = 1;           % module index, i.e., line number in modules.txt
+readoutmod = 2;
+rfphs = 0;              % radians
+rf_spoil_seed_cnt = 0;
+rf_spoil_seed = 117;    % degrees
+ii = 1;                 % counts number of module executions
+ny = matrix(2);
+nz = matrix(3);
 
-% Calculate timing
-delayTE = round((TE - mr.calcDuration(gxPre) - mr.calcDuration(gz)/2 ...
-                    - mr.calcDuration(gx)/2)/seq.gradRasterTime)*seq.gradRasterTime;
-delayTR = round((TR - mr.calcDuration(gxPre) - mr.calcDuration(gz) ...
-                    - mr.calcDuration(gx) - delayTE)/seq.gradRasterTime)*seq.gradRasterTime;
+dabon = 1;
+daboff = 0;
+dabmode = dabon;   % best to leave acquisition on even during disdaqs so auto-prescan gets a signal (?)
+waveform = 1;
+textra = 0;        % add delay at end of module (int, microseconds)
 
-if step > 0
-    spoilArea=4*gx.area();
-    % Add spoilers in read, refocus in phase and spoiler in slice
-    gxPost = mr.makeTrapezoid('x', 'Area', spoilArea, 'system', sys); % we pass 'system' here to calculate shortest time gradient
-    gyPost = mr.makeTrapezoid('y', 'Area', spoilArea, 'system', sys);
-    gzPost = mr.makeTrapezoid('z', 'Area', spoilArea, 'system', sys);
+for iz = 0:nz           % We'll use iz=0 for approach to steady-state
+	for iy = 1:ny
+
+		% rf excitation block (usage of 'block' here parallels its usage in Pulseq)
+		block = [];
+		block.module = rfmod;
+		block.rfscale = 1.0;
+		block.gxscale = 0;
+		block.gyscale = 0;
+		block.gzscale = 1.0;
+		block.rfphs = angle(exp(1i*rfphs));   % radians
+		d(ii,:) = toppe.blockstruct2vec(block);
+		ii = ii + 1;
+
+		% readout
+		block = [];
+		block.module =  readoutmod;
+		block.rfscale = 1.0;
+		block.gxscale = 1.0;
+		block.gyscale = ((iy-1+0.5)-ny/2)/(ny/2);    % phase-encode amplitude scaling, range is [-1 1]
+		block.gzscale = ((iz-1+0.5)-nz/2)/(nz/2);    % partition-encode amplitude scaling
+		block.dabslice = max(iz,0);                  % Convention: skip dabslice=0 
+		block.dabecho = 0; 
+		block.dabview = iy;                          % Convention: skip baseline (0) view
+		block.recphs = angle(exp(1i*rfphs));         % radians
+		d(ii,:) = toppe.blockstruct2vec(block);
+		ii = ii + 1;
+
+		% update rf/rec phase
+		rfphs = rfphs + (rf_spoil_seed/180 * pi)*rf_spoil_seed_cnt ;  % radians
+		rf_spoil_seed_cnt = rf_spoil_seed_cnt + 1;
+	end
 end
 
-if step > 1
-    gyPost = mr.makeTrapezoid('y', 'Area', -max(phaseAreas(:)), 'Duration', 2e-3);
-end
+% write loop array to scanloop.txt
+toppe.loop2txt(d);
 
-if step > 0
-    delayTR = delayTR - mr.calcDuration(gxPost, gyPost, gzPost);
-end
+%% Play sequence in loop (movie) mode
+nModulesPerTR = 2;
+toppe.playseq(nModulesPerTR, 'nTRskip', 10);
 
-% Loop over phase encodes and define sequence blocks
-for i=1:Ny
-    if step > 2
-        % Vary RF phase quasi-randomly
-        rand_phase = mod(117*(i^2 + i + 2), 360)*pi/180;
-        [rf, gz] = mr.makeSincPulse(20*pi/180, 'Duration', 4e-3,...
-                                    'SliceThickness', 5e-3, ...
-                                    'apodization', 0.5, ...
-                                    'timeBwProduct', 4, ...
-                                    'system', sys, ...
-                                    'phaseOffset', rand_phase);
-    end
-    seq.addBlock(rf, gz);
-    gyPre = mr.makeTrapezoid('y', 'Area', phaseAreas(i), 'Duration', 2e-3);
-    seq.addBlock(gxPre, gyPre, gzReph);
-    seq.addBlock(mr.makeDelay(delayTE));
-    if step > 3
-        % Make receiver phase follow transmitter phase
-        adc = mr.makeAdc(Nx, 'Duration', gx.flatTime,...
-                         'Delay', gx.riseTime,...
-                         'phaseOffset', rand_phase);
-    end
-    seq.addBlock(gx, adc);
-    if step > 1
-        gyPost = mr.makeTrapezoid('y', 'Area', -gyPre.area, 'Duration', 2e-3);
-    end
-    if step > 0
-        % Add spoilers in read and slice and may be in phase
-        seq.addBlock(gxPost, gyPost, gzPost);
-    end
-    seq.addBlock(mr.makeDelay(delayTR));
-end
+return;
 
-seq.setDefinition('FOV', [fov fov sliceThickness]*1e3);
-seq.setDefinition('Name', 'gre');
-
-seq.write(['DEMO_gre' num2str(step) '.seq'])       % Write to pulseq file
-
-seq.plot('timeRange', [0 2*TR])
-
-% do not run the rest of the script automatically
-return
-
-%% plot gradients to check for gaps and optimality of the timing
-gw=seq.gradient_waveforms();
-figure; plot(gw'); % plot the entire gradient shape
-
-%% new single-function call for trajectory calculation
-[ktraj_adc, ktraj, t_excitation, t_refocusing, t_adc] = seq.calculateKspace();
-
-% plot k-spaces
-time_axis=(1:(size(ktraj,2)))*sys.gradRasterTime;
-figure; plot(time_axis, ktraj'); % plot the entire k-space trajectory
-hold; plot(t_adc,ktraj_adc(1,:),'.'); % and sampling points on the kx-axis
-figure; plot(ktraj(1,:),ktraj(2,:),'b'); % a 2D plot
-axis('equal'); % enforce aspect ratio for the correct trajectory display
-hold;plot(ktraj_adc(1,:),ktraj_adc(2,:),'r.'); % plot the sampling points
-
-%% listen to the sequence
-seq.sound();
