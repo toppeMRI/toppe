@@ -1,32 +1,33 @@
+% 2D multi-shot EPI demo using TOPPE @ ISMRM 2019
+%
+% Jon-Fredrik Nielsen, University of Michigan 
+
 % To use the +toppe Matlab package, include the (root) folder containing the +toppe folder in your Matlab path.
 addpath ~/gitlab/toppe/
 
-% Define FOV and resolution
-N = 128;
-sliceThickness = 0.5;    % cm
-fov = 25.6;              % cm
-
-% Define sequence parameters
-alpha = 20;              % excitation angle (degrees)
+%% Define sequence parameters
+N = 96;                  % image size (pixels)
+fov = 25.6;              % field of view (cm)
+slicethickness = 0.5;    % cm
+nshots = 8;              % number of RF shots to fill (2D) k-space
+alpha = 40;              % excitation angle (degrees)
 ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x and z)
 
-% set system limits
-sys = toppe.systemspecs('maxSlew', 130, 'slewUnit', 'T/m/s', 'maxGrad', 25, 'gradUnit', 'mT/m');  
+%% set system limits
+sys = toppe.systemspecs('maxSlew', 200, 'slewUnit', 'T/m/s', 'maxGrad', 50, 'gradUnit', 'mT/m');  
 
-% Create slice selection pulse and gradient ('tipdown.mod')
+%% Create slice selection pulse and gradient ('tipdown.mod')
 ofname = 'tipdown.mod';     % Output file name
 dur = 2;                    % RF pulse duration (msec)
-ftype = 'ls';
+ftype = 'ls';               % ls = least-squares SLR design
 tbw = 6;                    % time-bandwidth product of SLR pulse 
-toppe.utils.rf.makeslr(alpha, sliceThickness, tbw, dur, ncyclesspoil, ...
+toppe.utils.rf.makeslr(alpha, slicethickness, tbw, dur, ncyclesspoil, ...
                        'ftype', ftype, 'ofname', ofname, 'system', sys);
 %toppe.plotmod(ofname);
 
-% Create readout.mod
+%% Create readout.mod
 ofname = 'readout.mod';     % output file name
-zres = 10*n/matrix(1);      % 'dummy' z resolution since we're only doing 2D here. Just needs to be larger than in-plane resolution.
-toppe.utils.makegre(fov, matrix(1), zres, ... 
-                    'system', sys, 'ofname', ofname, 'ncycles', ncyclesspoil); 
+toppe.utils.makeepi(fov,N,nshots,'ofname',ofname);
 %toppe.plotmod(ofname);
 
 %% Create scanloop.txt
@@ -36,31 +37,25 @@ rf_spoil_seed_cnt = 0;
 rf_spoil_seed = 117;    % degrees
 
 toppe.write2loop('setup');
-for iy = -10:n   % We'll use iy<1 for approach to steady-state
+for iy = -4:nshots   % We'll use iy<1 for approach to steady-state
 
 	% rf excitation 
 	toppe.write2loop('tipdown.mod', 'RFphase', rfphs, 'Gamplitude', [0 0 1]');
 
 	% readout. Data is stored in 'slice', 'echo', and 'view' indeces.
-	if step > 1
-		daqphs = rfphs;
-	end
-	yamp = max( ((iy-1+0.5)-n/2)/(n/2), -1);    % phase-encode amplitude scaling, range is [-1 1]
-	toppe.write2loop('readout.mod', 'DAQphase', daqphs, 'view', max(iy,1), ...
-		'Gamplitude', [1 yamp 0]', 'textra', 20); 
+	tdelay = 0;     % (ms) delay at end of waveforms
+	toppe.write2loop('readout.mod', 'waveform', max(iy,1), 'DAQphase', rfphs, 'view', max(iy,1), ...
+		'Gamplitude', [1 1 0]', 'textra', tdelay); 
 
 	% update rf phase (RF spoiling)
-	if step > 0
-		rfphs = rfphs + (rf_spoil_seed/180 * pi)*rf_spoil_seed_cnt ;  % radians
-		rf_spoil_seed_cnt = rf_spoil_seed_cnt + 1;
-	end
+	rfphs = rfphs + (rf_spoil_seed/180 * pi)*rf_spoil_seed_cnt ;  % radians
+	rf_spoil_seed_cnt = rf_spoil_seed_cnt + 1;
 end
 toppe.write2loop('finish');
 
-
 %% Play sequence in loop (movie) mode
 nModulesPerTR = 2;
-toppe.playseq(nModulesPerTR, 'nTRskip', 2);
+toppe.playseq(nModulesPerTR, 'tpause', 1);
 
 return;
 
