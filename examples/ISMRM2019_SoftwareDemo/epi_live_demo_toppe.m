@@ -43,7 +43,7 @@ for iy = -4:nshots   % We'll use iy<1 for approach to steady-state
 	toppe.write2loop('tipdown.mod', 'RFphase', rfphs, 'Gamplitude', [0 0 1]');
 
 	% readout. Data is stored in 'slice', 'echo', and 'view' indeces.
-	tdelay = 0;     % (ms) delay at end of waveforms
+	tdelay = 450;     % (ms) delay at end of waveforms
 	toppe.write2loop('readout.mod', 'waveform', max(iy,1), 'DAQphase', rfphs, 'view', max(iy,1), ...
 		'Gamplitude', [1 1 0]', 'textra', tdelay); 
 
