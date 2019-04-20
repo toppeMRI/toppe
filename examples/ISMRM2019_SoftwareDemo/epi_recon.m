@@ -1,42 +1,20 @@
-function [ims imsos d]= recon3dft(pfile,echo,readoutfile,dokzft,zpad,dodisplay,clim)
-% Recon 3D spin-warp image acquired with TOPPE.
-%
-% function [ims imsos d]= recon3dft(pfile,echo,[readoutfile,dokzft,zpad,dodisplay,clim])
-%
-% Beginning of duration of readout plateau (in samples) is stored in readout.mod header, 
-% See, e.g., makeepi.m
-%
-% Input:
-%  echo             echo to recon
-%  readoutfile      default: 'readout.mod'
+function [ims imsos d]= epi_recon(pfile, readoutfile)
+% Reconstruct 2D EPI data acquired with ISMRM2019 "live" demo
 %
 % Output:
-%  ims:          [nx ny nz ncoils]    
-%
-% $Id: recon3dft.m,v 1.8 2018/11/13 18:41:36 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/recon3dft.m,v $
+%  ims           [nx ny ncoils]    
+%  imsos         coil-combined (root-sum-of-squares) image
+%  d             raw (k-space) data
 
 import toppe.*
 import toppe.utils.*
 
-if ~exist('echo','var')
-	echo = 1;
-end
 if ~exist('readoutfile','var')
 	readoutfile = 'readout.mod';
 end
-if ~exist('dokzft','var')
-	dokzft = true;
-end
-if ~exist('dodisplay','var')
-	dodisplay = false;
-end
-if ~exist('zpad','var')
-	zpad = [1 1];     % zero-padding factor along z
-end
 
 % load raw data
-d = loadpfile(pfile,echo);   % int16. [ndat ncoils nslices nechoes nviews] = [ndat ncoils nz 2 ny]
+d = loadpfile(pfile);   % int16. [ndat ncoils nslices nechoes nviews] = [ndat ncoils 1 1 nshots]
 d = permute(d,[1 5 3 2 4]);         % [ndat ny nz ncoils nechoes]
 d = double(d);
 
