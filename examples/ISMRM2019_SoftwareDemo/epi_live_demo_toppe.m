@@ -1,16 +1,8 @@
 % To use the +toppe Matlab package, include the (root) folder containing the +toppe folder in your Matlab path.
 addpath ~/gitlab/toppe/
 
-% step
-% 0 ... Basic sequence
-% 1 ... Add RF spoiling
-% 2 ... Make receiver phase follow transmitter phase
-step = 2;
-
 % Define FOV and resolution
-n = 128;
-nz = 1;
-matrix = [n n nz];
+N = 128;
 sliceThickness = 0.5;    % cm
 fov = 25.6;              % cm
 
