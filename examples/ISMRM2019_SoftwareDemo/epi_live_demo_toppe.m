@@ -36,14 +36,19 @@ daqphs = 0;
 rf_spoil_seed_cnt = 0;
 rf_spoil_seed = 117;    % degrees
 
+[~,~,~,~,~,hdrints] = toppe.readmod('readout.mod');
+raster = 4e-3;                     % msec
+deltaTE = raster*hdrints(3);       % echo spacing (msec)
+
 toppe.write2loop('setup');
 for iy = -4:nshots   % We'll use iy<1 for approach to steady-state
 
 	% rf excitation 
-	toppe.write2loop('tipdown.mod', 'RFphase', rfphs, 'Gamplitude', [0 0 1]');
+	ets = (max(iy,1)-1)/nshots*deltaTE;     % echo-time shift (msec)
+	toppe.write2loop('tipdown.mod', 'RFphase', rfphs, 'Gamplitude', [0 0 1]', 'textra', ets);
 
 	% readout. Data is stored in 'slice', 'echo', and 'view' indeces.
-	tdelay = 450;     % (ms) delay at end of waveforms
+	tdelay = 2-ets;     % (ms) delay at end of waveforms (determines TR)
 	toppe.write2loop('readout.mod', 'waveform', max(iy,1), 'DAQphase', rfphs, 'view', max(iy,1), ...
 		'Gamplitude', [1 1 0]', 'textra', tdelay); 
 
