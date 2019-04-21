@@ -6,6 +6,8 @@ function [ims imsos d]= epi_recon(pfile, readoutfile)
 %  imsos         coil-combined (root-sum-of-squares) image
 %  d             raw (k-space) data
 
+test = true;
+
 import toppe.*
 import toppe.utils.*
 
@@ -13,46 +15,44 @@ if ~exist('readoutfile','var')
 	readoutfile = 'readout.mod';
 end
 
+% get readout file header
+[~,gx,~,~,~,hdrints] = toppe.readmod(readoutfile);
+ndat = size(gx,1);
+N    = hdrints(1);       % image size
+nes  = hdrints(3);       % echo spacing (number of 4us samples)
+npre = hdrints(4);       % number of samples before start of readout plateau of first echo
+nshots = size(gx,2);
+
 % load raw data
-d = loadpfile(pfile);   % int16. [ndat ncoils nslices nechoes nviews] = [ndat ncoils 1 1 nshots]
-d = permute(d,[1 5 3 2 4]);         % [ndat ny nz ncoils nechoes]
+if ~test
+d = loadpfile(pfile);               % int16, size [ndat ncoils nslices nechoes nviews] = [ndat ncoils 1 1 nshots]
+d = permute(d,[1 5 2 3 4]);         % [ndat nshots ncoils].
 d = double(d);
-
 d = flipdim(d,1);        % data is stored in reverse order for some reason
+[ndat nshots ncoils] = size(d);
+else
+	ncoils = 1;
+end
+	
 
-%if(mod(size(d,3),2))
-%	d = d(:,:,2:end,:,:);  % throw away dabslice = 0
-%end
-
-% get flat portion of readout
-[rf,gx,gy,gz,desc,paramsint16,paramsfloat] = readmod(readoutfile);
-nramp = 0; %15;  % see writemod.m
-nbeg = paramsint16(1) + nramp;  
-nx = paramsint16(2);  % number of acquired data samples per TR
-decimation = round(125/paramsfloat(20));
-d = d(nbeg:(nbeg+nx-1),:,:,:,:);     % [nx*125/oprbw ny nz ncoils nechoes]
-
-% zero-pad in z
-if zpad(2) > 1
-	[ndat ny nz ncoils nechoes] = size(d);
-	d2 = zeros([ndat ny round(nz*zpad(2)) ncoils]);
-	d2(:,:,(end/2-nz/2):(end/2+nz/2-1),:,:) = d;
-	d = d2; clear d2;
+% sort data into 2D NxN matrix
+d2d = zeros(N,N,ncoils);
+etl = N/nshots;    % echo-train length
+iy = 1;
+for ic = 1:ncoils
+	for ii = 1:1 %nshots
+		for jj = 1:etl
+			istart = npre + (jj-1)*nes + 1;
+			d2d(:,iy,ic) = d(istart:(istart+N-1), ii, ic);
+		end
+	end
 end
 
-% recon 
+return
+
 for coil = 1:size(d,4)
-	fprintf(1,'\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\brecon coil %d', coil);
-	imstmp = ift3(d(:,:,:,coil));
+	im(:,:,coil) = fftshift(ifftn(fftshift(D)));
 	imstmp = imstmp(end/2+((-nx/decimation/2):(nx/decimation/2-1))+1,:,:);               % [nx ny nz]
-	if zpad(1) > 1   % zero-pad (interpolate) in xy
-		dtmp = fft3(imstmp);
-		[nxtmp nytmp nztmp] = size(dtmp);
-		dtmp2 = zeros([round(nxtmp*zpad(1)) round(nytmp*zpad(1)) nztmp]);
-		dtmp2((end/2-nxtmp/2):(end/2+nxtmp/2-1),(end/2-nytmp/2):(end/2+nytmp/2-1),:) = dtmp;
-		dtmp = dtmp2; clear dtmp2;
-		imstmp = ift3(dtmp);
-	end
 	ims(:,:,:,coil) = imstmp;
 end
 
@@ -74,27 +74,6 @@ else
 		im(imsos);
 	end
 end
-return;
-
-function im = ift3(D,do3dfft)
-%
-%	function im = ift3(dat)
-%
-%	Centered inverse 3DFT of a 3D data matrix.
-% 
-% $Id: recon3dft.m,v 1.8 2018/11/13 18:41:36 jfnielse Exp $
-
-if ~exist('do3dfft','var')
-	do3dfft = true;
-end
-
-if do3dfft
-	im = fftshift(ifftn(fftshift(D)));
-else
-	% don't do fft in 3rd dimension
-	for k = 1:size(D,3)
-		im(:,:,k) = fftshift(ifftn(fftshift(D(:,:,k))));
-	end
-end
 
 return;
+
