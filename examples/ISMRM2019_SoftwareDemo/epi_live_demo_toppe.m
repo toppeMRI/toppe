@@ -41,7 +41,7 @@ raster = 4e-3;                     % msec
 deltaTE = raster*hdrints(3);       % echo spacing (msec)
 
 toppe.write2loop('setup');
-for iy = -4:nshots   % We'll use iy<1 for approach to steady-state
+for iy = -2:nshots   % We'll use iy<1 for approach to steady-state
 
 	% rf excitation 
 	ets = (max(iy,1)-1)/nshots*deltaTE;     % echo-time shift (msec)
@@ -60,7 +60,7 @@ toppe.write2loop('finish');
 
 %% Play sequence in loop (movie) mode
 nModulesPerTR = 2;
-toppe.playseq(nModulesPerTR, 'tpause', 1);
+toppe.playseq(nModulesPerTR, 'tpause', 0.66);
 
 return;
 
