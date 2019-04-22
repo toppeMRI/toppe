@@ -48,7 +48,7 @@ for iy = -2:nshots   % We'll use iy<1 for approach to steady-state
 	toppe.write2loop('tipdown.mod', 'RFphase', rfphs, 'Gamplitude', [0 0 1]', 'textra', ets);
 
 	% readout. Data is stored in 'slice', 'echo', and 'view' indeces.
-	tdelay = 2-ets;     % (ms) delay at end of waveforms (determines TR)
+	tdelay = 960-ets;     % (ms) delay at end of waveforms (determines TR)
 	toppe.write2loop('readout.mod', 'waveform', max(iy,1), 'DAQphase', rfphs, 'view', max(iy,1), ...
 		'Gamplitude', [1 1 0]', 'textra', tdelay); 
 
@@ -58,9 +58,12 @@ for iy = -2:nshots   % We'll use iy<1 for approach to steady-state
 end
 toppe.write2loop('finish');
 
+%% Create archive with all scan files
+system('tar czf epi.tgz modules.txt scanloop.txt tipdown.mod readout.mod');
+
 %% Play sequence in loop (movie) mode
 nModulesPerTR = 2;
-toppe.playseq(nModulesPerTR, 'tpause', 0.66);
+toppe.playseq(nModulesPerTR, 'tpause', 0.66, 'drawpause', false);
 
 return;
 

@@ -65,6 +65,9 @@ for iy = -10:n   % We'll use iy<1 for approach to steady-state
 end
 toppe.write2loop('finish');
 
+%% Create archive with all scan files
+system('tar czf gre.tgz modules.txt scanloop.txt tipdown.mod readout.mod');
+
 
 %% Play sequence in loop (movie) mode
 nModulesPerTR = 2;
