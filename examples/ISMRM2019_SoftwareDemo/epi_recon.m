@@ -25,8 +25,15 @@ nshots = size(gx,2);
 d = toppe.utils.loadpfile(pfile); %, 1, 2, 2);               % int16, size [ndat ncoils nslices nechoes nviews] = [ndat ncoils 1 1 nshots]
 d = permute(d,[1 5 2 3 4]);         % [ndat nshots ncoils].
 d = double(d);
-d = flipdim(d,1);        % data is stored in reverse order for some reason
+d = flipdim(d,1);        % data is stored in reverse order (for some reason)
 [ndat nshots ncoils] = size(d);
+
+% apply gradient/acquisition delay
+d = circshift(d, 0);
+%dup = interpft(d, 5*ndat
+%for ii = 1:nshots
+%	for ic = 1:ncoils
+%		dtmp = 
 
 % sort data into 2D NxN matrix
 d2d = zeros(N,N,ncoils);
