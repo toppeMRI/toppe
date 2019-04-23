@@ -6,8 +6,9 @@ function [ims imsos d]= epi_recon(pfile, readoutfile)
 %  imsos         coil-combined (root-sum-of-squares) image
 %  d             raw (k-space) data
 
-import toppe.*
-import toppe.utils.*
+addpath ~/gitlab/toppe/
+%import toppe.*
+%import toppe.utils.*
 
 if ~exist('readoutfile','var')
 	readoutfile = 'readout.mod';
