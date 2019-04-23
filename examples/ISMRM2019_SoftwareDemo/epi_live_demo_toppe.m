@@ -32,7 +32,6 @@ toppe.utils.makeepi(fov,N,nshots,'ofname',ofname);
 
 %% Create scanloop.txt
 rfphs = 0;              % radians
-daqphs = 0;
 rf_spoil_seed_cnt = 0;
 rf_spoil_seed = 117;    % degrees
 
