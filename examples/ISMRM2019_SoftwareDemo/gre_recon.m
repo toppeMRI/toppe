@@ -1,4 +1,4 @@
-function [ims imsos d]= epi_recon(pfile, readoutfile)
+function [ims imsos d]= gre_recon(pfile, readoutfile)
 % Reconstruct 2D EPI data acquired with ISMRM2019 "live" demo
 %
 % Output:
@@ -10,6 +10,10 @@ addpath ~/gitlab/toppe/
 %import toppe.*
 %import toppe.utils.*
 
+if ~exist('pfile','var')
+	error('Usage: gre_recon(pfile, [readoutfile])');
+end
+
 if ~exist('readoutfile','var')
 	readoutfile = 'readout.mod';
 end
@@ -17,58 +21,26 @@ end
 %% get readout file header
 [~,gx,~,~,~,hdrints] = toppe.readmod(readoutfile);
 ndat = size(gx,1);
-N    = hdrints(1);       % image size
-nes  = hdrints(3);       % echo spacing (number of 4us samples)
-npre = hdrints(4);       % number of samples before start of readout plateau of first echo
-nshots = size(gx,2);
 
 %% load raw data
-d = toppe.utils.loadpfile(pfile); %, 1, 2, 2);               % int16, size [ndat ncoils nslices nechoes nviews] = [ndat ncoils 1 1 nshots]
-d = permute(d,[1 5 2 3 4]);         % [ndat nshots ncoils].
+d = toppe.utils.loadpfile(pfile);   % int16, size [ndat ncoils nslices nechoes nviews] = [ndat ncoils 1 1 ny]
+d = permute(d,[1 5 3 2 4]);         % [ndat ny nz ncoils nechoes]
 d = double(d);
 d = flipdim(d,1);        % data is stored in reverse order (for some reason)
-[ndat nshots ncoils] = size(d);
 
-%% apply gradient/acquisition delay
-%d = circshift(d, 1);
-%dup = interpft(d, 5*ndat
-%for ii = 1:nshots
-%	for ic = 1:ncoils
-%		dtmp = 
+%% get flat portion of readout
+[rf,gx,gy,gz,desc,paramsint16,paramsfloat] = toppe.readmod(readoutfile);
+nbeg = paramsint16(1);
+nx = paramsint16(2);  % number of acquired data samples per TR, on plateau
+decimation = round(125/paramsfloat(20));
+d = d(nbeg:(nbeg+nx-1),:,:,:,:);     % [nx*125/oprbw ny nz ncoils nechoes]
 
-%% sort data into 2D NxN matrix
-d2d = zeros(N,N,ncoils);
-etl = N/nshots;    % echo-train length
-for ic = 1:ncoils
-	for ii = 1:nshots
-		for jj = 1:etl
-			istart = npre + (jj-1)*nes + 1;
-			dtmp = d(istart:(istart+N-1), ii, ic);  % one echo
-
-			% flip echo as needed 
-			if 1 %mod(ii,2)
-				if mod(jj-1,2)
-					dtmp = flipdim(dtmp,1);           
-				end
-			else
-				if mod(jj,2)
-					dtmp = flipdim(dtmp,1);
-				end
-			end
-
-			% phase-encode index
-			iy = (jj-1)*nshots + ii;
-
-			d2d(:,iy,ic) = dtmp;
-		end
-	end
+%% Do IFT and display
+for ic = 1:size(d,4)
+	imstmp = fftshift(ifftn(fftshift(squeeze(d(:,:,1,ic)))));
+   imstmp = imstmp(end/2+((-nx/decimation/2):(nx/decimation/2-1))+1,:,:);               % [nx ny nz]
+	ims(:,:,ic) = imstmp;
 end
-
-%% do IFT and display
-for ic = 1:ncoils
-	ims(:,:,ic) = fftshift(ifftn(fftshift(d2d(:,:,ic))));
-end
-%keyboard
 imsos = sqrt(sum(abs(ims).^2,3)); 
 im(imsos);
 
