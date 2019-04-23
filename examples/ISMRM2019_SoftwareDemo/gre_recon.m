@@ -1,4 +1,4 @@
-function [ims imsos d]= gre_recon(pfile, readoutfile)
+function [ims imsos d] = gre_recon(pfile, readoutfile)
 % Reconstruct 2D EPI data acquired with ISMRM2019 "live" demo
 %
 % Output:
@@ -31,7 +31,7 @@ d = flipdim(d,1);        % data is stored in reverse order (for some reason)
 %% get flat portion of readout
 [rf,gx,gy,gz,desc,paramsint16,paramsfloat] = toppe.readmod(readoutfile);
 nbeg = paramsint16(1);
-nx = paramsint16(2);  % number of acquired data samples per TR, on plateau
+nx = paramsint16(2)  % number of acquired data samples per TR, on plateau
 decimation = round(125/paramsfloat(20));
 d = d(nbeg:(nbeg+nx-1),:,:,:,:);     % [nx*125/oprbw ny nz ncoils nechoes]
 
