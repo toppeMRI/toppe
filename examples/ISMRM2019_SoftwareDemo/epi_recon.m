@@ -46,7 +46,7 @@ for ic = 1:ncoils
 			dtmp = d(istart:(istart+N-1), ii, ic);  % one echo
 
 			% flip echo as needed 
-			if 1 %mod(ii,2)
+			if mod(ii,2)
 				if mod(jj-1,2)
 					dtmp = flipdim(dtmp,1);           
 				end
