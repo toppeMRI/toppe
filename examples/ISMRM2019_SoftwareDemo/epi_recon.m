@@ -1,4 +1,4 @@
-function [ims imsos d]= epi_recon(pfile, readoutfile)
+function [ims imsos d]= epi_recon(pfile, readoutfile, nshift)
 % Reconstruct 2D EPI data acquired with ISMRM2019 "live" demo
 %
 % Output:
@@ -12,6 +12,9 @@ addpath ~/gitlab/toppe/
 
 if ~exist('readoutfile','var')
 	readoutfile = 'readout.mod';
+end
+if ~exist('readoutfile','var')
+	nshift = 0;
 end
 
 %% get readout file header
@@ -30,8 +33,17 @@ d = flipdim(d,1);        % data is stored in reverse order (for some reason)
 [ndat nshots ncoils] = size(d);
 
 %% apply gradient/acquisition delay
-d = circshift(d, 1);
-%dup = interpft(d, 5*ndat
+%d = circshift(d, 1);
+nup = 10;
+dup = interpft(d, nup*ndat, 1);
+dup = circshift(dup,nshift,1);
+%d = dup(1:nup:end,:,:);
+for ii = 1:nshots
+	for jj = 1:ncoils
+		d(:,ii,jj) = decimate(dup(:,ii,jj),nup);
+	end
+end
+size(d)
 %for ii = 1:nshots
 %	for ic = 1:ncoils
 %		dtmp = 
@@ -70,6 +82,7 @@ for ic = 1:ncoils
 end
 imsos = sqrt(sum(abs(ims).^2,3)); 
 im(imsos);
+title(sprintf('nshift = %d', nshift));
 %keyboard
 
 return;
