@@ -14,7 +14,7 @@ alpha = 40;              % excitation angle (degrees)
 ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x and z)
 
 %% set system limits
-sys = toppe.systemspecs('maxSlew', 200, 'slewUnit', 'T/m/s', 'maxGrad', 50, 'gradUnit', 'mT/m');  
+sys = toppe.systemspecs('maxSlew', 150, 'slewUnit', 'T/m/s', 'maxGrad', 40, 'gradUnit', 'mT/m');  
 
 %% Create slice selection pulse and gradient ('tipdown.mod')
 ofname = 'tipdown.mod';     % Output file name
@@ -27,7 +27,7 @@ toppe.utils.rf.makeslr(alpha, slicethickness, tbw, dur, ncyclesspoil, ...
 
 %% Create readout.mod
 ofname = 'readout.mod';     % output file name
-toppe.utils.makeepi(fov,N,nshots,'ofname',ofname);
+toppe.utils.makeepi(fov,N,nshots,'ofname',ofname, 'system', sys);
 %toppe.plotmod(ofname);
 
 %% Create scanloop.txt

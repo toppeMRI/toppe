@@ -30,7 +30,7 @@ d = flipdim(d,1);        % data is stored in reverse order (for some reason)
 [ndat nshots ncoils] = size(d);
 
 %% apply gradient/acquisition delay
-%d = circshift(d, 1);
+d = circshift(d, 1);
 %dup = interpft(d, 5*ndat
 %for ii = 1:nshots
 %	for ic = 1:ncoils
@@ -68,9 +68,9 @@ end
 for ic = 1:ncoils
 	ims(:,:,ic) = fftshift(ifftn(fftshift(d2d(:,:,ic))));
 end
-%keyboard
 imsos = sqrt(sum(abs(ims).^2,3)); 
 im(imsos);
+%keyboard
 
 return;
 
