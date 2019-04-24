@@ -1,5 +1,10 @@
-function [ims imsos d]= epi_recon(pfile, readoutfile, nshift)
+function [ims imsos d]= epi_recon(pfile, readoutfile, graddelay)
 % Reconstruct 2D EPI data acquired with ISMRM2019 "live" demo
+%
+% Inputs:
+%  pfile
+%  readoutfile   Default: 'readout.mod'
+%  graddelay     gradient/acquisition delay (sec)
 %
 % Output:
 %  ims           [nx ny ncoils]    
@@ -13,8 +18,8 @@ addpath ~/gitlab/toppe/
 if ~exist('readoutfile','var')
 	readoutfile = 'readout.mod';
 end
-if ~exist('readoutfile','var')
-	nshift = 0;
+if ~exist('graddelay','var')
+	graddelay = 0;
 end
 
 %% get readout file header
@@ -34,7 +39,9 @@ d = flipdim(d,1);        % data is stored in reverse order (for some reason)
 
 %% apply gradient/acquisition delay
 %d = circshift(d, 1);
-nup = 10;
+nup = 10;       % upsampling factor
+dt = 4e-6;      % raster time (sec)
+nshift = round(graddelay/dt*nup);
 dup = interpft(d, nup*ndat, 1);
 dup = circshift(dup,nshift,1);
 %d = dup(1:nup:end,:,:);
@@ -82,8 +89,22 @@ for ic = 1:ncoils
 end
 imsos = sqrt(sum(abs(ims).^2,3)); 
 im(imsos);
-title(sprintf('nshift = %d', nshift));
-%keyboard
+title(sprintf('graddelay = %.1f us', graddelay*1e6));
 
+%% Estimate grad/acquisition delay from image data (assumes that center strip is unaliased)
+d2dOdd = d2d;
+d2dOdd(:,2:2:end,:) = 0;
+d2dEven = d2d;
+d2dEven(:,1:2:end,:) = 0;
+mask = imsos > 0.1*max(imsos(:));
+for ic = 1:ncoils
+	imsOdd(:,:,ic) = mask.*fftshift(ifftn(fftshift(d2dOdd(:,:,ic))));
+	imsEven(:,:,ic) = mask.*fftshift(ifftn(fftshift(d2dEven(:,:,ic))));
+end
+pc2d = toppe.utils.phasecontrastMulticoil(imsOdd,imsEven);   % phase difference image (2D)
+stripInds = (N/2-2):(N/2+1);
+pc1d = mean(pc2d(:,(N/2-2):(N/2+2)), 2);
+X = [ones(N,1) linspace(-1,1,N)'];
+b = X\pc1d
 return;
 
