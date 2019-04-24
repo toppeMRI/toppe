@@ -19,7 +19,7 @@ alpha = 20;              % excitation angle (degrees)
 ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x and z)
 
 % set system limits
-sys = toppe.systemspecs('maxSlew', 130, 'slewUnit', 'T/m/s', 'maxGrad', 25, 'gradUnit', 'mT/m');  
+sys = toppe.systemspecs('maxSlew', 150, 'slewUnit', 'T/m/s', 'maxGrad', 40, 'gradUnit', 'mT/m');  
 
 % Create slice selection pulse and gradient ('tipdown.mod')
 ofname = 'tipdown.mod';     % Output file name
@@ -55,7 +55,7 @@ for iy = -10:n   % We'll use iy<1 for approach to steady-state
 	end
 	yamp = max( ((iy-1+0.5)-n/2)/(n/2), -1);    % phase-encode amplitude scaling, range is [-1 1]
 	toppe.write2loop('readout.mod', 'DAQphase', daqphs, 'view', max(iy,1), ...
-		'Gamplitude', [1 yamp 0]', 'textra', 20); 
+		'Gamplitude', [1 yamp 0]', 'textra', 30); 
 
 	% update rf phase (RF spoiling)
 	if step > 0
