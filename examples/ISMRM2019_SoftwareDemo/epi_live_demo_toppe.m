@@ -14,7 +14,9 @@ alpha = 40;              % excitation angle (degrees)
 ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x and z)
 
 %% set system limits
-sys = toppe.systemspecs('maxSlew', 150, 'slewUnit', 'T/m/s', 'maxGrad', 40, 'gradUnit', 'mT/m');  
+% NB! 'maxGrad' MUST match the physical system limit -- since gradients are scaled relative to this.
+% 'maxSlew' is a design choice, i.e., it can be at or below the physical system limit.
+sys = toppe.systemspecs('maxSlew', 150, 'slewUnit', 'T/m/s', 'maxGrad', 50, 'gradUnit', 'mT/m');  
 
 %% Create slice selection pulse and gradient ('tipdown.mod')
 ofname = 'tipdown.mod';     % Output file name
