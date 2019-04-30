@@ -12,4 +12,7 @@ Usage:
 ```
 
 Issue:
-If b2rf is not found, use b2rf.m in +toppe/+utils/+rf/+jpauly/matlab/ instead.
+If you're not able to compile the mex files for the SLR toolbox, try using the Matlab scripts instead by copying them to somewhere in your path:
+```
+$ cp ../../+toppe/+utils/+rf/+jpauly/matlab/ .
+```
