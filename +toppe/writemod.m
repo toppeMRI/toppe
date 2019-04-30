@@ -91,6 +91,9 @@ npulses = max( [size(rf,2) size(gx,2) size(gy,2) size(gz,2)] );
 if isempty(ndat)
 	error('At least one waveform must be specified');
 end
+if ndat > 2^15
+	error(sprintf('Max waveform length is 32768 (samples) -- found %d samples', ndat));
+end
 
 % make length divisible by 4 (EPIC seems to behave best this way)
 if mod(ndat, 4)

@@ -84,6 +84,7 @@ arg.waveform        = 1;
 arg.textra          = 0;
 arg.RFamplitude     = 1;
 arg.RFphase         = 0;
+arg.DAQphase        = 0;
 arg.RFspoil         = false;
 arg.RFoffset        = 0;
 arg.slice           = 1;
@@ -97,6 +98,7 @@ checkInputs(arg);
 persistent rf_spoil_seed_cnt
 persistent rf_spoil_phase
 persistent irfphase
+persistent idaqphase
 persistent setupdone
 
 %% If modname is setup, then init the file
@@ -177,8 +179,10 @@ if module.hasRF % Write RF module
     if arg.RFspoil % If spoil is called, replace RF phase with spoil phase
         updateSpoilPhase();
         irfphase = phase2int(rf_spoil_phase);
+        idaqphase = irfphase;
     else
         irfphase = phase2int(arg.RFphase);
+        idaqphase = phase2int(arg.DAQphase);
     end
     
     % Update slice/echo/view
@@ -195,7 +199,7 @@ if module.hasRF % Write RF module
         arg.RFoffset = round(arg.RFoffset);
     end
     f = arg.RFoffset;
-    
+
     % Write line values
     d = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 phi irfphase irfphase textra_us f arg.waveform];
 elseif module.hasDAQ % Write DAQ module
@@ -212,8 +216,15 @@ elseif module.hasDAQ % Write DAQ module
     
     % No rotation for now
     phi = 0;
+
+	 % receive phase
+    if arg.RFspoil % If spoil is called, replace RF phase with spoil phase
+       idaqphase = irfphase;
+    else
+       idaqphase = phase2int(arg.DAQphase);
+    end
     
-    d = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) phi irfphase irfphase textra_us 0 arg.waveform];
+    d = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) phi idaqphase idaqphase textra_us 0 arg.waveform];
     
     % Check if line is all integers
     if ~all(d == round(d))
@@ -228,9 +239,9 @@ dlmwrite(arg.loopFile, d, '-append','delimiter', '\t', 'precision', 8);
 return
 
 %% Nested functions
-    function irfphase = phase2int(rfphase)
-        rfphasetmp = atan2(sin(rfphase), cos(rfphase));      % wrap phase to (-pi,pi) range
-        irfphase = 2*round(rfphasetmp/pi*max_pg_iamp/2);     % short int
+    function iphs = phase2int(phs)
+        phstmp = atan2(sin(phs), cos(phs));          % wrap phase to (-pi,pi) range
+        iphs = 2*round(phstmp/pi*max_pg_iamp/2);     % short int
     end
 
     function updateSpoilPhase
