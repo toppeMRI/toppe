@@ -88,7 +88,7 @@ for ic = 1:ncoils
 	ims(:,:,ic) = fftshift(ifftn(fftshift(d2d(:,:,ic))));
 end
 imsos = sqrt(sum(abs(ims).^2,3)); 
-imagesc(imsos'); axis equal off;
+imagesc(imsos'); axis equal off; colormap gray;
 title(sprintf('gradDelay = %.1f us, phsOffset = %.2f rad', gradDelay*1e6, phsOffset));
 
 %% Estimate grad/acquisition delay and odd/even phase offset from image data (assumes that center strip is unaliased)

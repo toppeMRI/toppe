@@ -42,7 +42,7 @@ for ic = 1:size(d,4)
 	ims(:,:,ic) = imstmp;
 end
 imsos = sqrt(sum(abs(ims).^2,3)); 
-imagesc(imsos'); axis equal off;
+imagesc(imsos'); axis equal off; colormap gray;
 
 return;
 
