@@ -22,6 +22,8 @@ epi_live_demo
 
 To recon the Pfile 'Pepi.7' which was acquired with 'readout.mod':
 ```
-epi_recon('Pepi.7', 'readout.mod');
+gradDelay = 2e-6;                      % seconds
+oddEvenPhaseOffset = -0.2;             % radians
+epi_recon('Pepi.7', 'readout.mod', gradDelay, oddEvenPhaseOffset);
 ```
 
