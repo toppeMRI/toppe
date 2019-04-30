@@ -6,7 +6,7 @@ function [ims imsos d] = gre_recon(pfile, readoutfile)
 %  imsos         coil-combined (root-sum-of-squares) image
 %  d             raw (k-space) data
 
-addpath ~/gitlab/toppe/
+%addpath ~/gitlab/toppe/
 %import toppe.*
 %import toppe.utils.*
 

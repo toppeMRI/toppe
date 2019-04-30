@@ -11,7 +11,7 @@ function [ims imsos d]= epi_recon(pfile, readoutfile, gradDelay, phsOffset)
 %  imsos         coil-combined (root-sum-of-squares) image
 %  d             raw (k-space) data
 
-addpath ~/gitlab/toppe/
+%addpath ~/gitlab/toppe/
 %import toppe.*
 %import toppe.utils.*
 
