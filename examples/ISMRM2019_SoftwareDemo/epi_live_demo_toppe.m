@@ -3,7 +3,7 @@
 % Jon-Fredrik Nielsen, University of Michigan 
 
 % To use the +toppe Matlab package, include the (root) folder containing the +toppe folder in your Matlab path.
-addpath ~/gitlab/toppe/
+% addpath ~/github/toppe/
 
 %% Define sequence parameters
 N = 96;                  % image size (pixels)
