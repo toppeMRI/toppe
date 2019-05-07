@@ -205,7 +205,13 @@ for ib = 2:length(seq.blockEvents)
 				for iwav = 1:npulses
 					eval(sprintf('wav1 = moduleArr(ic).%s.waveforms(:,iwav);', ax));
 					eval(sprintf('wav2 = modCandidate.%s.waveforms;', ax));
-					wavdiff = norm(wav1-wav2, 1); 
+					try
+						wavdiff = norm(wav1-wav2, 1); 
+					catch
+						fprintf('gradients, if not canReuse\n');
+						ib
+						keyboard
+					end
 					if wavdiff < tol
 						% Found a gradient waveform (probably a trapezoid) with the same shape.
 						canReuse = 1;
