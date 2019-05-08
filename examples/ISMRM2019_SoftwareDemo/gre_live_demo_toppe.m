@@ -1,5 +1,5 @@
 % To use the +toppe Matlab package, include the (root) folder containing the +toppe folder in your Matlab path.
-% addpath ~/github/toppe/
+addpath ../..   % path to the 'toppe' folder
 
 % step
 % 0 ... Basic sequence
