@@ -1,6 +1,6 @@
 # 2D GRE and EPI sequence examples for ISMRM 2019 software demo, Sunday 12 May.
 
-Use with psd version 'toppev2c'
+Use with psd version 'toppev2c'. See https://toppemri.github.io/ for more info.
 
 
 ## 2D GRE
