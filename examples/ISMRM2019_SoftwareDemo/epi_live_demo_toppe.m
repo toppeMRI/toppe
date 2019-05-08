@@ -4,6 +4,7 @@
 
 % To use the +toppe Matlab package, include the (root) folder containing the +toppe folder in your Matlab path.
 addpath ../..   % path to the 'toppe' folder
+addpath ./lib   % files needed for SLR design 
 
 %% Define sequence parameters
 N = 96;                  % image size (pixels)
