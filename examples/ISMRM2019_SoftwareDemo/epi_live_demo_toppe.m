@@ -29,7 +29,7 @@ toppe.utils.rf.makeslr(alpha, slicethickness, tbw, dur, ncyclesspoil, ...
 
 %% Create readout.mod
 ofname = 'readout.mod';     % output file name
-toppe.utils.makeepi(fov,N,nshots,'ofname',ofname, 'system', sys);
+toppe.utils.makeepi(fov,N,nshots,'ofname',ofname, 'system', sys, 'ncycles', ncyclesspoil);
 %toppe.plotmod(ofname);
 
 %% Create scanloop.txt
