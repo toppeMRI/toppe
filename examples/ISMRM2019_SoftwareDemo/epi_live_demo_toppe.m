@@ -64,7 +64,7 @@ system('tar czf epi.tgz modules.txt scanloop.txt tipdown.mod readout.mod');
 
 %% Play sequence in loop (movie) mode
 nModulesPerTR = 2;
-toppe.playseq(nModulesPerTR, 'tpause', 0.66, 'drawpause', false);
+toppe.playseq(nModulesPerTR, 'tpause', 1.0, 'drawpause', false);
 
 return;
 
