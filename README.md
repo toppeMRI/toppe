@@ -1,6 +1,8 @@
 # TOPPE Matlab files and user guide
 
+<!--
 This file is located in https://github.com/toppeMRI/toppe/
+-->
 
 TOPPE development is primarily being done in a private Gitlab repo at the U of Michigan fMRI lab; this repo tries to stay up to date with that.
 
