@@ -1,6 +1,8 @@
 # TOPPE Matlab files and user guide
 
-TOPPE development is primarily being done in a private repo at the U of Michigan fMRI lab; this repo tries to stay up to date with that.
+This file is: https://github.com/toppeMRI/toppe/README.md
+
+TOPPE development is primarily being done in a private Gitlab repo at the U of Michigan fMRI lab; this repo tries to stay up to date with that.
 
 However, we want this to be a community effort and you are most welcome to propose changes! The suggested way to do so is to create a development branch and propose a merge of this branch with the master branch.
 
