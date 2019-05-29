@@ -37,8 +37,8 @@ end
 dg = -sign(g(end))*arg.maxSlew*dt*1e3;      % G/sample
 g = [g(:)' g(end):dg:0];
 
-area = sum(g)*dt;   % G/cm*sec
-gblip = trapwave(abs(area), dt, arg.maxGrad, arg.maxSlew*1000);
+area = sum(g)*dt;    % G/cm*sec
+gblip = trapwave2(abs(area), arg.maxGrad, arg.maxSlew, dt*1e3);
 gbal = [g(:); -sign(area)*gblip(:)];
 
 return

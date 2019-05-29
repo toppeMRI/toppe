@@ -1,4 +1,4 @@
-function modArr = readModuleListFile(modulesListFile)
+function modArr = readmodulelistfile(modulesListFile)
 % Load all .mod files in modulesListFile into cell array
 %
 % function modArr = readModuleListFile(modulesListFile)

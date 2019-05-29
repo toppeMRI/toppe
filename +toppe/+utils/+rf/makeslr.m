@@ -1,4 +1,4 @@
-function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, varargin)
+function [rf, gex, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, varargin)
 % Create slice-selective SLR pulse with gradient crusher (or balancing blip) before it.
 %
 % function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, varargin)
@@ -36,7 +36,7 @@ import toppe.utils.rf.jpauly.*
 
 %% parse inputs
 % Default values 
-arg.ofname          = [];
+arg.ofname          = sprintf('tipdown-flip%d-slthick%.1fcm-tbw%.1f-dur%.1fms-ncycles%.1f', flip, slthick, tbw, dur, ncycles);
 arg.sliceOffset     = 0;
 arg.system          = toppe.systemspecs();
 arg.type            = 'ex';
@@ -50,7 +50,7 @@ arg.dorfmask        = false;
 arg = vararg_pair(arg, varargin);
 
 if round(tbw) ~= tbw
-	error('tbw must be an integer');
+%	error('tbw must be an integer');
 end
 
 
@@ -85,9 +85,9 @@ resex = round(dur/dt);  % number of (4us) samples in RF waveform
 switch arg.type
 	case 'ex'
 		rfex = rfex/90*flip;
-		fnamestem = sprintf('tipdown-flip%d-slthick%.1fcm-tbw%d-dur%.1fms-ncycles%.1f', flip, slthick, tbw, dur, ncycles);
+		fnamestem = sprintf('tipdown-flip%d-slthick%.1fcm-tbw%.1f-dur%.1fms-ncycles%.1f', flip, slthick, tbw, dur, ncycles);
 	case 'se'
-		fnamestem = sprintf('spinecho-slthick%.1fcm-dur%.1fms-ncycles%.1f-tbw%d-%s', slthick, dur, ncycles, tbw, date);
+		fnamestem = sprintf('spinecho-slthick%.1fcm-dur%.1fms-ncycles%.1f-tbw%.1f-%s', slthick, dur, ncycles, tbw, date);
 end
 
 if ~isempty(arg.ofname)
@@ -96,14 +96,6 @@ if ~isempty(arg.ofname)
 		fnamestem = arg.ofname(1:(I-1));
 	else
 		fnamestem = arg.ofname;   % '.mod' will be appended to output file name below
-	end
-end
-
-% Bloch-Siegert modules
-if arg.forBlochSiegert
-	if arg.writeModFile
-		writemod('rf', rfex(:), 'gz', gex(:), 'nomflip', flip, 'ofname', ...
-		sprintf('%s-plateauOnly.mod',fnamestem), 'desc', 'SLR pulse', 'system', arg.system);
 	end
 end
 
@@ -147,14 +139,18 @@ end
 
 % write RF trapezoid and rephaser to separate .mod files (for Bloch-Siegert with toppe.e)
 if arg.forBlochSiegert
-	rfex1 = rfex(1:irep);
-	gex1 = gex(1:irep);
+	rfex1 = [0; rfex(1:irep); 0];
+	gex1  = [0; gex(1:irep);  0];
+	rfex1 = makeGElength(rfex1);
+	gex1 = makeGElength(gex1);
 	if arg.writeModFile
 		writemod('rf', rfex1(:), 'gz', gex1(:), 'nomflip', flip, ...
 			'ofname', sprintf('%s-norep.mod',fnamestem), 'desc', 'SLR pulse, less rephaser', 'system', arg.system);
 	end
-	rfex2 = rfex((irep+1):end);
-	gex2 = gex((irep+1):end);
+	rfex2 = [0; rfex((irep+1):end); 0];
+	rfex2 = makeGElength(rfex2);
+	gex2 = [0; gex((irep+1):end); 0];
+	gex2 = makeGElength(gex2);
 	if arg.writeModFile
 		writemod('gz', gex2(:), 'nomflip', flip, ...
 			'ofname', sprintf('%s-rephaser.mod',fnamestem), 'desc', 'SLR pulse, rephaser', 'system', arg.system);
@@ -227,7 +223,7 @@ iref = find(rf==max(rf));              % center of RF pulse
 
 %% make slice-select gradient waveform 
 bw = tbw / dur;                    % kHz
-gplateau = bw / (gamma * slthick);      % slice-select gradient amplitude (G/cm)
+gplateau = bw / (gamma * slthick);     % slice-select gradient amplitude (G/cm)
 
 if gplateau > mxg
 	error('gradient exceeds mxg');
@@ -237,8 +233,11 @@ end
 gss = gplateau*ones(1,npix);   % plateau of slice-select gradient
 s = mxs * dt * 0.999;   % max change in g per sample (G/cm), slightly decreased to avoid floating point eror
 gss_ramp = [s:s:gplateau];
+if isempty(gss_ramp)
+	gss_ramp = 0;
+end
 
-if gplateau-gss_ramp(end) % Fix the boundary of ramp and plateau when g is not a multiple of s
+if gplateau-gss_ramp(end) > 0 % Fix the boundary of ramp and plateau when g is not a multiple of s
     gss_ramp = [gss_ramp (gplateau+gss_ramp(end))/2];
 end
 

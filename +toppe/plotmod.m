@@ -36,7 +36,12 @@ subplot(338); sub_plot(T, theta); ylabel('angle(rf) rad');
 xlabel('time (msec)');
 
 % gradient waveform
-subplot(331); sub_plot(T,gx);    ylabel('gx G/cm');
+subplot(331); sub_plot(T,gx);    ylabel('gx G/cm');   
+try
+	sgtitle(fname);
+catch
+	title(fname);
+end
 subplot(332); sub_plot(T,gy);    ylabel('gy G/cm');
 subplot(333); sub_plot(T,gz);    ylabel('gz G/cm');
 

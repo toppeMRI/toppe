@@ -41,7 +41,7 @@ function [waveform] = trapwave(area,T,gmax,smax)
 
 import toppe.utils.*
 
-waveform = trapwave2(area, T*1e-3, gmax, 1e3*sma);
+waveform = trapwave2(area, gmax, 1e-3*smax, T*1e-3);
 return;
 
 garea=abs(area);	% Same for positive and negative areas.

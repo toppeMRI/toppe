@@ -29,15 +29,13 @@ import toppe.utils.*
 if nargin < 1, help(mfilename), error(mfilename), end
 if nargin == 1 && streq(opt, 'test'), vararg_pair_test, clear, return, end
 
-base = [caller_name ' arg: ']; % for printing
-
 local.subs = {};
 local.allow_new = 0;
 local = vararg_pair_do(local, varargin, {}, 0, 0);
 
 allow_extra = nargout > 1;
 [opt extra] = vararg_pair_do(opt, varargs, local.subs, local.allow_new, ...
-	allow_extra, base);
+	allow_extra);
 
 % Structure elements of opt with value "NaN" are checked as being required.
 % NO, this just adds overhead.  Removed 2007-2-9.
@@ -47,7 +45,7 @@ allow_extra = nargout > 1;
 % vararg_pair_do()
 %
 function [opt, extra] = ...
-	vararg_pair_do(opt, varargs, subs, allow_new, allow_extra, base)
+	vararg_pair_do(opt, varargs, subs, allow_new, allow_extra)
 
 if allow_extra && allow_new
 	error 'only one of "new" or "extra" is sensible for vararg_pair'
@@ -84,6 +82,8 @@ for ii=1:npair
 	end
 
 	if isfield(opt, 'chat') && opt.chat && isempty(ex)
+        % for printing, only called when needed for performance
+        base = [caller_name(2) ' arg: '];
 		show_pair(arg, val, base)
 	end
 end

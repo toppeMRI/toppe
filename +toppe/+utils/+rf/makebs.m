@@ -9,9 +9,6 @@ function rf = makebs(amp, varargin)
 %   system        (optional) struct specifying hardware system info, see systemspecs.m
 %
 % See also calckbs.m
-%
-% $Id: makebs.m,v 1.1 2018/11/02 14:24:52 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/+rf/makebs.m,v $
 
 import toppe.*
 import toppe.utils.*
@@ -26,6 +23,8 @@ arg = vararg_pair(arg, varargin);   % substitute varargin values as appropriate
 wrf = 0;   % frequency offset (Hz)
 [rf,T] = fermi(amp,wrf,4e-3,0.1e-3);
 rf = [0; rf(:); 0];   % make sure RF waveform starts and ends at 0 to avoid issues on scanner
+
+rf = makeGElength(rf);
 
 % write mod file
 writemod('rf', rf, 'ofname', 'bs.mod', ...

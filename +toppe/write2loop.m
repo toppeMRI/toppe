@@ -91,6 +91,7 @@ arg.slice           = 1;
 arg.echo            = 1;
 arg.view            = 1;
 arg.dabmode         = 'on';
+arg.rot             = 0;     % in-plane gradient rotation angle (radians)
 arg = vararg_pair(arg, varargin);
 checkInputs(arg);
 
@@ -100,46 +101,57 @@ persistent rf_spoil_phase
 persistent irfphase
 persistent idaqphase
 persistent setupdone
+persistent modules
+persistent d
+persistent d_index
 
 %% If modname is setup, then init the file
-if strcmp(modname,'setup')
-    fid = fopen(arg.loopFile, 'w+', 'ieee-be');
-    fprintf(fid, 'nt\tmaxslice\tmaxecho\tmaxview \n');
-    fprintf(fid, lineformat, zeros(5,1));
-    fprintf(fid, headerline);
+if strcmp(modname,'setup')    
+    % Zero out spoiling angle tracking variables
     rf_spoil_phase = 0;
     irfphase = 0;
     rf_spoil_seed_cnt = 0;
+    
+    % Load modules in only once and keep persistent for speed
+    modules = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+    
+    % Preallocate 
+    d = zeros(1000000,16);
+    d_index = 1; % Current line to write to
+    
+    % Mark we're set up
     setupdone = 1;
     return
 end
 
 if strcmp(modname,'finish')
-    fid = fopen(arg.loopFile, 'r+', 'ieee-be');
-    % Seek to beginning and read in all values
-    frewind(fid);
-    textscan(fid,'%s',1,'delimiter','\n', 'headerlines',2);
-    d = fscanf(fid, dformat, [16 inf])';
+    % Remove rows that are all zeros (preallocated but unused)
+    d = d(1:d_index-1,:);
     
-    % Calculate updated header values
+    % Check if all lines are integers
+    if ~all(d == round(d))
+        error('Value in d is a non-integer, this should never happen!')
+    end
+    
+    % Calculate header values
     nt = size(d,1);              % number of startseq() calls
     maxslice = max(d(:,7));
     maxecho = max(d(:,8));
     maxview = max(d(:,9));
-    dur = toppe.getscantime('loopFile',arg.loopFile);
+    dur = toppe.getscantime('loopArr',d,'mods',modules);
     udur = round(dur * 1e6);
-    fclose(fid);
     newParams = [nt maxslice maxecho maxview udur];
     
-    % Rewrite the entire file
+    % Write scanloop lines from d matrix
     fid = fopen(arg.loopFile, 'w+', 'ieee-be');
     fprintf(fid, 'nt\tmaxslice\tmaxecho\tmaxview \n');
     fprintf(fid, lineformat, newParams); % Updated line
     fprintf(fid, headerline);
-    dlmwrite(arg.loopFile, d, '-append','delimiter', '\t', 'precision', 8);  % precision=8 needed to avoid large numbers written in scientific notation
     fclose(fid);
+    dlmwrite(arg.loopFile, d, '-append','delimiter', '\t', 'precision', 8);  % precision=8 needed to avoid large numbers written in scientific notation
     
     % Disable setup flag to conclude file
+    modules = []; % Erase modules struct from mem for safety in case .mod files get updated
     setupdone = [];
     return
 end
@@ -149,8 +161,7 @@ if isempty(setupdone)
     error('Set up not performed, call write2loop(''setup'') before writing module files.');
 end
 
-%% Read module waveforms and find input module
-modules = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+%% Find input module in persistant module struct
 % Find module in cell array and store the index in moduleno
 for iModule = 1:size(modules,2)
     if strcmp(modname,modules{iModule}.fname)
@@ -199,12 +210,13 @@ if module.hasRF % Write RF module
         arg.RFoffset = round(arg.RFoffset);
     end
     f = arg.RFoffset;
-
-    % Write line values
-    d = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 phi irfphase irfphase textra_us f arg.waveform];
+ 
+    % Write line values and increment
+    d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 phi irfphase irfphase textra_us f arg.waveform];
+    d_index = d_index + 1;
 elseif module.hasDAQ % Write DAQ module
     % Set slice/echo/view
-    if arg.slice == 'dis'
+    if all(arg.slice == 'dis')
         dabslice = 0;
     elseif arg.slice > 0
         dabslice = arg.slice;
@@ -214,28 +226,30 @@ elseif module.hasDAQ % Write DAQ module
     dabecho = arg.echo-1; % Index echo from 0 to n-1
     dabview = arg.view;
     
-    % No rotation for now
-    phi = 0;
-
 	 % receive phase
     if arg.RFspoil % If spoil is called, replace RF phase with spoil phase
        idaqphase = irfphase;
     else
        idaqphase = phase2int(arg.DAQphase);
     end
-    
-    d = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) phi idaqphase idaqphase textra_us 0 arg.waveform];
-    
-    % Check if line is all integers
-    if ~all(d == round(d))
-        error('Value in d is a non-integer, this should never happen!')
-    end
-else
-    error(['Module didn''t have RF or DAQ specified, check ' arg.moduleListFile]);
-end
 
-% Write line to end of scanloop
-dlmwrite(arg.loopFile, d, '-append','delimiter', '\t', 'precision', 8);
+    % rotation
+    phi = angle(exp(1i*arg.rot));     % wrap to [-pi pi]
+    iphi = 2*round(phi/pi*max_pg_iamp/2);
+    
+    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform];
+    d_index = d_index + 1;
+else
+    % gradients only
+    %error(['Module didn''t have RF or DAQ specified, check ' arg.moduleListFile]);
+
+    % rotation
+    phi = angle(exp(1i*arg.rot));     % wrap to [-pi pi]
+    iphi = 2*round(phi/pi*max_pg_iamp/2);
+
+    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform];
+    d_index = d_index + 1;
+end
 return
 
 %% Nested functions

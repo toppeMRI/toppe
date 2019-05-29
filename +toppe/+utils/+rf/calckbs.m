@@ -12,8 +12,6 @@ function [kbs th] = calckbs(rf, freq)
 %  pc = phasecontrast3d(imPlus4000, imMinus4000);
 %  b1 = sqrt(pc/2/kbs);   % Measured b1 in Gauss. Note factor of 2!
 %
-% $Id: calckbs.m,v 1.2 2018/11/02 14:30:29 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/+rf/calckbs.m,v $
 
 import toppe.*
 
