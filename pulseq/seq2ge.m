@@ -294,13 +294,47 @@ for ic = 1:length(moduleArr)
 	gz = moduleArr(ic).gz.waveforms;
 
 	if arg.verbose
-		fprintf('Creating .mod file number %d... ', ic);
+		fprintf('Creating .mod file number %d...\n', ic);
 	end
 
 	% force rf waveform to be non-empty to avoid error in writemod (does no harm; will not be played out)
 	if isempty(rf) 
 		rf = 0.001*ones(moduleArr(ic).nt, 1);
 	end
+
+	% make sure waveforms start and end at zero, and are on a 4-sample boundary (toppe.writemod requires this)
+	channels = {'rf','gx','gy','gz'};
+	zeropadWarning = false;
+	fourSampleBoundaryWarning = false;
+	for ii=1:length(channels)
+		eval(sprintf('wav = %s;', channels{ii}));
+		if ~isempty(wav)
+			[nt npulses] = size(wav);
+			if any(wav(1,:) ~= 0)
+				wav = [zeros(1,npulses); wav];
+				zeropadWarning = true;
+			end
+			if any(wav(end,:) ~= 0)
+				wav = [wav; zeros(1,npulses)];
+				ZeropadWarning = true;
+			end
+			[nt npulses] = size(wav);
+			if mod(nt,4)
+				wav = [wav; zeros(4-mod(nt,4), 1)];
+				fourSampleBoundaryWarning = true;
+			end
+		end
+		eval(sprintf('%s = wav;', channels{ii}));
+	end
+
+	if arg.verbose
+		if fourSampleBoundaryWarning
+			warning(sprintf('One or more waveforms padded with zero at beginning and/or end (module %d).', ic));
+		end
+		if zeropadWarning
+			warning(sprintf('One or more waveforms extended to 16us (4 sample) boundary (module %d).', ic));
+		end
+	end		
 
 	try
 		warning('off');    % don't show message about padding waveforms
