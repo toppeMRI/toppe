@@ -24,8 +24,6 @@ function seq = ge2seq(toppeTarFile, varargin)
 %  >> sys = systemspecs('maxSlew', 130, 'slewUnit', 'T/m/s');
 %  >> ge2seq('TOPPEseq.tar', 'system', lims, 'systemGE', sys);
 %
-% $Id: ge2seq.m,v 1.18 2018/11/07 02:47:04 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/pulseq/ge2seq.m,v $
 
 
 %% Parse inputs and set system values
