@@ -320,7 +320,7 @@ for ic = 1:length(moduleArr)
 			end
 			[nt npulses] = size(wav);
 			if mod(nt,4)
-				wav = [wav; zeros(4-mod(nt,4), 1)];
+				wav = [wav; zeros(4-mod(nt,4), npulses)];
 				fourSampleBoundaryWarning = true;
 			end
 		end
