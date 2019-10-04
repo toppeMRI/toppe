@@ -17,6 +17,7 @@ import toppe.utils.rf.*
 % parse inputs
 arg.system = systemspecs();         % default
 arg.showSpectrum = false;           % default
+arg.ofname = 'bs.mod';
 arg = vararg_pair(arg, varargin);   % substitute varargin values as appropriate
 
 % Fermi pulse 
@@ -27,7 +28,7 @@ rf = [0; rf(:); 0];   % make sure RF waveform starts and ends at 0 to avoid issu
 rf = makeGElength(rf);
 
 % write mod file
-writemod('rf', rf, 'ofname', 'bs.mod', ...
+writemod('rf', rf, 'ofname', arg.ofname, ...
          'desc', 'Fermi pulse for Bloch-Siegert b1+ mapping', ...
          'system', arg.system );
 

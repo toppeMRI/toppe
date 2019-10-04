@@ -1,6 +1,8 @@
 function [rf, gex, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, varargin)
 % Create slice-selective SLR pulse with gradient crusher (or balancing blip) before it.
 %
+% This code has gotten pretty messy and needs a cleanup for readability.
+%
 % function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, varargin)
 % 
 % Inputs:
@@ -18,6 +20,8 @@ function [rf, gex, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, 
 %   forBlochSiegert      Writes RF excitation and rephaser gradient into separate .mod files
 %                        (rephaser goes after Fermi pulse)
 %   writeModFile         true (default) or false
+%   discardPrephaser     Don't include the balanced (pre-phaser) gradient trapezoid (if ncycles=0)? Default: false.
+%   spoilDerate          [1 1], range is [0.1 1.0]. Derate slew rate by this factor during pre/rewinders. Default: 1.0.
 % Outputs:
 %   rf               Gauss
 %   g                Gauss/cm
@@ -41,10 +45,18 @@ arg.sliceOffset     = 0;
 arg.system          = toppe.systemspecs();
 arg.type            = 'ex';
 arg.ftype           = 'ls';
-arg.forBlochSiegert = 0;
+arg.forBlochSiegert = false;
 arg.writeModFile    = true;
 arg.isPresto        = false;
-arg.dorfmask        = false;
+arg.spoilDerate     = 1.0;
+if arg.spoilDerate < 0.1 | arg.spoilDerate > 1.0
+	error('spoilDerate must be in the range [0.1 1.0]');
+end
+if strcmp(arg.type, 'se')
+	arg.discardPrephaser = true;
+else
+	arg.discardPrephaser = false;
+end
 
 % Substitute varargin values as appropriate
 arg = vararg_pair(arg, varargin);
@@ -52,9 +64,6 @@ arg = vararg_pair(arg, varargin);
 if round(tbw) ~= tbw
 %	error('tbw must be an integer');
 end
-
-
-%% Design pulse and gradients
 
 mxg = arg.system.maxGrad;          
 if strcmp(arg.system.gradUnit, 'mT/m')
@@ -65,7 +74,6 @@ if strcmp(arg.system.slewUnit, 'T/m/s')
 	mxs = mxs/10;     % Gauss/cm/ms
 end
 
-dorfmask    = arg.dorfmask;
 sliceOffset = arg.sliceOffset;
 
 if ncycles==0 | arg.isPresto
@@ -74,13 +82,48 @@ else
 	isBalanced=0;
 end
 
-%tbw = 4;
 dt = arg.system.raster*1e3;        % msec
 
-% Design rf pulse and slice-select gradient
+%% Design rf pulse and slice-select gradient
 resex = round(dur/dt);  % number of (4us) samples in RF waveform
-[rfex,gex,irep,iref] = sub_myslrrf(dt*resex, tbw, arg.type, slthick, mxg, mxs, arg.ftype, isBalanced, arg.system);
-                               
+[rfex,gex,irep,iref,gplateau] = sub_myslrrf(dt*resex, tbw, arg.type, slthick, mxg, 0.99*mxs, arg.ftype, isBalanced, arg.system, arg.spoilDerate);
+
+% remove balancing (pre-phaser) gradient at beginning of pulse
+if arg.discardPrephaser & ncycles == 0
+	I = find(gex==0);
+	J = find(I>10);      % go past any zeros that may be present at start of gradient
+	gex = gex(I(J(1)):end);
+	rfex = rfex(I(J(1)):end);
+	gex = toppe.utils.makeGElength(gex);
+	rfex  = toppe.utils.makeGElength(rfex);
+end
+
+% add spoiler gradient along slice-select
+if ncycles > 0 & ~strcmp(arg.type, 'se')
+	gspoil = toppe.utils.makecrusher(ncycles, slthick, 0, 0.99*mxs, mxg); 
+	areaSpoil = sum(gspoil)*arg.system.raster;  % G/cm*sec
+	areass = sum(gex)*arg.system.raster;        % area of slice-select gradient [G/cm*sec]
+	if areass > areaSpoil
+  		% no need to add spoiler (already big enough)
+	else
+		I = find(gex ~= 0);
+		gdiff = diff(gex(I(1):end));
+		J = find(gdiff==0);
+		plateauStart = I(1)+J(1);
+		ramp = [0; gex(1:(plateauStart-1))];
+		gex = gex((plateauStart-1):end);
+		rfex = rfex((plateauStart-1):end);
+		bridge = toppe.utils.mybridged(areaSpoil-areass, gex(1), mxg, arg.spoilDerate*0.99*mxs*1e3); 
+		npre = length([ramp; bridge']);
+		gex = [ramp; bridge'; gex];
+		rfex = [0*ramp; 0*bridge'; rfex];
+	end
+end
+
+% make sure waveforms start and end at zero
+rf = [0; rfex; 0];
+gex = [0; gex; 0];
+
 % output file name
 switch arg.type
 	case 'ex'
@@ -100,39 +143,41 @@ if ~isempty(arg.ofname)
 end
 
 % slice offset frequency
-gplateau = gex(end/2);
 freq = arg.system.gamma*gplateau*sliceOffset; % Hz
 
 % crusher
 if isBalanced | arg.isPresto
 	gcrush = [];
 else
-	gcrush = makecrusher(ncycles,slthick,0,mxs,mxg);
+	gcrush = makecrusher(ncycles,slthick,0,arg.spoilDerate*0.99*mxs,mxg);
 end
 gcrush = [gcrush(:); zeros(4,1)];
 
 gspoil = [gcrush(:); 0*gex(:)];
 
-gex = [gcrush(:); gex(:) ];
-rfex = [0*gcrush(:); rfex(:) ];
-iref = iref + length(gcrush);
-irep = irep + length(gcrush);
+%gex = [gcrush(:); gex(:) ];
+%rfex = [0*gcrush(:); rfex(:) ];
+%iref = iref + length(gcrush);
+%irep = irep + length(gcrush);
 switch arg.type
 	case 'se'
-		gex = [gex; gcrush(:)];
-		rfex = [rfex; 0*gcrush(:)];
+		gex = [gcrush(:); gex; gcrush(:)];
+		rfex = [0*gcrush(:);rfex; 0*gcrush(:)];
 		gspoil = [gspoil; gcrush(:)];
 end
 
 if arg.isPresto
-	gpresto1 = makecrusher(ncycles,slthick,0, mxs, mxg);     % played before readout
-	gpresto2 = makecrusher(2*ncycles,slthick,0, mxs, mxg);   % played at end of TR
+	gpresto1 = makecrusher(ncycles,slthick,0, 0.99*mxs, mxg);     % played before readout
+	gpresto2 = makecrusher(2*ncycles,slthick,0, 0.99*mxs, mxg);   % played at end of TR
 	gex = [gpresto2(:); gex(:); -gpresto1(:)];
 	rfex = [0*gpresto2(:); rfex(:); 0*gpresto1(:)];
 end
 
 if arg.writeModFile
-	writemod('rf', rfex(:), 'gx', gspoil(:), 'gy', gspoil(:), 'gz', gex(:), ...
+	rfex = toppe.utils.makeGElength(rfex);
+	gex = toppe.utils.makeGElength(gex);
+	%writemod('rf', rfex(:), 'gx', gspoil(:), 'gy', gspoil(:), 'gz', gex(:), ...
+	writemod('rf', rfex(:), 'gz', gex(:), ...
 		'nomflip', flip, 'ofname', sprintf('%s.mod',fnamestem), 'desc', 'SLR pulse', 'system', arg.system);
 end
 %plotmod(sprintf('%s.mod',fnamestem));
@@ -166,7 +211,7 @@ return;
 
 
 %% create RF pulse with slice-select gradient
-function [rf,gex,irep,iref,gplateau,areaprep,idep,arearep] = sub_myslrrf(dur, tbw, type, slthick, mxg, mxs, ftype, isBalanced, sys)
+function [rf,gex,irep,iref,gplateau,areaprep,idep,arearep] = sub_myslrrf(dur, tbw, type, slthick, mxg, mxs, ftype, isBalanced, sys, spoilDerate)
 % function [rf,gss,irep,iref,gplateau] = myslrrf(dur,tbw,type,slthick,isBalanced,type,ftype)
 %
 % INPUTS:
@@ -231,13 +276,13 @@ end
 
 % slice-select trapezoid 
 gss = gplateau*ones(1,npix);   % plateau of slice-select gradient
-s = mxs * dt * 0.999;   % max change in g per sample (G/cm), slightly decreased to avoid floating point eror
+s = mxs * dt * 0.995;   % max change in g per sample (G/cm), slightly decreased to avoid floating point eror
 gss_ramp = [s:s:gplateau];
 if isempty(gss_ramp)
 	gss_ramp = 0;
 end
 
-if gplateau-gss_ramp(end) > 0 % Fix the boundary of ramp and plateau when g is not a multiple of s
+if gplateau-gss_ramp(end) > s % Fix the boundary of ramp and plateau when g is not a multiple of s
     gss_ramp = [gss_ramp (gplateau+gss_ramp(end))/2];
 end
 
@@ -248,7 +293,7 @@ iref = iref + numel(gss_ramp);
 switch type
 	case {'ex', 'st', 'sat'}
 		arearep = sum(gss_trap((iref+1):end)) * dt * 1e-3;            % G/cm*s
-		gzrep = -trapwave2(arearep, mxg, mxs, dt);
+		gzrep = -trapwave2(arearep, mxg, spoilDerate*mxs, dt);
 	case 'se'
 		gzrep = [];
 	case 'inv'
@@ -260,7 +305,7 @@ switch type
 	case {'ex', 'st', 'sat'}
 		%area = sum(gss( ((length(ramp)+1):(length(ramp)+midpoint)):end)) * dt * 1e-3             % G/cm*s
 		areaprep = sum([gss_trap(1:iref)]) * dt * 1e-3;            % G/cm*s
-		gzprep = -trapwave2(areaprep, mxg, mxs, dt);
+		gzprep = -trapwave2(areaprep, mxg, spoilDerate*mxs, dt);
 	case 'se'
 		gzprep = [];
 	case 'inv'
@@ -272,7 +317,7 @@ if ~isBalanced
 	gzprep = [];
 end
 
-irep = length([gzprep gss_trap]);
+irep = length([gzprep gss_trap])+1;
 iref = iref + numel(gzprep);
 gex = [gzprep gss_trap gzrep];
 idep = numel(gzprep);
