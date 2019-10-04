@@ -30,7 +30,9 @@ function write2loop(modname,varargin)
 %    waveform           [1 1]    Waveform number to play (1,...,nwaveforms)
 %                                Default: 1
 %    textra             [1 1]    Extra time at end of waveform (ms)
-%    rot                [1 1]    R
+%    rot                [1 1]    In-plane gradient rotation angle (radians), around the axis of rotation defined by rotmat.
+%    rotmat             [3 3]    3x3 rotation matrix (for toppev3). If 'version'=2, then 'rot' is applied and 'rotmat' is ignored.
+%    version            [1 1]    Default: 2 (for backward compatibility) 
 %
 % RF module input options:
 %    RFamplitude        [1 1]    Amplitude scaling of RF waveform
@@ -91,9 +93,16 @@ arg.slice           = 1;
 arg.echo            = 1;
 arg.view            = 1;
 arg.dabmode         = 'on';
-arg.rot             = 0;     % in-plane gradient rotation angle (radians)
+arg.rot             = 0;
+arg.rotmat          = eye(3);
+arg.version         = 2;
 arg = vararg_pair(arg, varargin);
 checkInputs(arg);
+
+%% Apply in-plane rotation angle 'rot' to arg.rotmat
+n = arg.rotmat*[0 0 1]';   % axis of rotation
+R = angleaxis2rotmat(arg.rot, n);
+rotmat = R*arg.rotmat;
 
 %% Set up persistant values for tracking values inbetween calls
 persistent rf_spoil_seed_cnt
@@ -104,9 +113,13 @@ persistent setupdone
 persistent modules
 persistent d
 persistent d_index
+persistent toppeVer
 
 %% If modname is setup, then init the file
 if strcmp(modname,'setup')    
+
+	toppeVer = arg.version;
+
     % Zero out spoiling angle tracking variables
     rf_spoil_phase = 0;
     irfphase = 0;
@@ -116,7 +129,12 @@ if strcmp(modname,'setup')
     modules = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
     
     % Preallocate 
-    d = zeros(1000000,16);
+	switch toppeVer
+		case 3
+			d = zeros(1000000,25);
+		otherwise
+			d = zeros(1000000,16);
+	end
     d_index = 1; % Current line to write to
     
     % Mark we're set up
@@ -140,11 +158,24 @@ if strcmp(modname,'finish')
     maxview = max(d(:,9));
     dur = toppe.getscantime('loopArr',d,'mods',modules);
     udur = round(dur * 1e6);
-    newParams = [nt maxslice maxecho maxview udur];
+	if toppeVer > 2
+    	newParams = [nt maxslice maxecho maxview udur toppeVer];
+	else
+    	newParams = [nt maxslice maxecho maxview udur];
+ 	end
     
-    % Write scanloop lines from d matrix
-    fid = fopen(arg.loopFile, 'w+', 'ieee-be');
-    fprintf(fid, 'nt\tmaxslice\tmaxecho\tmaxview \n');
+	% Write scanloop lines from d matrix
+	fid = fopen(arg.loopFile, 'w+', 'ieee-be');
+	if toppeVer > 2
+    	fprintf(fid, 'nt\tmaxslice\taxecho\tmaxview\tscandur\tversion\n');
+	else
+    	fprintf(fid, 'nt\tmaxslice\tmaxecho\tmaxview\tscandur\n');
+	end
+	if toppeVer > 2
+		lineformat = '%d\t%d\t%d\t%d\t%d\t%d\n';
+	else
+		lineformat = '%d\t%d\t%d\t%d\t%d\n';
+	end
     fprintf(fid, lineformat, newParams); % Updated line
     fprintf(fid, headerline);
     fclose(fid);
@@ -181,10 +212,21 @@ ia_gz = 2*round(arg.Gamplitude(3)*max_pg_iamp/2);
 % Calculate time at end of module
 textra_us = 2*round(1000*arg.textra/2);
 
+% 3d rotation matrix
+if toppeVer > 2
+	if ndims(rotmat) ~= 2 | ~all(size(rotmat)==3) % | norm(rotmat) ~= 1
+		error('rotmat must be a 3x3 orthonormal matrix');
+	end
+	rt = rotmat';
+	drot = round(max_pg_iamp*rt(:)');   % vectorized, in row-major order
+else
+	drot = [];
+end;
+
 if module.hasRF % Write RF module
     % Do RF amplitude stuff
     ia_rf = 2*round(arg.RFamplitude*max_pg_iamp/2);
-    ia_th = 2*round(arg.RFamplitude*max_pg_iamp/2);
+    ia_th = max_pg_iamp;
     
     % Do RF phase stuff
     if arg.RFspoil % If spoil is called, replace RF phase with spoil phase
@@ -201,8 +243,8 @@ if module.hasRF % Write RF module
     dabecho = 0;
     dabview = 1;
     
-    % No RF rotation
-    phi = 0;
+    % rotation
+    phi = angle(exp(1i*arg.rot));     % wrap to [-pi pi]
     
     % Frequency offset in Hz
     if arg.RFoffset ~= round(arg.RFoffset)
@@ -212,7 +254,7 @@ if module.hasRF % Write RF module
     f = arg.RFoffset;
  
     % Write line values and increment
-    d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 phi irfphase irfphase textra_us f arg.waveform];
+    d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 phi irfphase irfphase textra_us f arg.waveform drot];
     d_index = d_index + 1;
 elseif module.hasDAQ % Write DAQ module
     % Set slice/echo/view
@@ -237,7 +279,7 @@ elseif module.hasDAQ % Write DAQ module
     phi = angle(exp(1i*arg.rot));     % wrap to [-pi pi]
     iphi = 2*round(phi/pi*max_pg_iamp/2);
     
-    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform];
+    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot];
     d_index = d_index + 1;
 else
     % gradients only
@@ -247,7 +289,7 @@ else
     phi = angle(exp(1i*arg.rot));     % wrap to [-pi pi]
     iphi = 2*round(phi/pi*max_pg_iamp/2);
 
-    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform];
+    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot];
     d_index = d_index + 1;
 end
 return
@@ -311,6 +353,9 @@ end
 if arg.view ~= round(abs(arg.view)) || arg.view < 1
     error('View must be an integer > 0');
 end
+if arg.version < 2 || arg.version > 3
+	error('version must be 2 or 3');
+end
 end
 
 %% Define constants via functions
@@ -322,17 +367,12 @@ function h = rf_spoil_seed
 h = 117;
 end
 
-% Define line formats for scanloop
-function h = lineformat
-h = '%d\t%d\t%d\t%d\t%d\n';
-end
-
 function h = dformat
 h = '%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d \n';
 end
 
 function h = headerline
-h = 'Core ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview dabon phi rfphase recphase \n';
+h = 'Core a_rf a_th a_gx a_gy a_gz dabslice dabecho dabview dabmode rot rfphase recphase textra freq waveform rotmat...\n';
 end
 
 function h = dabval(dabmode)

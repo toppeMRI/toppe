@@ -1,62 +1,101 @@
-function plotmod(fname)
+function plotmod(fname, varargin)
 % Plot TOPPE .mod file.
 %
-% function sub_plotmod(fname)
+% function plotmod(fname)
 %
-% This file is part of the TOPPE development environment for platform-independent MR pulse programming.
+% Inputs:
+%   fname      [string]    .mod file name, or 'all' (print all .mod files in current folder)
+% Options:
+%  plotPNS     [boolean]   default: true
+%  printPNS    [boolean]   print pns numbers to console. Default: false.
+%  gradcoil    [string]    gradient subsystem (see pns.m). Default: 'xrm'
 
-% TOPPE is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Library General Public License as published by
-% the Free Software Foundation version 2.0 of the License.
-%
-% TOPPE is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU Library General Public License for more details.
-%
-% You should have received a copy of the GNU Library General Public License
-% along with TOPPE. If not, see <http://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>.
-% 
-% (c) 2016 The Regents of the University of Michigan
-% Jon-Fredrik Nielsen, jfnielse@umich.edu
+arg.plotPNS = true;
+arg.printPNS = false;
+arg.gradcoil = 'xrm';
+
+arg = toppe.utils.vararg_pair(arg, varargin);
+
+if strcmp(fname, 'all')
+	f = dir('*.mod');
+	for ii = 1:length(f)
+		sub_plotmod(f(ii).name, arg);
+	end
+else
+	sub_plotmod(fname, arg);
+end
+
+return;
+
+function sub_plotmod(fname, arg)
 
 [b1,gx,gy,gz] = toppe.readmod(fname);
 rho = abs(b1);
 theta = angle(b1);
 
+figure;
+
+% PNS
+gdt = 4d-6;           % raster time (sec)
+repetitions = 1;
+for ii = 1:repetitions
+	grad(1,:,ii) = gx(:)'*1d-2;    % T/m
+	grad(2,:,ii) = gy(:)'*1d-2;
+	grad(3,:,ii) = gz(:)'*1d-2;
+end
+plt = false;           % plot output
+[p.PThresh, p.pt, p.PTmax, p.gmax, p.smax] = toppe.pns(grad, arg.gradcoil, 'gdt', gdt, 'plt', false, 'print', arg.printPNS);
+
+if arg.plotPNS
+	subplot(4,3,11);
+	t = (0:(size(p.pt,2)-1))*gdt*1e3;     % time (ms)
+	plot(t,p.pt(:,:,1),'',t,p.PThresh(:,:,1),'r--',...
+        [t(1) t(end)],[100 100],'m:',[t(1) t(end)],[80 80],'m:',...
+        [t(1) t(end)],-[100 100],'m:',[t(1) t(end)],-[80 80],'m:');
+    xlabel('time [ms]'); ylabel('PNS threshold [%]');
+    tmp = 1.05*max([p.PThresh(:,:,1) 100]);
+    grid on; axis([0 t(end) -tmp tmp]);
+
+end
+
 nt = size(b1,1);
 dt = 4e-3;  % ms
 T = linspace(dt/2,nt*dt-dt/2,nt);
 
-figure
 % rf
-subplot(337); sub_plot(T, rho);   ylabel('abs(rf) G');
+subplot(437); sub_plot(T, rho);   ylabel('abs(rf) G');
 xlabel('time (msec)');
-subplot(338); sub_plot(T, theta); ylabel('angle(rf) rad');
-xlabel('time (msec)');
+subplot(438); sub_plot(T, theta); ylabel('angle(rf) rad');
 
 % gradient waveform
-subplot(331); sub_plot(T,gx);    ylabel('gx G/cm');   
+subplot(431); sub_plot(T,gx);    ylabel('gx G/cm');   
 try
 	sgtitle(fname);
 catch
 	title(fname);
 end
-subplot(332); sub_plot(T,gy);    ylabel('gy G/cm');
-subplot(333); sub_plot(T,gz);    ylabel('gz G/cm');
+subplot(432); sub_plot(T,gy);    ylabel('gy G/cm');
+subplot(433); sub_plot(T,gz);    ylabel('gz G/cm');
 
 % gradient slew
-subplot(334); sub_plot(T(2:end), diff(gx)/dt);  ylabel('gx slew    G/cm/ms');
-subplot(335); sub_plot(T(2:end), diff(gy)/dt);  ylabel('gy slew    G/cm/ms');
-subplot(336); sub_plot(T(2:end), diff(gz)/dt);  ylabel('gz slew    G/cm/ms');
-xlabel('time (msec)');
+subplot(434); sub_plot(T(2:end), diff(gx)/dt);  ylabel('x slew  G/cm/ms');
+subplot(435); sub_plot(T(2:end), diff(gy)/dt);  ylabel('y slew  G/cm/ms');
+subplot(436); sub_plot(T(2:end), diff(gz)/dt);  ylabel('z slew  G/cm/ms');
+g = [gx gy gz];
+slew = sqrt(sum((diff(g,1)/dt).^2,2));
+subplot(4,3,10); sub_plot(T(2:end), slew, 'Color', 'r');  ylabel('combined slew  G/cm/ms');
 
 return;
 
-function sub_plot(T,wav,label)
+function sub_plot(T,wav,varargin)
+
+arg.Color = 'b';
+arg.LineWidth = 1.0;
+arg = toppe.utils.vararg_pair(arg, varargin);
 
 h = line(T,wav);
-set(h, 'LineWidth', 1.0);
+set(h, 'LineWidth', arg.LineWidth);
+set(h, 'Color', arg.Color);
 
 return;
 
