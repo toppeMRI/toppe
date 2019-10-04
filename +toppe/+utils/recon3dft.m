@@ -1,4 +1,4 @@
-function [ims imsos d]= recon3dft(pfile,echo,readoutfile,dokzft,zpad,dodisplay,clim)
+function [ims imsos d]= recon3dft(pfile,varargin) 
 % Recon 3D spin-warp image acquired with TOPPE.
 %
 % function [ims imsos d]= recon3dft(pfile,echo,[readoutfile,dokzft,zpad,dodisplay,clim])
@@ -12,28 +12,22 @@ function [ims imsos d]= recon3dft(pfile,echo,readoutfile,dokzft,zpad,dodisplay,c
 %
 % Output:
 %  ims:          [nx ny nz ncoils]    
-%
-% $Id: recon3dft.m,v 1.8 2018/11/13 18:41:36 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/recon3dft.m,v $
 
 import toppe.*
 import toppe.utils.*
 
-if ~exist('echo','var')
-	echo = 1;
-end
-if ~exist('readoutfile','var')
-	readoutfile = 'readout.mod';
-end
-if ~exist('dokzft','var')
-	dokzft = true;
-end
-if ~exist('dodisplay','var')
-	dodisplay = false;
-end
-if ~exist('zpad','var')
-	zpad = [1 1];     % zero-padding factor along z
-end
+%echo,readoutfile,dokzft,zpad,dodisplay,clim)
+arg.type = '3d';
+arg.echo = 1;
+arg.readoutfile = 'readout.mod';
+arg.dokzft = 'true';
+arg.zpad = [1 1];
+arg.dodisplay = false;
+arg = toppe.utils.vararg_pair(arg, varargin);
+echo = arg.echo;
+readoutfile = arg.readoutfile;
+zpad = arg.zpad;
+dodisplay = arg.dodisplay;
 
 % load raw data
 d = loadpfile(pfile,echo);   % int16. [ndat ncoils nslices nechoes nviews] = [ndat ncoils nz 2 ny]
@@ -65,7 +59,7 @@ end
 % recon 
 for coil = 1:size(d,4)
 	fprintf(1,'\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\brecon coil %d', coil);
-	imstmp = ift3(d(:,:,:,coil));
+	imstmp = ift3(d(:,:,:,coil), 'type', arg.type);
 	imstmp = imstmp(end/2+((-nx/decimation/2):(nx/decimation/2-1))+1,:,:);               % [nx ny nz]
 	if zpad(1) > 1   % zero-pad (interpolate) in xy
 		dtmp = fft3(imstmp);
@@ -80,7 +74,11 @@ end
 
 fprintf('\n');
 
-%ims = flipdim(ims,1);
+% flip along L/R to match the scanner host display (
+% In Axial view on console: 'R' is on left; 'A' is top
+% In Sagittal view: 'A' is on left; 'S' is on top
+% In Coronal view: 'R' is on left; 'S' is on top
+ims = flipdim(ims,1);
 
 % display root sum-of-squares image
 imsos = sqrt(sum(abs(ims).^2,4)); 
@@ -98,7 +96,7 @@ else
 end
 return;
 
-function im = ift3(D,do3dfft)
+function im = sub_ift3(D,do3dfft)
 %
 %	function im = ift3(dat)
 %

@@ -4,41 +4,43 @@ function gbal = makebalanced(g, varargin)
 % function gbal = makebalanced(g, varargin)
 %
 % Inputs:
-%   g          G/cm
+%   g          1D gradient waveform (G/cm)
 % Options:
 %   maxSlew    G/cm/ms. Default: 10.
 %   maxGrad    G/cm. Default: 5.
 %   system     struct specifying hardware system limits, see systemspecs.m
-%
-% $Id: makebalanced.m,v 1.6 2018/10/26 01:38:45 jfnielse Exp $
+%              If 'system' is provided, it overrides 'maxSlew' and 'maxGrad' options.
 
 import toppe.*
 import toppe.utils.*
 
-%% parse inputs
-% Defaults
+% parse inputs
 arg.maxSlew = 10;
-arg.system  = toppe.systemspecs();
-arg.maxGrad = arg.system.maxGrad;
-
-%arg = toppe.utils.vararg_pair(arg, varargin);
+arg.maxGrad = 5;
+arg.system  = []; 
 arg = vararg_pair(arg, varargin);
 
-dt = arg.system.raster;        % GE raster time (sec)
+if isempty(arg.system)
+	maxSlew = arg.maxSlew;
+	maxGrad = arg.maxGrad;
+	sys = toppe.systemspecs;
+	dt = sys.raster;        % GE raster time (sec)
+else
+	maxSlew = arg.system.maxSlew;  % assumes G/cm/ms
+	maxGrad = arg.system.maxGrad;  % assumes G/cm
+	dt = arg.system.raster;        % GE raster time (sec)
+end
 
-if ~exist('maxSlew', 'var')
-	maxSlew = arg.system.maxSlew;
-end
-if ~exist('maxGrad', 'var')
-	maxGrad = arg.system.maxGrad;
-end
+maxSlew = 0.995*maxSlew;    % so it passes hardware checks
+maxGrad = 0.995*maxGrad;
 
 % ramp to zero
-dg = -sign(g(end))*arg.maxSlew*dt*1e3;      % G/sample
+dg = -sign(g(end))*maxSlew*dt*1e3;      % G/sample
 g = [g(:)' g(end):dg:0];
 
+% add balancing trapezoid
 area = sum(g)*dt;    % G/cm*sec
-gblip = trapwave2(abs(area), arg.maxGrad, arg.maxSlew, dt*1e3);
+gblip = trapwave2(abs(area), maxGrad, maxSlew, dt*1e3);
 gbal = [g(:); -sign(area)*gblip(:)];
 
 return

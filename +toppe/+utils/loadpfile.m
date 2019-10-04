@@ -127,9 +127,10 @@ if ~arg.quiet; textprogressbar('Loading data: '); end
 for icoil = 1:ncoils
     if ~arg.quiet; textprogressbar(icoil/ncoils*100); end
     for islice = slicestart:sliceend   % skip first slice (sometimes contains corrupted data)
-        for iecho = ECHOES % Load every element in ECHOES
+        for iecho = 1:length(ECHOES) % Load every element in ECHOES
+				echo = ECHOES(iecho);
             for iview = 1:nviews
-                offsetres = (icoil-1)*coilres + (islice-1)*sliceres + (iecho-1)*echores + iview*ndat;
+                offsetres = (icoil-1)*coilres + (islice-1)*sliceres + (echo-1)*echores + iview*ndat;
                 offsetbytes = 2*ptsize*offsetres;
                 fseek(fid, rdb_hdr.off_data+offsetbytes, 'bof');
                 dtmp = fread(fid, 2*ndat, 'int16=>int16');

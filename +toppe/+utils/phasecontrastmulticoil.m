@@ -1,5 +1,5 @@
-function pc = phasecontrast(ims1, ims2)
-% function pc = phasecontrast(ims1, ims2)
+function pc = phasecontrastmulticoil(ims1, ims2)
+% function pc = phasecontrastmulticoil(ims1, ims2)
 %
 % Calculate phase contrast between two multi-coil 2D/3D images.
 %

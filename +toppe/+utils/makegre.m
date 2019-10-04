@@ -13,6 +13,7 @@ function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
 %  system      struct specifying system info, see systemspecs.m
 %  ofname      Output file name. Default: 'readout.mod'
 %  extrafiles  [bool] If true, writes z phase-encode and spoiler to separate .mod files.
+%  slewDerate
 
 zres = zres*10;   % mm
 
@@ -27,6 +28,7 @@ arg.ofname = 'readout.mod';
 arg.extrafiles = false;
 arg.flip   = false;
 arg.isdess = 0;
+arg.slewDerate = 0.8;
 
 % Substitute varargin values as appropriate
 arg = vararg_pair(arg, varargin);      % requires MIRT
@@ -64,20 +66,19 @@ ramp = 0:s:g;
 
 % x prewinder.
 area = sum([ramp gxro fliplr(ramp)])*dt*1e-3;                % G/cm*s
-%gxprew = -trapwave(area/2, dt*1e-3, mxg, mxs*1e3);   % sqrt(3) since up to 3 gradients are playing simultaneously
-gxprew = -trapwave2(area/2, mxg, mxs, dt);   % sqrt(3) since up to 3 gradients are playing simultaneously
+gxprew = -trapwave2(area/2, mxg, arg.slewDerate*mxs/sqrt(3), dt);   % sqrt(3) since up to 3 gradients are playing simultaneously
 
 % put together the whole gx waveform
-gcrush = makecrusher(arg.ncycles,fov/npix,0, mxs, mxg);
+gcrush = makecrusher(arg.ncycles,fov/npix,0, mxs/sqrt(3), mxg);
 if arg.ncycles > 0
 	areacrush = sum(gcrush)*dt*1e-3;   % G/cm*sec
 	arearo = sum([gxprew ramp gxro fliplr(ramp)])*dt*1e-3;
-	bridge = mybridged(areacrush-arearo,gxro(end), mxg, mxs*1e3);  
+	bridge = mybridged(areacrush-arearo,gxro(end), mxg, arg.slewDerate*mxs/sqrt(3)*1e3);  
 	gx = [gxprew ramp gxro bridge fliplr(ramp)];
 else
 	gx = [ramp gxro fliplr(ramp)];
 	area = sum(gx)*dt*1e-3;
-	gbal = -trapwave2(area/2, mxg, mxs, dt);   
+	gbal = -trapwave2(area/2, mxg, mxs/sqrt(3), dt);   
 	gx = [gxprew ramp gxro fliplr(ramp) gbal];
 end
 
@@ -88,7 +89,7 @@ iref = readstart + npixro/2;   % center of echo (point from which to calculate T
 
 % create y phase encode
 yarea = sum([gxro])*dt*1e-3;
-gyprew = -trapwave2(yarea/2, mxg, mxs, dt);   
+gyprew = -trapwave2(yarea/2, mxg, arg.slewDerate*mxs/sqrt(3), dt);   
 gy = 0*gx;
 %gy((readstart-length(gyprew)-1):(readstart-2)) = gyprew;
 gy(1:numel(gyprew)) = gyprew;
@@ -105,7 +106,7 @@ zfov = npixz*zres/10;   % cm
 gzamp = (1/dt)/(gamma*zfov);             % Gauss/cm
 gzro = gzamp*ones(1,npixz);
 zarea = sum([gzro])*dt*1e-3;
-gzprew = -trapwave2(zarea/2, mxg, mxs, dt);   
+gzprew = -trapwave2(zarea/2, mxg, arg.slewDerate*mxs/sqrt(3), dt);   
 gz = 0*gx;
 gz(1:numel(gzprew)) = gzprew;
 if ~arg.isdess
