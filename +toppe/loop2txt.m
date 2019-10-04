@@ -32,8 +32,8 @@ maxecho = max(d(:,8));
 maxview = max(d(:,9));
 fname = 'scanloop.txt';
 fid = fopen(fname, 'w', 'ieee-be');
-fprintf(fid, 'nt\tmaxslice\tmaxecho\tmaxview\n');
-fprintf(fid, '%d\t%d\t%d\t%d\n', nt, maxslice, maxecho, maxview);
+fprintf(fid, 'nt\tmaxslice\tmaxecho\tmaxview\tduration\n');
+fprintf(fid, '%d\t%d\t%d\t%d\t%d\n', nt, maxslice, maxecho, maxview, 0);
 fprintf(fid, 'Core ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview dabon phi rfphase recphase \n');
 fclose(fid);
 dlmwrite(fname, d, '-append', 'delimiter', '\t', 'precision', 8);  % precision=8 needed to avoid large numbers written in scientific notation
@@ -45,7 +45,7 @@ udur = round(dur * 1e6); % Time in microseconds
 
 % Define format for second line of scanloop.txt
 lineformat = '%d\t%d\t%d\t%d\t%d\n';
-newParams = [nt maxslice maxecho maxview udur];
+newParams = [nt maxslice maxecho maxview udur]; % overwrite w/ correct duration
 
 % Replace second line in scanloop.txt with one that contains our time
 fid = fopen(fname,'r+'); % Reopen scanloop.txt

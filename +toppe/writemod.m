@@ -23,7 +23,8 @@ function writemod(varargin)
 %   nomflip       Excitation flip angle (degrees). Stored in .mod float header, but has no influence on b1 scaling. Default: 90.
 %   hdrfloats     Additional floats to put in header (max 12)
 %   hdrints       Additional ints to put in header (max 30)
-%   system        struct specifying hardware system info, see systemspecs.m
+%   system                 struct specifying hardware system info, see systemspecs.m
+%   ignoreSystemLimits     default: false
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
@@ -55,12 +56,25 @@ arg.desc      = 'TOPPE module';
 arg.nomflip   = 90;
 arg.hdrfloats = [];
 arg.hdrints   = [];
-arg.system    = toppe.systemspecs();
+arg.system    = [];
+arg.ignoreSystemLimits = false;
 
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
 
-system = arg.system;
+%% Detect all-zero RF waveform, treat as empty, and give warning to user
+if ~isempty(arg.rf) & norm(abs(arg.rf(:,1))) == 0
+	arg.rf = [];
+	warning('(First) RF waveform contains all zeros -- ignored');
+end
+
+%% Warn if system struct not provided
+if isempty(arg.system)
+	warning('Using default system limits -- are you sure this is what you want?');
+	system = toppe.systemspecs();
+else
+	system = arg.system;
+end
 
 %% Copy input waveform to rf, gx, gy, and gz (so we don't have to carry the arg. prefix around)
 fields = {'rf' 'gx' 'gy' 'gz'};
@@ -81,7 +95,7 @@ if strcmp(arg.gradUnit, 'mT/m')
 end
 
 %% Check against system hardware limits
-if ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
+if ~arg.ignoreSystemLimits & ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
 	error('Waveforms failed system hardware checks -- exiting');
 end
 

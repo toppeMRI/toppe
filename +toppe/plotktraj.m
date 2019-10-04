@@ -5,6 +5,8 @@ function plotktraj(fname)
 % % Plots k space trajectory of a readout module
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 
+% Will plot the trajectory in 'readout.mod' file if no filename is input.
+
 % TOPPE is free software: you can redistribute it and/or modify
 % it under the terms of the GNU Library General Public License as published by
 % the Free Software Foundation version 2.0 of the License.
@@ -20,6 +22,9 @@ function plotktraj(fname)
 % (c) 2016 The Regents of the University of Michigan
 % Jon-Fredrik Nielsen, jfnielse@umich.edu
 
+if nargin == 0
+    fname = 'readout.mod';
+end
 [~,gx,gy,gz] = toppe.readmod(fname);
 
 % Plot k-space trajectory

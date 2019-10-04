@@ -28,6 +28,7 @@ function sys = systemspecs(varargin)
 %                      toppe.timessi        EPIC 'ssi' time, i.e., minimum duration/delay between modules (us). Default: 100.
 %                      toppe.nMaxModules    max number of .mod files. Not known. Default: 30.
 %                      toppe.nMaxWaveforms  max number of columns in waveform array. Not known. Default: 200.
+%   gradient        Currently suppports 'xrmw', 'xrm', 'whole', 'zoom'. See pns.m. Default: 'xrm'.
 %
 % Usage examples:
 %  >> sys = systemspecs();                   % use default values
@@ -48,15 +49,27 @@ sys.maxEcho  = 16;             % about right
 sys.addDelays = true ;         % False: set time gaps to zero.
 
 % sys.toppe struct relates to the TOPPE interpreter/driver.
-% You shouldn't edit these.
-sys.toppe.version = 'v2';
-sys.toppe.start_core = 224;        % minimum rf/gradient start time (us)
-sys.toppe.myrfdel    = 94;         % rf/gradient delay (us) ( = psd_rf_wait)
-sys.toppe.daqdel     = 100;        % daq/gradient delay (us) (= psd_grd_wait)
+% You probably shouldn't edit these.
+sys.toppe.version = 'v3';
+sys.toppe.start_core_rf  = 0;        % minimum start time (us) for rf modules
+sys.toppe.start_core_daq = 126;        % minimum start time (us) for data acquisition modules
+sys.toppe.start_core_grad = 0;        % minimum start time (us) for gradient-only modules
+sys.toppe.myrfdel    = 94;         % rf/gradient delay (us) ( = psd_rf_wait). Inside scanner: 78.
+sys.toppe.daqdel     = 100;        % daq/gradient delay (us) (= psd_grd_wait). Inside scanner: 84.
 sys.toppe.timetrwait = 64;         % required delay at end of module (us)
 sys.toppe.timessi    = 100;        % EPIC 'ssi' time, i.e., minimum duration/delay between modules
 sys.toppe.nMaxModules   = 20;      % Not known at the moment, probably limited by total scanner system memory.
 sys.toppe.nMaxWaveforms = 200;     % Not known at the moment.
+
+% gradient subsystem. See also pns.m.
+% Scanner  Gradient coil   chronaxie rheobase alpha  gmax  smax
+% MR750w   XRMW            360d-6    20.0     0.324  33    120
+% MR750    XRM             334d-6    23.4     0.333  50    200
+% HDx      TRM WHOLE       370d-6    23.7     0.344  23    77
+% HDx      TRM ZOOM        354d-6    29.1     0.309  40    150
+%
+% values on scanner from /w/config/Scandbdt.cfg + GRSubsystemHWO.xml
+sys.gradient = 'xrm';
 
 % Substitute specified system values as appropriate
 sys = toppe.utils.vararg_pair(sys, varargin);

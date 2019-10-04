@@ -5,7 +5,8 @@ function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, v
 %
 % Inputs:
 %   nstart,nstop       first and last startseq calls (as specified in scanloop.txt)
-% Options:
+%
+% Input options:
 %   loopFile           default: 'scanloop.txt'
 %   loopArr            scan loop array (see readloop.m). Default: read from loopFile.
 %   moduleListFile     default: 'modules.txt'
@@ -26,30 +27,8 @@ function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, v
 %   tdelay           Delay after end of module waveform.
 %                    Determined by duration in modules.txt AND by textra (column 14) in scanloop.txt
 %                    Used in ge2seq.m to set delay block, and in playseq.m.
-%
-% $Id: plotseq.m,v 1.6 2018/11/05 00:12:32 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/plotseq.m,v $
-
-% This file is part of the TOPPE development environment for platform-independent MR pulse programming.
-%
-% TOPPE is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Library General Public License as published by
-% the Free Software Foundation version 2.0 of the License.
-%
-% TOPPE is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU Library General Public License for more details.
-%
-% You should have received a copy of the GNU Library General Public License
-% along with TOPPE. If not, see <http://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>.
-%
-% (c) 2016-2018 The Regents of the University of Michigan
-% Jon-Fredrik Nielsen, jfnielse@umich.edu
 
 %% parse inputs
-
-% Default values
 arg.loopArr         = [];
 arg.loopFile        = 'scanloop.txt';
 arg.mods            = [];
@@ -58,12 +37,9 @@ arg.doDisplay       = true;
 arg.doTimeOnly      = false;
 arg.system          = toppe.systemspecs();  % Accept default timing (includes EPIC-related time gaps)
 arg.drawpause       = 1;
-
-% Substitute varargin values as appropriate
 arg = toppe.utils.vararg_pair(arg, varargin);
 
 %% read scan files as needed
-
 % scanloop array
 if isempty(arg.loopArr)
     loopArr = toppe.utils.tryread(@toppe.readloop, arg.loopFile);
@@ -80,8 +56,9 @@ end
 
 %% timing CVs
 c = struct2cell(arg.system.toppe);
-TPARAMS = cell2mat(c(2:end));
-[start_core myrfdel daqdel timetrwait timessi] = deal(TPARAMS(1), TPARAMS(2), TPARAMS(3), TPARAMS(4), TPARAMS(5));
+TPARAMS = cell2mat(c(2:8));
+[start_core_rf start_core_daq start_core_grad myrfdel daqdel timetrwait timessi] = ...
+	deal(TPARAMS(1), TPARAMS(2), TPARAMS(3), TPARAMS(4), TPARAMS(5),  TPARAMS(6),  TPARAMS(7)); 
 
 %% Initialize counter and turn off display if we're only doing timings
 if arg.doTimeOnly
@@ -110,10 +87,13 @@ for it = nstart:nstop
     
     if cores{ic}.hasRF
         coredel = myrfdel;
+        start_core = start_core_rf;
     elseif cores{ic}.hasDAQ
         coredel = daqdel;
+        start_core = start_core_daq;
     else
         coredel = 0;
+        start_core = start_core_grad;
     end
     
     tmin = start_core + coredel + cores{ic}.wavdur + timetrwait + timessi;   % mimimum core duration (us).
