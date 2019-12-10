@@ -2,8 +2,11 @@ function [imsos ims dcf] = reconSoS(dat, kx, ky, fov, imsize, varargin)
 % Reconstruct fully-sampled stack-of-spirals/stars data via adjoint nufft.
 % With (optional) fieldmap correction. Needs MIRT.
 %
-% function [ims imsos] = reconSoS(dat, kx, ky, fov, imsize, varargin)
+% function [imsos ims dcf] = reconSoS(dat, kx, ky, fov, imsize, varargin)
 %
+% Outputs:
+%  imsos        [nx ny nz]                        root-sum-of-squares coil-combined image
+%  ims          [nx ny nz ncoils]                 coil images (complex)
 % Inputs:
 %   dat         [ndat nleafs nz ntp ncoils]        acquired (kspace) data [ndat nleafs nz ntp ncoils]
 %   kx          [ndat leafs]                       readout trajectory (cycles/cm)
@@ -20,9 +23,8 @@ function [imsos ims dcf] = reconSoS(dat, kx, ky, fov, imsize, varargin)
 %   useParallel do recon in parallel (requires parallel toolbox)
 %   CC          Use coil compression (see ir_mri_coil_compress) in parallel
 %   quiet       Surpress output messages (default: false)
+%   fovShift    [dx dy] (cm)          shift FOV by these amounts
 %
-% $Id: reconSoS.m,v 1.8 2018/11/12 13:38:46 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/+spiral/reconSoS.m,v $
 
 import toppe.utils.spiral.*
 
@@ -34,9 +36,21 @@ arg.dcf          = [];
 arg.useParallel  = false;
 arg.CC           = [];
 arg.quiet        = false;
-arg = vararg_pair(arg, varargin);
+arg.fovShift     = [];
+arg = toppe.utils.vararg_pair(arg, varargin);
 
 [ndat nleafs nz ntp ncoils] = size(dat);
+
+% apply spatial shift 
+if ~isempty(arg.fovShift)
+	for icoil = 1:ncoils
+		for itp = 1:ntp
+			for iz = 1:nz
+				dat(:,:,iz,itp,icoil) = dat(:,:,iz,itp,icoil).*exp(1i*2*pi*(kx*arg.fovShift(1)+ky*arg.fovShift(2)));
+			end
+		end
+	end
+end
 
 % calculate density compensation function (if not provided)
 if isempty(arg.dcf)
