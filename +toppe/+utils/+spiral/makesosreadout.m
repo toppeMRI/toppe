@@ -1,4 +1,4 @@
-function [g] = makesosreadout(fov, matrix, nLeafs, maxSlew, varargin)
+function [g,seq] = makesosreadout(fov, matrix, nLeafs, maxSlew, varargin)
 % Make stack-of-spirals readout.mod file (fully sampled)
 %
 % function makesosreadout(fov, matrix, nLeafs, maxSlew, varargin)
@@ -10,11 +10,14 @@ function [g] = makesosreadout(fov, matrix, nLeafs, maxSlew, varargin)
 %   maxSlew    Max slew rate for design (G/cm/ms)
 % Options:
 %   system     struct specifying hardware system limits, see systemspecs.m
-%   maxGrad    Max gradient amplitude. Default: system.maxGrad.
+%   maxGrad    Max gradient amplitude. Default: system.maxGrad
 %   inout      'in' or 'out' (default) for spiral-in/out
+%   ofname     output file name. Default: 'readout.mod'
+%   rewDerate  derate slew during rewinder and z phase-encode blip by this factor, to reduce PNS. See pns.m. Default: 0.8.
+% Outputs:
+%   g          [nt 3]       [gx gy gz] gradients (G/cm)
+%   seq        struct       misc design parameters that may be useful (e.g., seq.sampWin)
 %
-% $Id: makesosreadout.m,v 1.7 2018/11/02 16:54:13 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/+spiral/makesosreadout.m,v $
 
 import toppe.*
 import toppe.utils.*
@@ -26,6 +29,8 @@ import toppe.utils.spiral.mintgrad.*
 arg.system  = toppe.systemspecs();
 arg.maxGrad = arg.system.maxGrad;
 arg.inout   = 'out';
+arg.ofname  = 'readout.mod';
+arg.rewDerate = 0.8;
 
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
@@ -36,6 +41,15 @@ end
 if matrix(1) ~= matrix(2)
 	error('Anisotropic x/y matrix not supported.');
 end
+
+%% struct to be returned
+seq.maxSlew = maxSlew;
+seq.fov = fov;
+seq.matrix = matrix;
+seq.nLeafs = nLeafs;
+seq.system = arg.system;
+
+maxSlew = 0.999*maxSlew;
 
 %% design spiral waveform (balanced)
 npix = matrix(1);
@@ -50,37 +64,47 @@ rmax = npix/(2*fov(1));   % max k-space radius
 cmd = sprintf('Created with Brian Hargreaves'' code: [k,g] = vds(%d,%d,4e-6,%d,fov,0,0,rmax);', maxSlew, arg.system.maxGrad, nLeafs);
 
 g = [0; 0; g(:)];  % add a couple of zeroes to make sure k=0 is sampled
+nsamp = length(g);
 
 % make balanced
-gx = makebalanced(real(g(:)), 'maxSlew', maxSlew);   
-gy = makebalanced(imag(g(:)), 'maxSlew', maxSlew);   
+gx = makebalanced(real(g(:)), 'maxSlew', arg.rewDerate*maxSlew/sqrt(2));  
+gy = makebalanced(imag(g(:)), 'maxSlew', arg.rewDerate*maxSlew/sqrt(2));   
 
 % make same length
 n = max(length(gx), length(gy));
 gx = [gx; zeros(n-length(gx), 1)];
 gy = [gy; zeros(n-length(gy), 1)];
 
-%% partition (kz) encoding trapezoid
+% partition (kz) encoding trapezoid
 gzamp = (1/arg.system.raster)/(arg.system.gamma*fov(3));     % Gauss/cm
 zarea = gzamp*matrix(3)*arg.system.raster;                   % Gauss/cm*sec
-gpe = -trapwave2(zarea/2, arg.system.maxGrad, maxSlew, arg.system.raster*1e3);
+gpe = -trapwave2(zarea/2, arg.system.maxGrad, arg.rewDerate*maxSlew, arg.system.raster*1e3);
 
-%% put kz trapezoid and spiral together
-gx1 = [0*gpe(:); zeros(2,1);   gx(:); 0*gpe(:)];
-gy1 = [0*gpe(:); zeros(2,1);   gy(:); 0*gpe(:)];
-gz1 = [  gpe(:); zeros(2,1); 0*gx(:);  -gpe(:)];
+% put kz trapezoid and spiral together
+gxtmp = gx;
+gx = [0*gpe(:); zeros(2,1);   gx(:);    0*gpe(:)];
+gy = [0*gpe(:); zeros(2,1);   gy(:);    0*gpe(:)];
+gz = [  gpe(:); zeros(2,1); 0*gxtmp(:);  -gpe(:)];
 
-%% spiral in or out 
+seq.sampWin = (length(gpe)+5):(length(gpe)+5+nsamp-1);
+
+% spiral in or out 
 if strcmp(arg.inout, 'in')
 	gx = flipud(gx);
 	gy = flipud(gy);
+	seq.sampWin = fliplr(length(gx)-seq.sampWin);
 end
 
-%% write to .mod file
-writemod('gx', gx1, 'gy', gy1, 'gz', gz1, 'ofname', 'readout.mod', 'desc', 'stack-of-spirals readout module');
+% make sure duration is on 4-sample (16us) boundary
+gx = toppe.utils.makeGElength(gx);
+gy = toppe.utils.makeGElength(gy);
+gz = toppe.utils.makeGElength(gz);
 
-%% return gradients for one leaf (to be rotated and kz-blipped in scanloop.txt)
-g = [gx1 gy1 gz1];
+% write to .mod file
+writemod('gx', gx, 'gy', gy, 'gz', gz, 'ofname', arg.ofname, 'desc', 'stack-of-spirals readout module', 'system', arg.system);
+
+% return gradients for one leaf (to be rotated and kz-blipped in scanloop.txt)
+g = [gx gy gz];
 
 return;
 
