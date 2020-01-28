@@ -1,31 +1,36 @@
 function [ims imsos d]= recon3dft(pfile,varargin) 
 % Recon 3D spin-warp image acquired with TOPPE.
 %
-% function [ims imsos d]= recon3dft(pfile,echo,[readoutfile,dokzft,zpad,dodisplay,clim])
+% function [ims imsos d]= recon3dft(pfile,varargin) 
 %
 % Beginning of duration of readout plateau (in samples) is stored in readout.mod header, 
 % See, e.g., makeepi.m
 %
-% Input:
+% Input options:
+%  type             '2d' or '3d'
 %  echo             echo to recon
-%  readoutfile      default: 'readout.mod'
+%  readoutFile      default: 'readout.mod'
+%  dokzft           default: false
+%  zpad             default: [1 1]
+%  dodisplay        default: false
 %
 % Output:
-%  ims:          [nx ny nz ncoils]    
+%  ims           [nx ny nz ncoils]    
+%  imsos         [nx ny nz]   root-sum-of-squares coil-combined image
 
 import toppe.*
 import toppe.utils.*
 
-%echo,readoutfile,dokzft,zpad,dodisplay,clim)
+%echo,readoutFile,dokzft,zpad,dodisplay,clim)
 arg.type = '3d';
 arg.echo = 1;
-arg.readoutfile = 'readout.mod';
+arg.readoutFile = 'readout.mod';
 arg.dokzft = 'true';
 arg.zpad = [1 1];
 arg.dodisplay = false;
 arg = toppe.utils.vararg_pair(arg, varargin);
 echo = arg.echo;
-readoutfile = arg.readoutfile;
+readoutFile = arg.readoutFile;
 zpad = arg.zpad;
 dodisplay = arg.dodisplay;
 
@@ -41,7 +46,7 @@ d = flipdim(d,1);        % data is stored in reverse order for some reason
 %end
 
 % get flat portion of readout
-[rf,gx,gy,gz,desc,paramsint16,paramsfloat] = readmod(readoutfile);
+[rf,gx,gy,gz,desc,paramsint16,paramsfloat] = readmod(readoutFile);
 nramp = 0; %15;  % see writemod.m
 nbeg = paramsint16(1) + nramp;  
 nx = paramsint16(2);  % number of acquired data samples per TR
