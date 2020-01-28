@@ -5,10 +5,14 @@ function roi = getroi(fname, roiId)
 %
 % Inputs
 %   fname    [string]         HDF5 file containing one (or more) ROIs. Created with the GUI.
-%   roiId    [1 1] integer    ROI index, starting at 1
+%   roiId    [1 1] integer    ROI index, starting at 1. Default: 1
 %
 % Output
 %   roi      Struct containing 3D ROI dimensions, center placement, and rotation. See also ROI.java.
+
+if ~exist('roiId', 'var')
+	roiId = 1;
+end
 
 % ROI dimensions
 roi.w = h5read(fname, sprintf('/ROI%d/dimensions/width',     roiId));
