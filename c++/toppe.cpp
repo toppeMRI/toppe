@@ -5,6 +5,7 @@
 #include "toppe.h"
 using namespace std;
 
+// Class constructor
 Module::Module(const char* s, int t) : type(t) {
 	//type = t;
 
@@ -25,13 +26,14 @@ Module::Module(const char* s, int t) : type(t) {
 	}
 }
 
+// Class destructor
 Module::~Module() {
 	if (status) {
 		clearMemory();
 	}
 }
   
-// Read binary portion of header.
+// Read header.
 // Use C-style I/O so code can be copied easily from EPIC
 void Module::readHeader(const char* fname) {
 

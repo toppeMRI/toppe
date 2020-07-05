@@ -11,19 +11,19 @@ using namespace std;
 
 class Module {
 private:
-	bool debug = true;
+	bool debug = true;        // If true, prints some values from the .mod file to screen
 	bool status = false;      // set to true once this Module has successfully loaded a .mod file
 
 	short nascii;             // number of characters in ascii header
 	short dataoffset;         // total header size (including ASCII and binary parts)
-	short nparamsint16;       // # of int16 parameters
-	short nparamsfloat;       // # of float parameters
+	short nparamsint16;       // # of int16 header parameters
+	short nparamsfloat;       // # of float header parameters
 
 	void  readShort(short*, int, FILE* );
 	short swapByte(short);
 
 public:
-	short    ncoils;             // number of coils/channels
+	short    ncoils;             // number of coils/channels. Useful in the future for, e.g., parallel transmit systems.
 	short    npts;               // number of points in waveform
 	short    npulses;            // number of different waveforms in .wav file 
 	float    b1max;              // RF amplitude waveform scaling (Gauss). Used to convert to physical units.
@@ -36,7 +36,7 @@ public:
 	/* 
 	RF and gradient waveform arrays. To convert these to physical units:
 	rho   = rho/maxiamp*b1max   (Gauss)
-	theta = theta/maxiamp*pi    (Rad)
+	theta = theta/maxiamp*pi    (Radians)
 	gx    = gx/maxiamp*gmax     (Gauss/cm)
 	gy    = gy/maxiamp*gmax     (Gauss/cm)
 	gz    = gz/maxiamp*gmax     (Gauss/cm)
