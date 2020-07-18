@@ -1,3 +1,5 @@
 inkscape -A overview.pdf overview.svg
 inkscape -A files.pdf files.svg
 inkscape -A timing.pdf timing.svg
+
+#inkscape -d 600 -e tmp.png overview.svg; convert tmp.png -quality 40 overview.jpg;
