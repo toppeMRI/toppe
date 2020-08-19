@@ -109,7 +109,6 @@ nextblock = seq.getBlock(ib+1);   % needed to set 'textra' in scanloop.txt
 loopStructArr(ib) = sub_updateloopstruct([], block, nextblock, arg.system, 'mod', ib);
 
 % data frames (in Pfile) are stored using indeces 'slice', 'echo', and 'view' 
-clear sl
 sl = 1;
 view = 1;
 echo = 0; 
