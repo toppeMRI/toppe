@@ -5,10 +5,10 @@ function module = sub_block2module(block, blockid, system, modnum)
 %
 % Inputs:
 %   block            Pulseq block obtained with getBlock()
-%   system           hardware specs, as described above
+%   system           hardware specs, as described in ../seq2ge.m
 %   modnum           Module number. Determines .mod file name.
 % Output:
-%   module        Struct array containing module info (rf/gradient waveforms, blockEvents, etc)
+%   module        Struct containing module info (rf/gradient waveforms, blockEvents, etc)
 %                   .duration        'duration' entry in modules.txt
 %                   .hasRF           'hasRF' entry in modules.txt
 %                   .hasADC          'hasADC' entry in modules.txt
