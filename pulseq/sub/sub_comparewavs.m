@@ -5,9 +5,11 @@ function [isSameShape] = sub_comparewavs(wav1, wav2, tol, isTrap, verbose)
 %  wav1         vector of real/complex values. If complex, only abs(wav) is considered (for now, TODO).
 %  wav2         vector of real/complex values
 %  tol          consider shapes to be equal if norm of difference between (normalized) waveforms < tol
+%  isTrap       boolean
 %
 % Outputs
 %  isSameShape   boolean
+
 %  scale         double 
 
 if ~isreal(wav1) | ~isreal(wav2)
