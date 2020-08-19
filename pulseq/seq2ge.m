@@ -36,7 +36,7 @@ function [moduleArr loopStructArr] = seq2ge(seqarg, varargin)
 
 %% Path to Pulseq and TOPPE packages
 addpath ~/github/pulseq-1.2.0/matlab/     % path to +mr package
-addpath ~/github/pulseq/matlab/     % path to +mr package
+%addpath ~/github/pulseq/matlab/           % path to +mr package
 addpath ~/github/toppeMRI/toppe/          % path to +toppe package
 
 addpath ./sub/                            % auxiliary functions
