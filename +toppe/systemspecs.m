@@ -37,7 +37,7 @@ function sys = systemspecs(varargin)
 % Usage examples:
 %  >> sys = systemspecs();                   % use default values
 %  >> sys = system('maxSlice', 50);          % sets maxSlice to 50; otherwise contains default values
-
+  
 %% Defaults
 maxGradDefault = 5;
 sys.maxGrad  = maxGradDefault;
