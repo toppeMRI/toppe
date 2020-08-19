@@ -35,8 +35,8 @@ function [moduleArr loopStructArr] = seq2ge(seqarg, varargin)
 % See https://toppemri.github.io/ for more info on TOPPE.
 
 %% Path to Pulseq and TOPPE packages
-addpath ~/github/pulseq-1.2.0/matlab/     % path to +mr package
-%addpath ~/github/pulseq/matlab/           % path to +mr package
+%addpath ~/github/pulseq-1.2.0/matlab/     % path to +mr package
+addpath ~/github/pulseq/matlab/           % path to +mr package
 addpath ~/github/toppeMRI/toppe/          % path to +toppe package
 
 addpath ./sub/                            % auxiliary functions
@@ -60,8 +60,10 @@ arg = toppe.utils.vararg_pair(arg, varargin);
 switch arg.system.toppe.version
 	case 'v2' 
 		nCols = 16;   % number of columns in scanloop.txt
+	case 'v3' 
+		nCols = 25;   % number of columns in scanloop.txt
 	otherwise
-		error('Please use TOPPE v2');
+		error('Please use TOPPE v2 or v3');
 end
 
 %% Get seq object
@@ -81,15 +83,16 @@ end
 % Find blocks that are unique in terms of waveforms and timing (i.e., waveform amplitudes, RF/ADC phase, etc can differ),
 % and fill 'moduleArr' struct array accordingly. 
 % Each entry of 'moduleArr' is a struct containing all waveforms belonging to one module (.mod file), and other module info.
-% The usage of the word "module" here is consistent with its use in TOPPE.
+% The usage of the word "module" here is consistent with its usage in TOPPE.
 
 % 'loopStructArr' struct array
-% Each entry contains information needed to fill out one row of scanloop.txt.
+% Each entry in this array contains information needed to fill out one row of scanloop.txt.
 
 if arg.verbose
 	fprintf('Filling moduleArr struct array, and loopStructArr array.\n' );
 end
 
+% get contents of [BLOCKS] section
 blockEvents = cell2mat(seq.blockEvents);
 blockEvents = reshape(blockEvents, [7, length(seq.blockEvents)]).'; % hardcoded for as long as Pulseq does not include another element
 
@@ -476,7 +479,7 @@ if arg.verbose
 	fprintf(' done\n');
 end
 
-
+return;
 
 %% Put TOPPE files in a .tar file (for convenience)
 system(sprintf('tar cf %s modules.txt scanloop.txt', arg.tarfile));
