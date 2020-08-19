@@ -4,7 +4,8 @@ function arg = sub_updateloopstruct(arg, block, nextblock, system, varargin)
 % Inputs
 %  arg          Either [] (empty), or a loopStruct struct (see below)
 %  block        Pulseq block (getBlock()). Can be empty.
-%  system       See above
+%  system       See ../seq2ge.m
+%
 % Options
 %  see code below
 
@@ -26,6 +27,7 @@ if isempty(arg)
 	arg.textra = 0;          % time added to end of module (sec)
 	arg.rffreq = 0;          % RF transmit frequency offset (Hz)
 	arg.wavnum = 1;          % waveform number (rf/grad waveform array column index). Non-zero positive integer.
+	arg.rotmat = eye(3);     % 3x3 rotation matrix (added to toppev3)
 end
 
 % Substitute specified system values as appropriate
@@ -33,10 +35,20 @@ arg = toppe.utils.vararg_pair(arg, varargin);
 
 % If block is provided, fill in values as appropriate
 if ~isempty(block)
+	if ~isempty(block.rf)
+		start_core = system.toppe.start_core_rf;    % RF module
+	elseif ~isempty(block.adc) 
+		start_core = system.toppe.start_core_daq;   % data acquisition module
+	else
+		start_core = system.toppe.start_core_grad;  % module containing only gradients (no RF or DAQ)
+	end
+
+	module.hasADC = 1;
+	module.hasRF = 1;
 	if ~isempty(block.delay)
-		% Set textra to delay even block, minus system-related overhead.
+		% Set textra to delay block, minus system-related overhead.
 		% For an explanation of toppeDelay, see toppe_timing.pdf.
-		toppeDelay = (system.toppe.timetrwait + system.toppe.timessi + system.toppe.start_core)*1e-6;   % sec
+		toppeDelay = (system.toppe.timetrwait + system.toppe.timessi + start_core)*1e-6;   % sec
 		siemensDelay = 0; % ?
 		arg.textra = siemensDelay + block.delay.delay - toppeDelay;     % negative values will be set to zero in scanloop.txt, with a warning
 		if arg.textra < 0
@@ -52,7 +64,7 @@ if ~isempty(block)
 			isempty(nextblock.gx) & isempty(nextblock.gy) & isempty(nextblock.gz)
 			% Set textra to delay of next block, minus system-related overhead.
          % For an explanation of toppeDelay, see toppe_timing.pdf.
-         toppeDelay = (system.toppe.timetrwait + system.toppe.timessi + system.toppe.start_core)*1e-6;   % sec
+         toppeDelay = (system.toppe.timetrwait + system.toppe.timessi + start_core)*1e-6;   % sec
 			siemensDelay = 0; % ?
 			arg.textra = arg.textra + siemensDelay + nextblock.delay.delay - toppeDelay;     % negative values will be set to zero in scanloop.txt, with a warning
 			%arg.textra = max(siemensDelay + nextblock.delay.delay - toppeDelay, 0);
