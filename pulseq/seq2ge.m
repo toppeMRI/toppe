@@ -371,7 +371,6 @@ for ic = 1:length(moduleArr)
 		
 	if arg.verbose
 		fprintf('success\n');
-		toppe.plotmod(moduleArr(ic).ofname); subplot(331); title(sprintf('module %d', ic));
 	end
 
 	% update entry in modules.txt
@@ -381,6 +380,7 @@ fclose(fid);
 
 if arg.verbose
 	fprintf('done. Created %d .mod files.\n', ic);
+	toppe.plotmod('all');
 end
 
 
