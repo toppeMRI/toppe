@@ -246,6 +246,7 @@ if false
 	sub_playseq(moduleArr, loopStructArr, nBlocksPerTR, nTRskip, tpause);
 end
 
+return
 
 %% Hopefully the sequence looks correct (sub_playseq()), so now we need to write the
 %% TOPPE files.
