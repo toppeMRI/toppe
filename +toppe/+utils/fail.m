@@ -8,9 +8,9 @@
 
 [name, line] = toppe.utils.caller_name(1);
 if isempty(varargin)
-	printf('Fail: %s %d', name, line)
+	toppe.utils.printf('Fail: %s %d', name, line)
 else
-	printf(['Fail: %s %d: ' varargin{1}], name, line, varargin{2:end})
+	toppe.utils.printf(['Fail: %s %d: ' varargin{1}], name, line, varargin{2:end})
 end
 %error fail
 evalin('caller', 'error(''!'')')
