@@ -216,7 +216,6 @@ for ib = 2:length(seq.blockEvents)
 		loopStructArr(ib) = sub_updateloopstruct([], block, nextblock, arg.system, ...
 			'dabmode', 1, 'slice', sl, 'echo', echo, 'view', view, 'mod', ic, 'wavnum', iWavReuse);
 	else
-		keyboard
 		% Found a new set of shapes, so add this waveform set to moduleArr(ic)
 		moduleArr(ic) = sub_updatemodule(moduleArr(ic), block, ib, arg.system);
 		loopStructArr(ib) = sub_updateloopstruct([], block, nextblock, arg.system, ...  %'mod', ic);
@@ -380,7 +379,7 @@ fclose(fid);
 
 if arg.verbose
 	fprintf('done. Created %d .mod files.\n', ic);
-%	toppe.plotmod('all');
+	toppe.plotmod('all');
 end
 
 return;
