@@ -1,9 +1,12 @@
 function [rf,gx,gy,gz] = sub_plotseq(moduleArr, loopStructArr, nstart, nstop, varargin)
 % Plot sequence contained in moduleArr and loopStructArr.
 % Skips delay blocks (for now)
+% See also sub_playseq.m
 
 %% parse inputs
+arg.nTRskip = 0;
 arg.system    = toppe.systemspecs();  % Accept default timing (includes EPIC-related time gaps)
+arg.gradMode  = 'amplitude';          % 'amplitude' or 'slew'
 arg.doDisplay = true;
 arg.units     = 'Gauss';              % or 'Hz', like Pulseq uses
 
@@ -13,18 +16,17 @@ arg = toppe.utils.vararg_pair(arg, varargin);
 %% timing CVs
 c = struct2cell(arg.system.toppe);
 TPARAMS = cell2mat(c(2:8));
-%[start_core myrfdel daqdel timetrwait timessi] = deal(TPARAMS(1), TPARAMS(2), TPARAMS(3), TPARAMS(4), TPARAMS(5));
 [start_core_rf start_core_daq start_core_grad myrfdel daqdel timetrwait timessi] = ...
 	deal(TPARAMS(1), TPARAMS(2), TPARAMS(3), TPARAMS(4), TPARAMS(5), TPARAMS(6), TPARAMS(7));
 
-%% build sequence. each sample is 4us.
+%% build sequence. each sample is 4us
 rf = []; gx = []; gy = []; gz = [];
 dt = 4;  % us
 for it = nstart:nstop
 	loopStruct = loopStructArr(it);
 
 	if isempty(loopStruct.mod)
-		% skip delay blocks
+		% skip delay blocks. TODO: add
 		continue;
 	end
 
@@ -90,22 +92,31 @@ gz = gscale*gz;
 
 %% plot
 if arg.doDisplay
-    T = (0:(numel(rf)-1))*dt/1000; % msec
-    Tend = 1.01*T(end);
+   T = (0:(numel(rf)-1))*dt/1000; % msec
+   Tend = 1.01*T(end);
 
-    rho = abs(rf);
-    th = angle(rf);
+   rho = abs(rf);
+   th = angle(rf);
 
-    gmax = max(abs([gx(:); gy(:); gz(:)]));
-    srho = max(1.1*max(abs(rho(:))),0.05);
-    lw = 1.5;
-    subplot(511); plot(T, rho, 'LineWidth', lw); ylabel(sprintf('rho (%s)',rfunit)); axis([T(1) Tend -srho srho]);
-    title(sprintf('[%d,%d]', nstart, nstop));
-    subplot(512); plot(T, th, 'LineWidth', lw);  ylabel('theta (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
-    subplot(513); plot(T, gx, 'LineWidth', lw);  ylabel(sprintf('gx (%s)',gunit)); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
-    subplot(514); plot(T, gy, 'LineWidth', lw);  ylabel(sprintf('gy (%s)',gunit)); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
-    subplot(515); plot(T, gz, 'LineWidth', lw);  ylabel(sprintf('gz (%s)',gunit)); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
-    xlabel('msec');
+   % rf
+   srho = max(1.1*max(abs(rho(:))),0.05);
+   lw = 1.5;
+   subplot(511); plot(T, rho, 'LineWidth', lw); ylabel(sprintf('rho (%s)',rfunit)); axis([T(1) Tend -srho srho]);
+   title(sprintf('[%d,%d]', nstart, nstop));
+   subplot(512); plot(T, th, 'LineWidth', lw);  ylabel('theta (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
+
+	% gradients/slew
+	if strcmp(arg.gradMode, 'slew')
+		T = T(2:end);
+		gx = diff(gx)/dt*1e3;   % G/cm/ms
+		gy = diff(gy)/dt*1e3;
+		gz = diff(gz)/dt*1e3;
+	end
+	gmax = max(abs([gx(:); gy(:); gz(:)]));
+	subplot(513); plot(T, gx, 'LineWidth', lw);  ylabel(sprintf('gx (%s)',gunit)); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+	subplot(514); plot(T, gy, 'LineWidth', lw);  ylabel(sprintf('gy (%s)',gunit)); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+	subplot(515); plot(T, gz, 'LineWidth', lw);  ylabel(sprintf('gz (%s)',gunit)); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+	xlabel('msec');
 end
 
 return;
