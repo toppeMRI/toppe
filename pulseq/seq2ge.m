@@ -186,7 +186,7 @@ for ib = 2:length(seq.blockEvents)
 	% modCandidate is not unique and has the same waveform length as an existing module, 
    % so now check to see if all waveform shapes in modCandidate match those in moduleArr(ic).
 
-	tol = 1e-14;  % Shape is deemed equal if sum(abs(difference)) < tol
+	tol = 1e-3;  % Shape is deemed equal if sum(abs(difference)) < tol
 
 	ii = 1;
 	isSameShape = [];
@@ -201,7 +201,6 @@ for ib = 2:length(seq.blockEvents)
 					wav1 = abs(wav1);
 					wav2 = abs(wav2);
 				end
-				%isSameShape(ii,iwav) = sub_comparewavs(wav1, wav2, tol, strcmp(ch.type,'trap'));
 				isSameShape(ii,iwav) = norm(wav1-wav2,1) < tol;
 			end
 			ii = ii + 1;
@@ -217,6 +216,7 @@ for ib = 2:length(seq.blockEvents)
 		loopStructArr(ib) = sub_updateloopstruct([], block, nextblock, arg.system, ...
 			'dabmode', 1, 'slice', sl, 'echo', echo, 'view', view, 'mod', ic, 'wavnum', iWavReuse);
 	else
+		keyboard
 		% Found a new set of shapes, so add this waveform set to moduleArr(ic)
 		moduleArr(ic) = sub_updatemodule(moduleArr(ic), block, ib, arg.system);
 		loopStructArr(ib) = sub_updateloopstruct([], block, nextblock, arg.system, ...  %'mod', ic);
@@ -241,18 +241,17 @@ if false
 
 	% movie
 	nBlocksPerTR = 5;
-	nTRskip = 4;
-	tpause = 0.05;    % pause between frames (sec)
 	sub_playseq(moduleArr, loopStructArr, nBlocksPerTR, nTRskip, tpause);
+   sub_playseq(modArr, loopArr, nBlocksPerTR);
+   sub_playseq(modArr, loopArr, 5, 'gradMode', 'slew', 'tpause', 0.5);
 end
 
-return
 
 %% Hopefully the sequence looks correct (sub_playseq()), so now we need to write the
 %% TOPPE files.
 
-%% First, write each module to a .mod file, and create modules.txt
 
+%% First, write each module to a .mod file
 if arg.verbose
 	fprintf(1, 'Writing .mod files and modules.txt... ');
 end
@@ -381,8 +380,10 @@ fclose(fid);
 
 if arg.verbose
 	fprintf('done. Created %d .mod files.\n', ic);
-	toppe.plotmod('all');
+%	toppe.plotmod('all');
 end
+
+return;
 
 
 %% Write scanloop.txt, which specifices the scan sequence (along with modules.txt and the .mod files).
