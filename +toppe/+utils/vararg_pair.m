@@ -52,12 +52,12 @@ if allow_extra && allow_new
 end
 
 npair = floor(length(varargs) / 2);
-if 2*npair ~= length(varargs), fail('need names and values in pairs'), end
+if 2*npair ~= length(varargs), toppe.utils.fail('need names and values in pairs'), end
 args = {varargs{1:2:end}};
 vals = {varargs{2:2:end}};
 
 if ~isempty(subs)
-	if size(subs,2) ~= 2, fail('subs must be Nx2'), end
+	if size(subs,2) ~= 2, toppe.utils.fail('subs must be Nx2'), end
 	subs1 = strvcat(subs(:,1)); % strmatch doc says fastest for char array!
 	subs2 = subs(:,2);
 	% todo: apply 'subs' all at once here?
@@ -69,7 +69,7 @@ for ii=1:npair
 	val = vals{ii};
 
 	if ~ischar(arg)
-		fail('unknown option of class %s', class(arg))
+		toppe.utils.fail('unknown option of class %s', class(arg))
 	end
 
 	if ~isempty(subs)
@@ -128,7 +128,7 @@ if isempty(idot)
 		extra = {arg, value};
 		return
 	else
-		fail('unknown option name "%s"', arg)
+		toppe.utils.fail('unknown option name "%s"', arg)
 	end
 end
 
@@ -138,18 +138,18 @@ if length(idot) > 1, error 'a.b.c.d not done', end
 arg1 = arg([1:(idot-1)]);
 arg2 = arg([(idot+1):end]);
 if ~isfield(opt, arg1)
-	fail('unknown option1 name "%s"', arg1)
+	toppe.utils.fail('unknown option1 name "%s"', arg1)
 end
 if ~isfield(opt.(arg1), arg2)
-	fail('unknown option2 name %s', arg2)
+	toppe.utils.fail('unknown option2 name %s', arg2)
 end
 s = struct('type', {'.', '.'}, 'subs', ...
 	{ arg([1:(idot-1)]), arg([(idot+1):end]) });
 try
 	opt = subsasgn(opt, s, value);
 catch
-	printf(lasterr)
-	fail('subsasgn? unknown option name %s', arg)
+	toppe.utils.printf(lasterr)
+	toppe.utils.fail('subsasgn? unknown option name %s', arg)
 end
 
 
@@ -164,7 +164,7 @@ ok = 1;
 for ii=1:length(names)
 	t = opt.(names{ii});
 	if isnumeric(t) && any(isnan(t(:)))
-		printf('Required option "%s" missing', names{ii});
+		toppe.utils.printf('Required option "%s" missing', names{ii});
 		ok = 0;
 	end
 end
@@ -176,7 +176,7 @@ if ~ok, error 'missing required "option(s)"', end
 %
 function show_pair(name, value, base)
 
-pri = @(varargin) printf([base varargin{1}], varargin{2:end});
+pri = @(varargin) toppe.utils.printf([base varargin{1}], varargin{2:end});
 
 if isnumeric(value) | islogical(value)
 	if max(size(value)) == 1	% only print scalars
@@ -233,7 +233,7 @@ jf_equal(opt.long1, 5)
 jf_equal(opt.long2, 6)
 
 opt = vararg_pair(opt, {'z', 'new'}, 'allow_new', 1);
-if ~isequal(opt.z, 'new'), fail('bug'), end
+if ~isequal(opt.z, 'new'), toppe.utils.fail('bug'), end
 try % typo in name should yield error
 	opt = vararg_pair(opt, {'verify_bad_test!', 'new'}, 'allow_new', 0)
 catch
