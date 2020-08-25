@@ -40,13 +40,24 @@ for ax = {'gx','gy','gz'};
 	if ~isempty(grad)
 		if strcmp(grad.type, 'grad')
 			% arbitrary gradient
-			grad.waveform = [grad.waveform; 0];
 			grad.raster = grad.t(2) - grad.t(1);
-			grad.t = [grad.t; grad.t(end) + grad.raster];
-			tge = 0:dt:(max(grad.t)-dt);
+			if abs(grad.waveform(1)) > 0
+				grad.waveform = [0; grad.waveform];  % force to start on zero
+				grad.t = [0; (grad.t + raster)];
+	 		end
+			if abs(grad.waveform(end)) > 0
+				grad.waveform = [grad.waveform; 0];  % force to end on zero
+				grad.t = [grad.t; (grad.t(end) + grad.raster)];
+			end
+			tge = 0:dt:(max(grad.t)-0*dt);
 			wav = interp1(grad.t, grad.waveform, tge);   % interpolate to GE raster time (4us)
 			wav(isnan(wav)) = 0;                         % must be due to interp1
-			wav = [wav(:); 0*wav(end)];
+			if wav(1) > 0
+				wav = [0; wav(:)];
+			end
+			if wav(end) > 0
+				wav = [wav(:); 0];
+			end
 			wav = wav/100/system.gamma;                  % Gauss/cm
 			peakSlew = max(max(diff(wav,1)/(dt*1e3),[],1));
 			if peakSlew > system.maxSlew
