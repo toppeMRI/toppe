@@ -382,8 +382,6 @@ if arg.verbose
 	toppe.plotmod('all');
 end
 
-return;
-
 
 %% Write scanloop.txt, which specifices the scan sequence (along with modules.txt and the .mod files).
 
