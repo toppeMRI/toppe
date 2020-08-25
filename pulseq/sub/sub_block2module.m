@@ -5,6 +5,7 @@ function module = sub_block2module(block, blockid, system, modnum)
 %
 % Inputs:
 %   block            Pulseq block obtained with getBlock()
+%   blockid          Pulseq block is seq.getBlock(blockid)
 %   system           hardware specs, as described in ../seq2ge.m
 %   modnum           Module number. Determines .mod file name.
 % Output:
