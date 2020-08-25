@@ -1,19 +1,27 @@
-function sub_playseq(modArr, loopArr, nBlocksPerTR, nTRskip, tpause)
+function sub_playseq(modArr, loopArr, nBlocksPerTR, varargin)
 % Play sequence contained in modArr and loopArr. See seq2ge.m.
-% Example
-%  [modArr,loopArr] = seq2ge(seq, 'system', lims, 'verbose', false);
-%  sub_playseq(modArr, loopArr, 5, 4);
+%
+% Example:
+%  sys = toppe.systemspecs('maxSlew', 20);
+%  [modArr,loopArr] = seq2ge(seq, 'system', sys, 'verbose', true);
+%  sub_playseq(modArr, loopArr, 5);
+%  sub_playseq(modArr, loopArr, 5, 'gradMode', 'slew');
 
-if ~exist('nTRskip', 'var')
-	nTRskip = 0;
-end
-if ~exist('tpause', 'var')
-	tpause = 0.05;   % sec
-end
+%% parse inputs
+arg.nTRskip = 0;
+arg.tpause = 0;    % sec
+arg.system = toppe.systemspecs();
+arg.gradMode  = 'amplitude';          % 'amplitude' or 'slew'
 
-for ii = 1:nBlocksPerTR*(1+nTRskip):length(loopArr)                        
-	[rf,gx,gy,gz] = sub_plotseq(modArr,loopArr,ii,ii+nBlocksPerTR-1);
+% Substitute varargin values as appropriate
+arg = toppe.utils.vararg_pair(arg, varargin);
+
+for ii = 1:nBlocksPerTR*(1+arg.nTRskip):length(loopArr)                        
+	[rf,gx,gy,gz] = sub_plotseq(modArr, loopArr, ii, ii+nBlocksPerTR-1, ...
+		'nTRskip',  arg.nTRskip, ...
+		'system',   arg.system, ...
+		'gradMode', arg.gradMode);
 	%refresh(gcf)
-	pause(tpause);   % helps refresh figure
+	pause(arg.tpause);   % helps refresh figure
 end
 
