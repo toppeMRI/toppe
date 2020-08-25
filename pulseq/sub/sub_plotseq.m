@@ -1,4 +1,6 @@
 function [rf,gx,gy,gz] = sub_plotseq(moduleArr, loopStructArr, nstart, nstop, varargin)
+% Plot sequence contained in moduleArr and loopStructArr.
+% Skips delay blocks (for now)
 
 %% parse inputs
 arg.system    = toppe.systemspecs();  % Accept default timing (includes EPIC-related time gaps)
@@ -10,8 +12,10 @@ arg = toppe.utils.vararg_pair(arg, varargin);
 
 %% timing CVs
 c = struct2cell(arg.system.toppe);
-TPARAMS = cell2mat(c(2:end));
-[start_core myrfdel daqdel timetrwait timessi] = deal(TPARAMS(1), TPARAMS(2), TPARAMS(3), TPARAMS(4), TPARAMS(5));
+TPARAMS = cell2mat(c(2:8));
+%[start_core myrfdel daqdel timetrwait timessi] = deal(TPARAMS(1), TPARAMS(2), TPARAMS(3), TPARAMS(4), TPARAMS(5));
+[start_core_rf start_core_daq start_core_grad myrfdel daqdel timetrwait timessi] = ...
+	deal(TPARAMS(1), TPARAMS(2), TPARAMS(3), TPARAMS(4), TPARAMS(5), TPARAMS(6), TPARAMS(7));
 
 %% build sequence. each sample is 4us.
 rf = []; gx = []; gy = []; gz = [];
@@ -28,10 +32,13 @@ for it = nstart:nstop
 
 	if module.hasRF
 		coredel = myrfdel;
+		start_core = start_core_rf;
 	elseif module.hasADC
 		coredel = daqdel;
+		start_core = start_core_daq;
 	else
 		coredel = 0;
+		start_core = start_core_grad;
 	end
 
 	tmin = start_core + coredel + dt*module.nt + timetrwait + timessi;   % mimimum core duration (us).
@@ -88,7 +95,7 @@ if arg.doDisplay
 
     rho = abs(rf);
     th = angle(rf);
-    
+
     gmax = max(abs([gx(:); gy(:); gz(:)]));
     srho = max(1.1*max(abs(rho(:))),0.05);
     lw = 1.5;
