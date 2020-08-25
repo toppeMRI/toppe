@@ -43,7 +43,7 @@ for ax = {'gx','gy','gz'};
 			grad.raster = grad.t(2) - grad.t(1);
 			if abs(grad.waveform(1)) > 0
 				grad.waveform = [0; grad.waveform];
-				grad.t = [0; (grad.t + raster)];
+				grad.t = [0; (grad.t + grad.raster)];
 	 		end
 			if abs(grad.waveform(end)) > 0
 				grad.waveform = [grad.waveform; 0];
