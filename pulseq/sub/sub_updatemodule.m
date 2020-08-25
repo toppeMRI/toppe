@@ -40,14 +40,18 @@ for ax = {'gx','gy','gz'};
 	if ~isempty(grad)
 		if strcmp(grad.type, 'grad')
 			% arbitrary gradient
+			grad.waveform = [grad.waveform; 0];
+			grad.raster = grad.t(2) - grad.t(1);
+			grad.t = [grad.t; grad.t(end) + grad.raster];
 			tge = 0:dt:(max(grad.t)-dt);
 			wav = interp1(grad.t, grad.waveform, tge);   % interpolate to GE raster time (4us)
 			wav(isnan(wav)) = 0;                         % must be due to interp1
+			wav = [wav(:); 0*wav(end)];
 			wav = wav/100/system.gamma;                  % Gauss/cm
 			peakSlew = max(max(diff(wav,1)/(dt*1e3),[],1));
 			if peakSlew > system.maxSlew
 				%[peakSlew system.maxSlew blockid module.modnum size(module.(ax),2)+1]
-				error(sprintf('slew rate violation at blockid %d (%s)', blockid, ax));
+				error(sprintf('slew rate violation at blockid %d (%s) (%.1f%%)', blockid, ax, peakSlew/system.maxSlew*100));
 			end 
 			wav = wav/max(abs(wav(:)));
 			module.(ax) = sub_addwav(module.(ax), wav(:));
