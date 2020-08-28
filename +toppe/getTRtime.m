@@ -6,8 +6,8 @@ function dur = getTRtime(LineStart,LineEnd,varargin)
 %
 %
 % Input options:
-%   loopFile       Default: 'scanloop.txt'
-%   moduleListFile        Default: 'modules.txt'
+%   loopFile           Default: 'scanloop.txt'
+%   moduleListFile     Default: 'modules.txt'
 %   system             struct specifying hardware system info, see systemspecs.m
 %                      Default: arg.system = systemspecs();
 %   In addition, the .mod files listed in 'moduleListFile' must be present in the current (working) folder.
@@ -17,26 +17,6 @@ function dur = getTRtime(LineStart,LineEnd,varargin)
 %
 % Examples:
 % >> toppe.getTRtime(100,102); %Time to run lines 100 through 102
-
-% This file is part of the TOPPE development environment for platform-independent MR pulse programming.
-%
-% TOPPE is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Library General Public License as published by
-% the Free Software Foundation version 2.0 of the License.
-%
-% TOPPE is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU Library General Public License for more details.
-%
-% You should have received a copy of the GNU Library General Public License
-% along with TOPPE. If not, see <http://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>.
-% 
-% (c) 2018 The Regents of the University of Michigan
-% Jon-Fredrik Nielsen, jfnielse@umich.edu
-%
-% $Id: getscantime.m,v 1.4 2018/10/25 12:40:29 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/getscantime.m,v $
 
 import toppe.*
 import toppe.utils.*

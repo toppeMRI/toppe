@@ -1,10 +1,16 @@
 function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
-% function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
-%
-% PNS Convolution model to calculate peripheral nerve stimulation
+% function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,chronaxie,rheobase,alpha,gdt,plt,varargin)
+%PNS Convolution model to calculate peripheral nerve stimulation
+% [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,chronaxie,rheobase,alpha,gdt,plt)
+%                                              CV par on scanner
+%   PThresh  Threshold of PNS          [%]     (cfdbdtper)
+%        pt  Threshold of different axis (uncombined)
+%     PTmax  Maximum PNS threshold (combined)
+%      gmax  Maximum gradient strength (combined)
+%      smax  Maximum slewrate (combined)
 %
 % Inputs:
-%      grad  [3 ntp] gradient matrix (dimensions,points,repetitions) [T/m]
+%      grad  gradient matrix (dimensions,points,repetitions) [T/m]
 %            (for 2D also dim=1 + complex data possible)
 %            also possible: (points,repetitions,dimensions)
 %      coil  'xrm', 'xrmw', 'whole', 'zoom' (take values from list below)
@@ -13,20 +19,7 @@ function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
 %      print    (bool) print a few relevant output values to console
 %      plt      (bool) plot
 %      gdt      (sec) Gradient update time (default=4d-6)
-%
-% Example:
-% >> [rf,gx,gy,gz] = toppe.plotseq(1,3);
-% >> toppe.pns([gx(:)'; gy(:)'; gz(:)']/100,'xrm');
 
-%
-% function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,chronaxie,rheobase,alpha,gdt,plt,varargin)
-% [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,chronaxie,rheobase,alpha,gdt,plt)
-%                                              CV par on scanner
-%   PThresh  Threshold of PNS          [%]     (cfdbdtper)
-%        pt  Threshold of different axis (uncombined)
-%     PTmax  Maximum PNS threshold (combined)
-%      gmax  Maximum gradient strength (combined)
-%      smax  Maximum slewrate (combined)
 % Old inputs:
 % chronaxie  Chronaxie time constant   [s]     (cfrfact [us])
 %  rheobase  Rheobase scale factor     [T/s]   (cfrinf [T/s])

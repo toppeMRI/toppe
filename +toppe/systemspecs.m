@@ -26,8 +26,8 @@ function sys = systemspecs(varargin)
 %                      toppe.start_core_rf    Minimum start time (us) for rf modules. Default: 0. 
 %                      toppe.start_core_daq   Minimum start time (us) for data acquisition modules. Default: 126
 %                      toppe.start_core_grad  Minimum start time (us) for gradient-only modules. Default: 0.
-%                      toppe.myrfdel          rf/gradient delay (us). Set to 'psd_rf_wait'. Default: 78
-%                      toppe.daqdel           daq/gradient delay (us). Set to 'psd_grd_wait'. Default: 84
+%                      toppe.myrfdel          rf/gradient delay (us). Set to 'psd_rf_wait'.
+%                      toppe.daqdel           daq/gradient delay (us). Set to 'psd_grd_wait'.
 %                      toppe.timetrwait     Required delay at end of module (us). Determined empiricially. Default: 64.
 %                      toppe.timessi        EPIC 'ssi' time, i.e., minimum duration/delay between modules (us). Default: 100.
 %                      toppe.nMaxModules    max number of .mod files. Not known. Default: 30.
@@ -37,7 +37,7 @@ function sys = systemspecs(varargin)
 % Usage examples:
 %  >> sys = systemspecs();                   % use default values
 %  >> sys = system('maxSlice', 50);          % sets maxSlice to 50; otherwise contains default values
-  
+
 %% Defaults
 maxGradDefault = 5;
 sys.maxGrad  = maxGradDefault;
@@ -50,13 +50,13 @@ sys.rfUnit   = 'Gauss';
 sys.raster   = 4e-6;           % sec
 sys.gamma    = 4.2576e3;       % Hz/Gauss
 sys.maxSlice = 2048;           % max dabslice. UI won't allow more than this to be entered
-sys.maxView  = 250;            % also not sure here
+sys.maxView  = 600;            % also not sure here
 sys.maxEcho  = 16;             % about right
 sys.addDelays = true ;         % False: set time gaps to zero.
 
 % sys.toppe struct relates to the TOPPE interpreter/driver.
 % You probably shouldn't edit these.
-sys.toppe.version = 'v3';
+sys.toppe.version = 'v2';
 sys.toppe.start_core_rf  = 0;      % minimum start time (us) for rf modules
 sys.toppe.start_core_daq = 126;    % minimum start time (us) for data acquisition modules
 sys.toppe.start_core_grad = 0;     % minimum start time (us) for gradient-only modules

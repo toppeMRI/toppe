@@ -13,7 +13,7 @@ function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
 %  system      struct specifying system info, see systemspecs.m
 %  ofname      Output file name. Default: 'readout.mod'
 %  extrafiles  [bool] If true, writes z phase-encode and spoiler to separate .mod files.
-%  slewDerate
+%  slewDerate  Reduce slew rate by this factor during prewinders/crushers
 
 zres = zres*10;   % mm
 
@@ -73,7 +73,11 @@ gcrush = makecrusher(arg.ncycles,fov/npix,0, mxs/sqrt(3), mxg);
 if arg.ncycles > 0
 	areacrush = sum(gcrush)*dt*1e-3;   % G/cm*sec
 	arearo = sum([gxprew ramp gxro fliplr(ramp)])*dt*1e-3;
-	bridge = mybridged(areacrush-arearo,gxro(end), mxg, arg.slewDerate*mxs/sqrt(3)*1e3);  
+	if areacrush > arearo
+		bridge = mybridged(areacrush-arearo,gxro(end), mxg, arg.slewDerate*mxs/sqrt(3)*1e3);  
+	else
+		bridge = [];
+	end
 	gx = [gxprew ramp gxro bridge fliplr(ramp)];
 else
 	gx = [ramp gxro fliplr(ramp)];
