@@ -19,6 +19,7 @@ function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, v
 %                      False (default) or true
 %
 %   system             struct specifying hardware system info, see systemspecs.m
+%   drawpause          (boolean) include pauses (textra) or not
 %
 % Outputs:
 %   rf               Complex RF waveform (Gauss)
@@ -159,12 +160,12 @@ if arg.doDisplay
     gmax = 5;  % Gauss/cm
     srho = max(1.1*max(abs(rho(:))),0.05);
     lw = 1.5;
-    subplot(511); plot(T, rho, 'LineWidth', lw); ylabel('rho'); axis([T(1) Tend -srho srho]);
-    subplot(512); plot(T, th, 'LineWidth', lw);  ylabel('theta'); axis([T(1) Tend -1.3*pi 1.3*pi]);
-    subplot(513); plot(T, gx, 'LineWidth', lw);  ylabel('gx'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+    subplot(511); plot(T, rho, 'LineWidth', lw); ylabel('rho (Gauss)'); axis([T(1) Tend -srho srho]);
+    subplot(512); plot(T, th, 'LineWidth', lw);  ylabel('theta (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
+    subplot(513); plot(T, gx, 'LineWidth', lw);  ylabel('gx (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
     %gmax = 1;  % Gauss/cm
-    subplot(514); plot(T, gy, 'LineWidth', lw);  ylabel('gy'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
-    subplot(515); plot(T, gz, 'LineWidth', lw);  ylabel('gz'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+    subplot(514); plot(T, gy, 'LineWidth', lw);  ylabel('gy (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+    subplot(515); plot(T, gz, 'LineWidth', lw);  ylabel('gz (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
     xlabel('msec');
 end
 
