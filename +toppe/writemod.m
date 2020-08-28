@@ -23,8 +23,7 @@ function writemod(varargin)
 %   nomflip       Excitation flip angle (degrees). Stored in .mod float header, but has no influence on b1 scaling. Default: 90.
 %   hdrfloats     Additional floats to put in header (max 12)
 %   hdrints       Additional ints to put in header (max 30)
-%   system                 struct specifying hardware system info, see systemspecs.m
-%   ignoreSystemLimits     default: false
+%   system        struct specifying hardware system info, see systemspecs.m
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
@@ -57,7 +56,6 @@ arg.nomflip   = 90;
 arg.hdrfloats = [];
 arg.hdrints   = [];
 arg.system    = [];
-arg.ignoreSystemLimits = false;
 
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
@@ -95,7 +93,7 @@ if strcmp(arg.gradUnit, 'mT/m')
 end
 
 %% Check against system hardware limits
-if ~arg.ignoreSystemLimits & ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
+if ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
 	error('Waveforms failed system hardware checks -- exiting');
 end
 

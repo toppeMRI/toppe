@@ -52,7 +52,7 @@ if arg.plotPNS
 	plot(t,p.pt(:,:,1),'',t,p.PThresh(:,:,1),'r--',...
         [t(1) t(end)],[100 100],'m:',[t(1) t(end)],[80 80],'m:',...
         [t(1) t(end)],-[100 100],'m:',[t(1) t(end)],-[80 80],'m:');
-    xlabel('time [ms]'); ylabel('PNS threshold [%]');
+    xlabel('time [ms]'); ylabel('PNS [% of threshold]');
     tmp = 1.05*max([p.PThresh(:,:,1) 100]);
     grid on; axis([0 t(end) -tmp tmp]);
 

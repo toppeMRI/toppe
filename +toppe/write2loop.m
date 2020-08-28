@@ -33,6 +33,7 @@ function write2loop(modname,varargin)
 %    rot                [1 1]    In-plane gradient rotation angle (radians), around the axis of rotation defined by rotmat.
 %    rotmat             [3 3]    3x3 rotation matrix (for toppev3). If 'version'=2, then 'rot' is applied and 'rotmat' is ignored.
 %    version            [1 1]    Default: 2 (for backward compatibility) 
+%    system             [1 1]    struct specifying hardware system info, see systemspecs.m
 %
 % RF module input options:
 %    RFamplitude        [1 1]    Amplitude scaling of RF waveform
@@ -96,7 +97,8 @@ arg.dabmode         = 'on';
 arg.rot             = 0;
 arg.rotmat          = eye(3);
 arg.version         = 2;
-arg = vararg_pair(arg, varargin);
+arg.system          = toppe.systemspecs();
+arg = toppe.utils.vararg_pair(arg, varargin);
 checkInputs(arg);
 
 %% Apply in-plane rotation angle 'rot' to arg.rotmat
@@ -156,6 +158,18 @@ if strcmp(modname,'finish')
     maxslice = max(d(:,7));
     maxecho = max(d(:,8));
     maxview = max(d(:,9));
+
+	% check if max 'slice', 'echo', and 'view' numbers in scanloop.txt exceed system limits
+	if maxslice > arg.system.maxSlice
+		warning('maxslice > system.maxSlice -- scan may not run!');	
+	end
+	if maxecho + 1 > arg.system.maxEcho    % +1 since 'echo' starts at 0
+		warning('maxecho > system.maxEcho -- scan may not run!');	
+	end
+	if maxview > arg.system.maxView
+		warning('maxview > system.maxView -- scan may not run!');	
+	end
+
     dur = toppe.getscantime('loopArr',d,'mods',modules);
     udur = round(dur * 1e6);
 	if toppeVer > 2
@@ -244,7 +258,7 @@ if module.hasRF % Write RF module
     dabview = 1;
     
     % rotation
-    phi = angle(exp(1i*arg.rot));     % wrap to [-pi pi]
+    phi = arg.rot;
     
     % Frequency offset in Hz
     if arg.RFoffset ~= round(arg.RFoffset)
