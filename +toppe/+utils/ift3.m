@@ -8,6 +8,8 @@ function [im imsos] = ift3(D, varargin)
 %  >> size(D) = [64 64 16];    ims = ift3(D, 'type', 2d);          % 16 receive coils; returns multi-coil 2D images
 %  >> size(D) = [64 64 20];    ims = ift3(D, 'dozfft', false);    % does not do ift along kz; returns 3D image
 %
+% $Id: ift3.m,v 1.4 2018/10/26 21:46:41 jfnielse Exp $
+% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/ift3.m,v $
 
 import toppe.*
 import toppe.utils.*

@@ -103,7 +103,7 @@ return;
 
 function im = sub_ift3(D,do3dfft)
 %
-%	function im = ift3(dat)
+%	function im = sub_ift3(dat)
 %
 %	Centered inverse 3DFT of a 3D data matrix.
 % 
