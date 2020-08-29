@@ -36,26 +36,32 @@ theta = angle(b1);
 figure;
 
 % PNS
-gdt = 4d-6;           % raster time (sec)
-repetitions = 1;
-for ii = 1:repetitions
-	grad(1,:,ii) = gx(:)'*1d-2;    % T/m
-	grad(2,:,ii) = gy(:)'*1d-2;
-	grad(3,:,ii) = gz(:)'*1d-2;
-end
-plt = false;           % plot output
-[p.PThresh, p.pt, p.PTmax, p.gmax, p.smax] = toppe.pns(grad, arg.gradcoil, 'gdt', gdt, 'plt', false, 'print', arg.printPNS);
-
 if arg.plotPNS
-	subplot(4,3,11);
-	t = (0:(size(p.pt,2)-1))*gdt*1e3;     % time (ms)
-	plot(t,p.pt(:,:,1),'',t,p.PThresh(:,:,1),'r--',...
-        [t(1) t(end)],[100 100],'m:',[t(1) t(end)],[80 80],'m:',...
-        [t(1) t(end)],-[100 100],'m:',[t(1) t(end)],-[80 80],'m:');
-    xlabel('time [ms]'); ylabel('PNS [% of threshold]');
-    tmp = 1.05*max([p.PThresh(:,:,1) 100]);
-    grid on; axis([0 t(end) -tmp tmp]);
+	gdt = 4d-6;           % raster time (sec)
+	nwavs = size(gx,2);   % number of waveforms in .mod file
+	for ii = 1:nwavs
+		clear grad;
+		grad(1,:) = gx(:,ii)'*1d-2;    % T/m
+		grad(2,:) = gy(:,ii)'*1d-2;
+		grad(3,:) = gz(:,ii)'*1d-2;
+		plt = false;           % plot output
+		% [p.PThresh, p.pt, p.PTmax, p.gmax, p.smax] = toppe.pns(grad, arg.gradcoil, 'gdt', gdt, 'plt', false, 'print', arg.printPNS);
+		[p.PThresh] = toppe.pns(grad, arg.gradcoil, 'gdt', gdt, 'plt', false, 'print', arg.printPNS);
+		pns.val(:,ii) = p.PThresh(:);
+	end
 
+	subplot(4,3,11);
+	%t = (0:(size(p.pt,2)-1))*gdt*1e3;     % time (ms)
+	t = (0:(size(pns.val,1)-1))*gdt*1e3;     % time (ms)
+	%plot(t,p.pt(:,:,1),'',t,p.PThresh(:,:,1),'r--',...
+   %     [t(1) t(end)],[100 100],'m:',[t(1) t(end)],[80 80],'m:',...
+   %     [t(1) t(end)],-[100 100],'m:',[t(1) t(end)],-[80 80],'m:');
+	plot(t, pns.val, '', ...
+		[t(1) t(end)],[100 100],'m:', ...
+		[t(1) t(end)],[80 80],'m:');
+	xlabel('time [ms]'); ylabel('PNS [% of threshold]');
+	tmp = 1.05*max([p.PThresh(:,:,1) 100]);
+	grid on; % axis([0 t(end) 0 tmp]);
 end
 
 nt = size(b1,1);
