@@ -78,7 +78,6 @@ if ~exist('rheobase','var'), error('Provide rheobase'); end
 if ~exist('alpha','var'), error('Provide alpha'); end
 if ~exist('gdt','var'), gdt = []; end
 if isempty(gdt), gdt = 4d-6; end
-if ~exist('plt','var'), plt = true; end
 if (chronaxie>600d-6) || (chronaxie<200d-6),
     warning('pns:chronaxie','chronaxie=%g; typical values in help',chronaxie);
 end
@@ -142,7 +141,7 @@ PThresh = sqrt(sum(pt.^2,1));      % percent threshold; Slide 35; Eq 31
 
 
 %% plotting
-if plt
+if arg.plt
     t = (0:n2-1)*gdt*1d3;            % time [ms]
     %figure; %(13); 
     clf;
