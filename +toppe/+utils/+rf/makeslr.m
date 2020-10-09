@@ -1,4 +1,4 @@
-function [rf, gex, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, varargin)
+function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, varargin)
 % Create slice-selective SLR pulse with gradient crusher (or balancing blip) before it.
 %
 % This code has gotten pretty messy and needs a cleanup for readability.
@@ -14,7 +14,7 @@ function [rf, gex, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, 
 % Options:
 %   ofname               output file name
 %   system               struct specifying hardware system info, see systemspecs.m
-%   type                 'ex' (default), 'se', ... (John Pauly's SLR toolbox: dzrf.m)
+%   type                 'st' (default), 'se', 'ex', ... (John Pauly's SLR toolbox: dzrf.m)
 %   ftype                'ls' (default), 'min', ... 
 %   sliceOffset          (cm) Default: 0. Determines the return value 'freq', to be used in scanloop.txt.
 %   forBlochSiegert      Writes RF excitation and rephaser gradient into separate .mod files
@@ -22,6 +22,7 @@ function [rf, gex, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, 
 %   writeModFile         true (default) or false
 %   discardPrephaser     Don't include the balanced (pre-phaser) gradient trapezoid (if ncycles=0)? Default: false.
 %   spoilDerate          [1 1], range is [0.1 1.0]. Derate slew rate by this factor during pre/rewinders. Default: 1.0.
+%   doDisplay            boolean
 % Outputs:
 %   rf               Gauss
 %   g                Gauss/cm
@@ -38,17 +39,23 @@ import toppe.utils.*
 import toppe.utils.rf.*
 import toppe.utils.rf.jpauly.*
 
+if strcmp(flip, 'test')
+	sub_test();
+	return;
+end
+
 %% parse inputs
 % Default values 
-arg.ofname          = sprintf('tipdown-flip%d-slthick%.1fcm-tbw%.1f-dur%.1fms-ncycles%.1f', flip, slthick, tbw, dur, ncycles);
+arg.ofname          = [];
 arg.sliceOffset     = 0;
 arg.system          = toppe.systemspecs();
-arg.type            = 'ex';
+arg.type            = 'st';
 arg.ftype           = 'ls';
 arg.forBlochSiegert = false;
 arg.writeModFile    = true;
 arg.isPresto        = false;
 arg.spoilDerate     = 1.0;
+arg.doDisplay       = false;
 if arg.spoilDerate < 0.1 | arg.spoilDerate > 1.0
 	error('spoilDerate must be in the range [0.1 1.0]');
 end
@@ -84,9 +91,17 @@ end
 
 dt = arg.system.raster*1e3;        % msec
 
+% 
+%switch arg.type
+%	case {'sat'}
+%		flip = 90;
+%	case {'se','inv'}
+%		flip = 180;
+%end
+
 %% Design rf pulse and slice-select gradient
 resex = round(dur/dt);  % number of (4us) samples in RF waveform
-[rfex,gex,irep,iref,gplateau] = sub_myslrrf(dt*resex, tbw, arg.type, slthick, mxg, 0.99*mxs, arg.ftype, isBalanced, arg.system, arg.spoilDerate);
+[rfex,gex,irep,iref,gplateau] = sub_myslrrf(flip, dt*resex, tbw, arg.type, slthick, mxg, 0.99*mxs, arg.ftype, isBalanced, arg.system, arg.spoilDerate);
 
 % remove balancing (pre-phaser) gradient at beginning of pulse
 if arg.discardPrephaser & ncycles == 0
@@ -121,16 +136,16 @@ if ncycles > 0 & ~strcmp(arg.type, 'se')
 end
 
 % make sure waveforms start and end at zero
-rf = [0; rfex; 0];
+rfex = [0; rfex; 0];
 gex = [0; gex; 0];
 
 % output file name
 switch arg.type
 	case 'ex'
-		rfex = rfex/90*flip;
-		fnamestem = sprintf('tipdown-flip%d-slthick%.1fcm-tbw%.1f-dur%.1fms-ncycles%.1f', flip, slthick, tbw, dur, ncycles);
+		%rfex = rfex/90*flip;
+		fnamestem = sprintf('tipdown-flip%d-slthick%.1fcm-tbw%.1f-dur%.1fms-ncycles%.1f-%s', flip, slthick, tbw, dur, ncycles, date);
 	case 'se'
-		fnamestem = sprintf('spinecho-slthick%.1fcm-dur%.1fms-ncycles%.1f-tbw%.1f-%s', slthick, dur, ncycles, tbw, date);
+		fnamestem = sprintf('spinecho-slthick%.1fcm-tbw%.1f-dur%.1fms-ncycles%.1f-%s', slthick, tbw, dur, ncycles, date);
 end
 
 if ~isempty(arg.ofname)
@@ -203,18 +218,28 @@ if arg.forBlochSiegert
 end
 
 % output
+% make equal length
 rf = rfex;
 g  = gex; 
+n = max(length(rf),length(g));
+rf = [rf; zeros(n-length(rf),1)];
+g = [g; zeros(n-length(g),1)];
+
+% display slice profile
+if arg.doDisplay
+	Z = linspace(-slthick,slthick,100);
+	m = slicesim([0 0 1],rf,g,dt,Z,1000,100,true);
+end
 
 return;
 
 
 
 %% create RF pulse with slice-select gradient
-function [rf,gex,irep,iref,gplateau,areaprep,idep,arearep] = sub_myslrrf(dur, tbw, type, slthick, mxg, mxs, ftype, isBalanced, sys, spoilDerate)
-% function [rf,gss,irep,iref,gplateau] = myslrrf(dur,tbw,type,slthick,isBalanced,type,ftype)
+function [rf,gex,irep,iref,gplateau,areaprep,idep,arearep] = sub_myslrrf(flip, dur, tbw, type, slthick, mxg, mxs, ftype, isBalanced, sys, spoilDerate)
 %
 % INPUTS:
+%  flip         flip angle (degrees)
 %  dur        - RF pulse duration (msec)
 %  tbw        - total # zero crossings = time-bandwidth product
 %  type       - 'st'/'ex'/'se' for small-tip / pi/2 excitation / spin-echo pulse
@@ -245,18 +270,15 @@ res = round(dur/dt);
 dur = res*dt;
 
 nrf = 200;                               % number of samples for SLR design
+if round(tbw) ~= tbw & strcmp(type, 'st')
+	error('tbw must be an integer for small-tip design');
+end
 rf = dzrf(nrf,tbw,type,ftype);       % row vector
 rf = real(rf);
 rf = resample(rf, res, nrf);
 
 % scale to Gauss
-switch type
-	case {'ex','sat'}
-		flip = pi/2;
-	case {'se','inv'}
-		flip = pi;
-end
-rf = flip * rf / sum(rf);               % normalized such that flip angle (radians) = sum(rf)
+rf = flip/180*pi * rf / sum(rf);               % normalized such that flip angle (radians) = sum(rf)
 gamma = sys.gamma*1e-3;               % kHz/Gauss
 rf = rf / gamma / dt /2/pi;             % Gauss
 
@@ -264,7 +286,12 @@ rf = rf / gamma / dt /2/pi;             % Gauss
 rf = [rf(:); zeros(mod(length(rf),2),1)];
 npix = length(rf);
 
-iref = find(rf==max(rf));              % center of RF pulse
+% find center (peak) of RF pulse. Smooth pulse first to reduce risk of picking an outlier
+I = find(rf==max(rf));              % approximate peak
+I = I(1);                           % in case length(I) > 1
+s = rf((I-20):(I+19));
+s = smooth(s);
+iref = find(s==max(s)) + I - 20;
 
 %% make slice-select gradient waveform 
 bw = tbw / dur;                    % kHz
@@ -276,7 +303,7 @@ end
 
 % slice-select trapezoid 
 gss = gplateau*ones(1,npix);   % plateau of slice-select gradient
-s = mxs * dt * 0.995;   % max change in g per sample (G/cm), slightly decreased to avoid floating point eror
+s = mxs * dt * 0.995;   % max change in g per sample (G/cm), slightly decreased to avoid floating point error
 gss_ramp = [s:s:gplateau];
 if isempty(gss_ramp)
 	gss_ramp = 0;
@@ -292,7 +319,7 @@ iref = iref + numel(gss_ramp);
 % slice-select rephaser gradient
 switch type
 	case {'ex', 'st', 'sat'}
-		arearep = sum(gss_trap((iref+1):end)) * dt * 1e-3;            % G/cm*s
+		arearep = sum(gss_trap((iref):end)) * dt * 1e-3;            % G/cm*s
 		gzrep = -trapwave2(arearep, mxg, spoilDerate*mxs, dt);
 	case 'se'
 		gzrep = [];
@@ -312,7 +339,8 @@ switch type
 		gzprep = [];
 end
 
-% put together the full slice-select gradient
+% put together the full slice-select gradient and rf waveform
+% make gss and rf the same length
 if ~isBalanced
 	gzprep = [];
 end
@@ -322,11 +350,63 @@ iref = iref + numel(gzprep);
 gex = [gzprep gss_trap gzrep];
 idep = numel(gzprep);
 
-% make gss and rf the same length. 
 rf = [0*gzprep(:); zeros(length(gss_ramp),1); rf; zeros(length(gss_ramp)+length(gzrep),1)];
+
+% rescale gradient rephaser to ensure accurate refocusing (flat phase across slice)
+if strcmp(type, 'ex')
+	Z = linspace(-0.5*slthick/2,0.5*slthick/2,50);
+	m = slicesim([0 0 1],rf,gex,dt,Z,1000,100,false);
+	ph = angle(m);  % we want this to be flat
+	P = polyfit(Z,ph,1);
+	gamma = 4.2576e3;   % Hz/Gauss
+	extraarea = P(1)/(2*pi*gamma);    % G/cm*s
+	gzrep = -trapwave2(arearep-extraarea, mxg, spoilDerate*mxs, dt);
+	gex = [gzprep gss_trap gzrep];
+	%m = slicesim([0 0 1],rf,gex,dt,Z,1000,100,true);
+end
 
 % ensure that duration is on a 16 us (4 sample) boundary
 rf = makeGElength(rf(:));
 gex = makeGElength(gex(:));
+
+return;
+
+
+function sub_test
+
+% design a spin-echo pulse and simulate SE slice profile
+flip = 180;
+slthick = 2;   % cm
+tbw = 6;
+dur = 6;       % ms
+ncycles = 8;   % number of cycles of spoiling across slthick
+ofname = 'se.mod';
+sys = toppe.systemspecs('maxSlew', 15, 'maxRf', 0.25);
+[rf,gex,freq180] = toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncycles,...
+	'system', sys, 'sliceOffset', 0, 'ofname', ofname, 'type', 'se');
+toppe.plotmod(ofname);
+
+m0 = [1 0 0];  % initial magnetization
+dt = 4e-3;     % sample (raster, dwell) time (us)
+Z = linspace(-slthick, slthick);
+T1 = 1000; T2 = 100;
+figure;
+toppe.utils.rf.slicesim(m0,rf,gex,dt,Z,T1,T2);
+
+% design a small-tip pulse and simulate slice profile
+flip = 20;
+slthick = 0.5;   % cm
+tbw = 6;
+dur = 2;       % ms
+ncycles = 2;   % number of cycles of spoiling across slthick
+ofname = 'st.mod';
+[rf,gex] = toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncycles,...
+	'system', sys, 'sliceOffset', 0, 'ofname', ofname, 'type', 'st');
+toppe.plotmod(ofname);
+
+m0 = [0 0 1];  % initial magnetization
+Z = linspace(-slthick, slthick);
+figure;
+toppe.utils.rf.slicesim(m0,rf,gex,dt,Z,T1,T2);
 
 return;
