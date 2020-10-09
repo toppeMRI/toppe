@@ -5,7 +5,7 @@
 function K = cfftn(D, direction)
 
 if nargin<2
-	error('toppe.utils.fftn: provide direction as either ''forward'' or ''inverse'' ');
+	error('toppe.utils.cfftn: provide direction as either ''forward'' or ''inverse'' ');
 end
 
 if strcmp('forward', direction)

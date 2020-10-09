@@ -10,7 +10,7 @@ function [ims imsos d]= recon3dft(pfile,varargin)
 %  type             '2d' or '3d'
 %  echo             echo to recon
 %  readoutFile      default: 'readout.mod'
-%  dokzft           default: false
+%  dokzft           default: true 
 %  zpad             default: [1 1]
 %  dodisplay        default: false
 %
@@ -62,8 +62,10 @@ if zpad(2) > 1
 end
 
 % recon 
+fprintf('reconstructing coil: '); nbytes = 0;
 for coil = 1:size(d,4)
-	fprintf(1,'\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\brecon coil %d', coil);
+	fprintf(repmat('\b',1,nbytes))
+    nbytes = fprintf('%d of %d', coil, size(d,4));
 	imstmp = ift3(d(:,:,:,coil), 'type', arg.type);
 	imstmp = imstmp(end/2+((-nx/decimation/2):(nx/decimation/2-1))+1,:,:);               % [nx ny nz]
 	if zpad(1) > 1   % zero-pad (interpolate) in xy
