@@ -1,14 +1,11 @@
-function [imsos ims dcf] = reconSoS(dat, kx, ky, fov, imsize, varargin)
+function [imsos, ims, dcf] = reconSoS(dat, kx, ky, fov, imsize, varargin)
 % Reconstruct fully-sampled stack-of-spirals/stars data via adjoint nufft.
 % With (optional) fieldmap correction. Needs MIRT.
 %
 % function [imsos ims dcf] = reconSoS(dat, kx, ky, fov, imsize, varargin)
 %
-% Outputs:
-%  imsos        [nx ny nz]                        root-sum-of-squares coil-combined image
-%  ims          [nx ny nz ncoils]                 coil images (complex)
 % Inputs:
-%   dat         [ndat nleafs nz ntp ncoils]        acquired (kspace) data [ndat nleafs nz ntp ncoils]
+%   dat         [ndat nleafs nz ntp ncoils]        acquired (kspace) data [ndat nleafs ntp nz ncoils]
 %   kx          [ndat leafs]                       readout trajectory (cycles/cm)
 %                                                 No support for timecourse
 %                                                 varying readout yet (ie
@@ -39,7 +36,7 @@ arg.quiet        = false;
 arg.fovShift     = [];
 arg = toppe.utils.vararg_pair(arg, varargin);
 
-[ndat nleafs nz ntp ncoils] = size(dat);
+[ndat, nleafs, nz, ntp, ncoils] = size(dat);
 
 % apply spatial shift 
 if ~isempty(arg.fovShift)
@@ -67,7 +64,7 @@ Ny = npix;
 Nx = npix;
 %nufft_args = {[Ny,Nx],[6,6],[2*Ny,2*Nx],[Ny/2,Nx/2],'table',2^12,'minmax:kb'};
 nufft_args = {[Ny,Nx],[6,6],[2*Ny,2*Nx],[Ny/2,Nx/2],'minmax:kb'};
-mask = logical(ones(Ny,Nx)); % Mask for support
+mask = true(Ny,Nx); % Mask for support
 L = 6;
 
 % Initialize system matrix for each z location
