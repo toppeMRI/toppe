@@ -1,4 +1,4 @@
-addpath ~/github/pulseq/              % +mr package
+addpath ~/github/pulseq/matlab/       % +mr package
 addpath ~/github/toppeMRI/PulseGEq/   % +pulsegeq package
 addpath ~/github/toppeMRI/toppe/      % +toppe package
 seq08_RadialGradientEcho;             % create 'gre_rad.seq'
