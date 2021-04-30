@@ -12,6 +12,11 @@ seq02_Fid_multipleFAs;
 % module2.mod => readout.mod
 % Update modules.txt accordingly
 
+seq03_SE;
+% rename:
+% module1.mod => tipdown.mod
+% module2.mod => readout.mod
+% Update modules.txt accordingly
 
 %seq05_RadialSE;
 pulsegeq.seq2ge('se_radial.seq');
