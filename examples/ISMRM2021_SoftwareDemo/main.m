@@ -1,7 +1,24 @@
 %setup;
 
+seq01_Fid;
+% rename:
+% module1.mod => tipdown.mod
+% module2.mod => readout.mod
+% Update modules.txt accordingly
+
+seq02_Fid_multipleFAs;
+% rename:
+% module1.mod => tipdown.mod
+% module2.mod => readout.mod
+% Update modules.txt accordingly
+
+
 %seq05_RadialSE;
 pulsegeq.seq2ge('se_radial.seq');
+% rename:
+% module1.mod => tipdown.mod
+% module6.mod => readout.mod
+% Update modules.txt accordingly
 toppe.playseq(4,'drawpause',false);
 
 return;
