@@ -37,6 +37,8 @@ pulsegeq.seq2ge('se_radial.seq');
 % Update modules.txt accordingly
 toppe.playseq(4,'drawpause',false);
 
+%% I guess that's it? There are some other ones in that folder:
+
 seq06_gre_live_demo_step0;
 pulsegeq.seq2ge('DEMO_gre_step0.seq');
 % rename:
@@ -44,6 +46,14 @@ pulsegeq.seq2ge('DEMO_gre_step0.seq');
 % module3.mod => readout.mod
 % Update modules.txt accordingly
 toppe.playseq(3);
+
+seq07_gre_live_demo;
+pulsegeq.seq2ge('DEMO_gre5.seq'); 
+% rename:
+% module1.mod => tipdown.mod
+% module6.mod => readout.mod
+% Update modules.txt accordingly
+toppe.playseq(4);
 
 
 return;
