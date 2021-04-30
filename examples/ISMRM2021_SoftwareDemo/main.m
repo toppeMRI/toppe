@@ -1,5 +1,10 @@
 %setup;
+
 %seq05_RadialSE;
+pulsegeq.seq2ge('se_radial.seq');
+toppe.playseq(4,'drawpause',false);
+
+return;
 
 sys = toppe.systemspecs;
 
