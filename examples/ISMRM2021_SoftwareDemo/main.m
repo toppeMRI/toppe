@@ -1,5 +1,6 @@
 %setup;
 
+addpath('./helper_funcs')
 sc = true;    % sc for "scan", set to true when actually running the scan 
               % and you want to send the files to the scanner
  
