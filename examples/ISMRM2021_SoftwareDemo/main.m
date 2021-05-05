@@ -25,15 +25,15 @@ update_modules(1,2)
 if sc, toppe.utils.coppe('target','outside'); end
 
 %%
-seq04_SE_withSpolers;
+seq04_SE_withSpolers_nodelay;
 pulsegeq.seq2ge(get_cur_seqfile);
-update_modules(1,2) 
+update_modules(1,4) 
 if sc, toppe.utils.coppe('target','outside'); end
 
 %%
-seq05_RadialSE;
+seq05_RadialSE_nodelay;
 pulsegeq.seq2ge(get_cur_seqfile);
-update_modules(1,6) 
+update_modules(1,7) 
 if sc, toppe.utils.coppe('target','outside'); end
 toppe.playseq(4,'drawpause',false);
 
