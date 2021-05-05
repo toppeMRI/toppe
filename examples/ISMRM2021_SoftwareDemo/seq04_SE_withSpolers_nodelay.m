@@ -37,7 +37,9 @@ for i=1:Nrep
     seq.addBlock(rf_ex);
     seq.addBlock(mr.makeDelay(delayTE1)); 
     seq.addBlock(rf_ref,g_sp);
-    seq.addBlock(adc,g_sp,mr.makeDelay(delayTR));  
+    seq.addBlock(g_sp, mr.makeDelay(delayTE2));
+    seq.addBlock(adc);
+    seq.addBlock(mr.makeDelay(delayTR));  
 end
 
 seq.plot();
