@@ -6,8 +6,8 @@ seq=mr.Sequence(system);              % Create a new sequence object
 adcDur=5.12e-3/2; 
 rfDur1=3e-3;
 rfDur2=1e-3;
-TR=150e-3;
-TE=54e-3;
+TR=250e-3;
+TE=20e-3; % 54e-3;
 spA=1000; % spoiler area in 1/m (=Hz/m*s)
 
 sliceThickness=3e-3;            % slice
