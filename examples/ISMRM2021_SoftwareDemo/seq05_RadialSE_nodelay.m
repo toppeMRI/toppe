@@ -43,7 +43,8 @@ gr = mr.makeTrapezoid('y',system,'FlatArea',Nx*deltak,'FlatTime',adcDur);
 adc = mr.makeAdc(Nx,system,'Duration',adcDur,'delay',gr.riseTime); %,'delay',delayTE2);
 gr.delay = 0; %delayTE2-gr.riseTime;
 
-grPre = mr.makeTrapezoid('y',system,'Area',gr.area/2+deltak/2,'Duration',delayTE1);
+grPredur = 5e-3; 
+grPre = mr.makeTrapezoid('y',system,'Area',gr.area/2+deltak/2,'Duration',grPredur); %delayTE1);
 
 delayTR=TR-mr.calcDuration(rf_ex)-delayTE1-mr.calcDuration(rf_ref);
 
@@ -56,6 +57,7 @@ for i=(1-Ndummy):Nr
     seq.addBlock(rf_ex,gs);
     %seq.addBlock(grPre); 
     seq.addBlock(mr.rotate('x',delta*(i-1),grPre)); 
+    seq.addBlock(mr.makeDelay(delayTE1-grPredur));  
     seq.addBlock(rf_ref,g_sp1);
     seq.addBlock(g_sp2, mr.makeDelay(delayTE2));
     if (i>0)
