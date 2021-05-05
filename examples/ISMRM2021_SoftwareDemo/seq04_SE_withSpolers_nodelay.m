@@ -24,7 +24,7 @@ delayTE1=TE/2-(mr.calcDuration(rf_ex)-mr.calcRfCenter(rf_ex)-rf_ex.delay)-rf_ref
 delayTE2=TE/2-mr.calcDuration(rf_ref)+rf_ref.delay+mr.calcRfCenter(rf_ref)-adcDur/2; % this is not perfect, but -adcDur/2/Nx  will break the raster alignment
 assert(delayTE2>mr.calcDuration(g_sp));
 
-adc = mr.makeAdc(Nx,'Duration',adcDur, 'system', system, 'delay', delayTE2);
+adc = mr.makeAdc(Nx,'Duration',adcDur, 'system', system); %, 'delay', delayTE2);
 
 delayTR=TR-mr.calcDuration(rf_ex)-delayTE1-mr.calcDuration(rf_ref);
 

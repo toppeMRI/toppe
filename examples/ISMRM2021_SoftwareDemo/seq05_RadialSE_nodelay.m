@@ -40,8 +40,8 @@ assert(delayTE2>mr.calcDuration(g_sp1));
 
 deltak=1/fov;
 gr = mr.makeTrapezoid('y',system,'FlatArea',Nx*deltak,'FlatTime',adcDur);
-adc = mr.makeAdc(Nx,system,'Duration',adcDur,'delay',delayTE2);
-gr.delay=delayTE2-gr.riseTime;
+adc = mr.makeAdc(Nx,system,'Duration',adcDur,'delay',gr.riseTime); %,'delay',delayTE2);
+gr.delay = 0; %delayTE2-gr.riseTime;
 
 grPre = mr.makeTrapezoid('y',system,'Area',gr.area/2+deltak/2,'Duration',delayTE1);
 
@@ -57,13 +57,13 @@ for i=(1-Ndummy):Nr
     %seq.addBlock(grPre); 
     seq.addBlock(mr.rotate('x',delta*(i-1),grPre)); 
     seq.addBlock(rf_ref,g_sp1);
+    seq.addBlock(g_sp2, mr.makeDelay(delayTE2));
     if (i>0)
-        %seq.addBlock(adc,gr,g_sp1,mr.makeDelay(delayTR)); 
-        seq.addBlock(mr.rotate('x',delta*(i-1),adc,gr,g_sp2,mr.makeDelay(delayTR)));  
+        seq.addBlock(mr.rotate('x',delta*(i-1),adc,gr));  
     else
-        %seq.addBlock(gr,g_sp1,mr.makeDelay(delayTR));  
-        seq.addBlock(mr.rotate('x',delta*(i-1),gr,g_sp2,mr.makeDelay(delayTR)));  
+        seq.addBlock(mr.rotate('x',delta*(i-1),gr));  
     end
+    seq.addBlock(mr.makeDelay(delayTR));  
 end
 
 seq.plot();%('showBlocks',1);
