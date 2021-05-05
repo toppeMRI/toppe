@@ -35,7 +35,7 @@ seq05_RadialSE_nodelay;
 pulsegeq.seq2ge(get_cur_seqfile);
 update_modules(1,7) 
 if sc, toppe.utils.coppe('target','outside'); end
-toppe.playseq(4,'drawpause',false);
+toppe.playseq(5,'drawpause',false);
 
 
 %%  --------------------    data conversion   -----------------------  %%
