@@ -22,16 +22,16 @@ delta=pi / Nr;                % angular increment; try golden angle pi*(3-5^0.5)
 % area from the first spoiler
 [rf_ex, gs, gsr] = mr.makeSincPulse(pi/2,system,'Duration',3e-3,...
     'SliceThickness',sliceThickness,'apodization',0.4,'timeBwProduct',4);
-gs.channel='x'; % change it to X because we want sagittal orientation
+gs.channel='z'; % change it to X because we want sagittal orientation
 
 % Create non-selective refocusing pulse
 rf_ref = mr.makeBlockPulse(pi,'Duration',rfDur2, 'system', system, 'use', 'refocusing'); % needed for the proper k-space calculation
     
 % calculate spoiler gradient
-g_sp1=mr.makeTrapezoid('x','Area',spA+gsr.area,'system',system);
+g_sp1=mr.makeTrapezoid('z','Area',spA+gsr.area,'system',system);
 rf_ref.delay=max(mr.calcDuration(g_sp1),rf_ref.delay);
 
-g_sp2=mr.makeTrapezoid('x','Area',spA,'system',system);
+g_sp2=mr.makeTrapezoid('z','Area',spA,'system',system);
 
 % Define delays and ADC events
 delayTE1=TE/2-(mr.calcDuration(gs)-mr.calcRfCenter(rf_ex)-rf_ex.delay)-rf_ref.delay-mr.calcRfCenter(rf_ref);
@@ -39,12 +39,12 @@ delayTE2=TE/2-mr.calcDuration(rf_ref)+rf_ref.delay+mr.calcRfCenter(rf_ref)-adcDu
 assert(delayTE2>mr.calcDuration(g_sp1));
 
 deltak=1/fov;
-gr = mr.makeTrapezoid('y',system,'FlatArea',Nx*deltak,'FlatTime',adcDur);
+gr = mr.makeTrapezoid('x',system,'FlatArea',Nx*deltak,'FlatTime',adcDur);
 adc = mr.makeAdc(Nx,system,'Duration',adcDur,'delay',gr.riseTime); %,'delay',delayTE2);
 gr.delay = 0; %delayTE2-gr.riseTime;
 
 grPredur = 5e-3; 
-grPre = mr.makeTrapezoid('y',system,'Area',gr.area/2+deltak/2,'Duration',grPredur); %delayTE1);
+grPre = mr.makeTrapezoid('x',system,'Area',gr.area/2+deltak/2,'Duration',grPredur); %delayTE1);
 
 delayTR=TR-mr.calcDuration(rf_ex)-delayTE1-mr.calcDuration(rf_ref);
 
@@ -56,14 +56,14 @@ assert(delayTR>=0);
 for i=(1-Ndummy):Nr
     seq.addBlock(rf_ex,gs);
     %seq.addBlock(grPre); 
-    seq.addBlock(mr.rotate('x',delta*(i-1),grPre)); 
+    seq.addBlock(mr.rotate('z',delta*(i-1),grPre)); 
     seq.addBlock(mr.makeDelay(delayTE1-grPredur));  
     seq.addBlock(rf_ref,g_sp1);
     seq.addBlock(g_sp2, mr.makeDelay(delayTE2));
     if (i>0)
-        seq.addBlock(mr.rotate('x',delta*(i-1),adc,gr));  
+        seq.addBlock(mr.rotate('z',delta*(i-1),adc,gr));  
     else
-        seq.addBlock(mr.rotate('x',delta*(i-1),gr));  
+        seq.addBlock(mr.rotate('z',delta*(i-1),gr));  
     end
     seq.addBlock(mr.makeDelay(delayTR));  
 end
