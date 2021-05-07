@@ -83,7 +83,7 @@ end
 seq.setDefinition('FOV', [sliceThickness*16 fov fov]);
 seq.setDefinition('Name', 'se_rad');
 
-seq.write('se_radial.seq')       % Write to pulseq file
+seq.write('se_cartesian.seq')       % Write to pulseq file
 %seq.install('siemens');    % copy to scanner
 
 % calculate k-space but only use it to check timing
