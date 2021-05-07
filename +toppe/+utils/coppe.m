@@ -28,17 +28,22 @@ try
             [~,~] = system('ssh -q fmrilab@romero "~/amos/pushtoppefiles"'); fprintf('done!\n');
             
         case 'outside'
-            fprintf('Copying to toro...');
-            [~,~] = system('scp toppe-scanfiles.tgz fmrilab@toro:~/tmp_amos/'); fprintf('done!\n');
-            fprintf('Copying to scanner...');
-            [~,~] = system('ssh -q fmrilab@toro "~/tmp_amos/pushtoppefiles"'); fprintf('done!\n');
+            % switch to this version if we can debug firewall stuff (MWH note 4/12/21)
+              fprintf('Copying to toro...');
+              [~,~] = system('scp toppe-scanfiles.tgz fmrilab@toro:~/toppe_utils/'); fprintf('done!\n');
+              fprintf('Copying to scanner...');
+              [~,~] = system('ssh -q fmrilab@toro "~/toppe_utils/pushtoppefiles"'); fprintf('done!\n');
+            
+            % temp verion that requires the password to be entered
+%             system('scp toppe-scanfiles.tgz fmrilab@toro:~/toppe_utils/');
+%             system('ssh -q fmrilab@toro "~/toppe_utils/pushtoppefiles"');
         otherwise
             fprintf('Invalid target, valid targets are ''inside'' or ''outside''.\n');
     end
     disp('Files sucessfully copied. Finding # of slices...');
     scanloop_struc = importdata('scanloop.txt');
-	scanloop_struc_data = scanloop_struc.data;
-	max_sli = scanloop_struc_data(2);
+    scanloop_struc_data = scanloop_struc.data;
+    max_sli = scanloop_struc_data(2);
     fprintf('Set # of slices on scanner to %d.\n',max_sli+1);
     disp('Ready to scan.');
 catch
