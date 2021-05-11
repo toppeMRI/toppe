@@ -96,10 +96,11 @@ end
 
 % If requested, set GE/EPIC-related time gaps to zero
 if ~sys.addDelays
-	sys.toppe.start_core = 0;
+	sys.toppe.start_core_rf = 0;
+	sys.toppe.start_core_daq = 0;
+	sys.toppe.start_core_grad = 0;
 	sys.toppe.myrfdel    = 0;
 	sys.toppe.daqdel     = 0;
-	sys.toppe.start_core = 0;
 	sys.toppe.timetrwait = 0;
 	sys.toppe.timessi    = 0;
 end
