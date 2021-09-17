@@ -100,8 +100,8 @@ end
 %% Force all waveform arrays to have the same dimensions (required by toppev2.e)
 ndat    = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
 npulses = max( [size(rf,2) size(gx,2) size(gy,2) size(gz,2)] );
-if isempty(ndat)
-	error('At least one waveform must be specified');
+if ndat == 0
+	error('At least one waveform must be non-empty');
 end
 if ndat > 2^15
 	error(sprintf('Max waveform length is 32768 (samples) -- found %d samples', ndat));
