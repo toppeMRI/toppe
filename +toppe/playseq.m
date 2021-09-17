@@ -12,6 +12,8 @@ function playseq(nModPerTR,varargin)
 %    system 			System struct. Default calls systemspecs.m.
 %    tpause             Delay before displaying next TR (sec) (Default: 0.01)
 %    drawpause          Display pauses (zeros at end of plot) (Default: 1)
+%    gmax               Gauss/cm
+%    rhomax             Gauss
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
@@ -49,6 +51,8 @@ arg.moduleListFile  = 'modules.txt';
 arg.system          = toppe.systemspecs();
 arg.tpause          = 0.01; 
 arg.drawpause       = 1;
+arg.gmax            = 5;     % Gauss/cm
+arg.rhomax          = 0.25;  % Gauss
 
 % Substitute varargin values as appropriate
 arg = toppe.utils.vararg_pair(arg, varargin);
@@ -62,7 +66,9 @@ modules = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
 
 % display
 for ii = 1 : ((1+arg.nTRskip)*nModPerTR) : size(loopArr,1)
-	toppe.plotseq(ii, ii+nModPerTR-1, 'loopArr', loopArr, 'mods', modules, 'system', arg.system, 'drawpause', arg.drawpause);
+	toppe.plotseq(ii, ii+nModPerTR-1, 'loopArr', loopArr, 'mods', modules, ...
+		'system', arg.system, 'drawpause', arg.drawpause, ...
+		'gmax', arg.gmax, 'rhomax', arg.rhomax );
 	subplot(511); title(num2str(ii));
 	drawnow; pause(arg.tpause);     % Force display update and pause
 end
