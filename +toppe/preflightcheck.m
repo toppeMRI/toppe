@@ -27,7 +27,7 @@ fclose(fid);
 % get modules
 modArr = toppe.readmodulelistfile(moduleListFile);
 
-% Make sure that:
+% Check that:
 %  - all .mod files use the same peak RF and gradient limits (e.g., 0.25 Gauss and 5 G/cm),
 %  - .mod files used to acquire data have the same number of gradient samples as readoutFilterFile.
 [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = toppe.readmod(b1CheckFile);
@@ -38,7 +38,7 @@ ndaq = hdr.res;   % number of 4us samples to acquire
 for ii = 1:length(modArr)
 	[rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = toppe.readmod(modArr{ii}.fname);
 	if modArr{ii}.hasDAQ & hdr.res ~= ndaq
-		error(sprintf('Samples in %s and %s do not match', readoutFilterFile, modArr{ii}.fname));
+		error(sprintf('Number of samples in %s and %s do not match', readoutFilterFile, modArr{ii}.fname));
 	end
 	if hdr.b1max ~= b1limit | hdr.gmax ~= glimit
 		error(sprintf('B1 and/or grad limit in %s does not match %s', modArr{ii}.fname, metaFile));
