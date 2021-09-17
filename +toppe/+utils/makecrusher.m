@@ -11,6 +11,7 @@ function gcrush = makecrusher(ncycles,opslthick,gzarea,mxs,mxg)
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 % University of Michigan 2019
 
+import toppe.*
 import toppe.utils.*
 
 if ~exist('gzarea','var')
