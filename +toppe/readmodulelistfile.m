@@ -14,8 +14,6 @@ function modArr = readmodulelistfile(modulesListFile)
 %                   s.hasDAQ
 %                   s.rf/gx/gy/gz/desc/ as returned by readmod.m
 %
-% $Id: readmodulelistfile.m,v 1.2 2018/10/24 10:44:50 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/readmodulelistfile.m,v $
 
 if ~exist('modulesListFile', 'var')
 	modulesListFile = 'modules.txt';
