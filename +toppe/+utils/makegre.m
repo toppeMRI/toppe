@@ -82,7 +82,7 @@ if arg.ncycles > 0
 else
 	gx = [ramp gxro fliplr(ramp)];
 	area = sum(gx)*dt*1e-3;
-	gbal = -trapwave2(area/2, mxg, mxs/sqrt(3), dt);   
+	gbal = -trapwave2(area/2, mxg, arg.slewDerate*mxs/sqrt(3), dt);   
 	gx = [gxprew ramp gxro fliplr(ramp) gbal];
 end
 
