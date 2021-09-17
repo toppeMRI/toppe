@@ -70,8 +70,22 @@ else
 end
 
 %% Call plotseq with 'doTimeOnly' argument to get the length of rho quickly
+% Do it in groups of rows (in scanloop.txt) to reduce memory requirements
 dt = 4e-6;    % duration of one gradient/rf sample (sec)
-rho = toppe.plotseq(1, size(loopArr,1), 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true, 'system', arg.system);
-dur = size(rho,1)*dt;
+dur = 0;
+nl = size(loopArr,1);   % number of rows in scanloop.txt (startseq() calls)
+nlPerGroup = 1e3;
+if nl > 2*nlPerGroup
+	for ii = 1:nlPerGroup:(nl-nlPerGroup)   %size(loopArr,1)
+		rho = toppe.plotseq(ii, ii+nlPerGroup-1, 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true, 'system', arg.system);
+		dur = dur + size(rho,1)*dt;
+	end
+	nlLeft = max(0, nl - (ii+nlPerGroup-1));
+	rho = toppe.plotseq(ii+1, ii+nlLeft-1, 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true, 'system', arg.system);
+	dur = dur + size(rho,1)*dt;
+else
+	rho = toppe.plotseq(1, size(loopArr,1), 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true, 'system', arg.system);
+	dur = dur + size(rho,1)*dt;
+end
 %dur = round(dur);
 %fprintf('Total scan time: %dm %ds\n', floor(dur/60), dur - 60*floor(dur/60) );
