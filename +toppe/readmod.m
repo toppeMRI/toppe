@@ -1,4 +1,4 @@
-function [rf,gx,gy,gz,desc,paramsint16,paramsfloat] = readmod(fname,showinfo)
+function [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = readmod(fname,showinfo)
 % Read waveforms, ASCII description, and header arrays from TOPPE .mod file.
 %
 % function [rf,gx,gy,gz,desc,paramsint16,paramsfloat] = readmod(fname,showinfo)
@@ -38,11 +38,11 @@ desc      = fread(fid, asciisize, 'uchar');
 desc = char(desc');
 
 % read rest of header
-ncoils = fread(fid, 1, 'int16');
-res    = fread(fid, 1, 'int16');
-npulses = fread(fid, 1, 'int16');
-b1max  = fscanf(fid, 'b1max:  %f\n');
-gmax   = fscanf(fid, 'gmax:   %f\n');
+hdr.ncoils = fread(fid, 1, 'int16');
+hdr.res    = fread(fid, 1, 'int16');
+hdr.npulses = fread(fid, 1, 'int16');
+hdr.b1max  = fscanf(fid, 'b1max:  %f\n');
+hdr.gmax   = fscanf(fid, 'gmax:   %f\n');
 
 nparamsint16 = fread(fid, 1,            'int16');
 paramsint16  = fread(fid, nparamsint16, 'int16');
@@ -54,45 +54,45 @@ end
 
 if showinfo
 	fprintf(1, '\n%s', desc);
-	fprintf(1, 'number of coils/channels:  %d\n', ncoils);
-	fprintf(1, 'number points in waveform: %d\n', res);
-	fprintf(1, 'number of waveforms:          %d\n', npulses);
+	fprintf(1, 'number of coils/channels:  %d\n', hdr.ncoils);
+	fprintf(1, 'number points in waveform: %d\n', hdr.res);
+	fprintf(1, 'number of waveforms:          %d\n', hdr.npulses);
 	fprintf(1, 'data offset (bytes):       %d\n', ftell(fid));
 	fprintf(1, '\n');
 end
 
 % read waveforms
-rho = zeros(res,npulses,ncoils);
+rho = zeros(hdr.res,hdr.npulses,hdr.ncoils);
 theta = rho;
-gx = zeros(res,npulses);
-gy = zeros(res,npulses);
-gz = zeros(res,npulses);
-for ip = 1:npulses
-	for ic = 1:ncoils
-		rho(:,ip,ic) = fread(fid, res, 'int16');
+gx = zeros(hdr.res,hdr.npulses);
+gy = zeros(hdr.res,hdr.npulses);
+gz = zeros(hdr.res,hdr.npulses);
+for ip = 1:hdr.npulses
+	for ic = 1:hdr.ncoils
+		rho(:,ip,ic) = fread(fid, hdr.res, 'int16');
 	end
-	for ic = 1:ncoils
-		theta(:,ip,ic) = fread(fid, res, 'int16');
+	for ic = 1:hdr.ncoils
+		theta(:,ip,ic) = fread(fid, hdr.res, 'int16');
 	end
-	gx(:,ip) = fread(fid, res, 'int16');
-	gy(:,ip) = fread(fid, res, 'int16');
-	gz(:,ip) = fread(fid, res, 'int16');
+	gx(:,ip) = fread(fid, hdr.res, 'int16');
+	gy(:,ip) = fread(fid, hdr.res, 'int16');
+	gz(:,ip) = fread(fid, hdr.res, 'int16');
 end
 
 % convert back to physical units
 max_pg_iamp = 2^15-2;                           % max instruction amplitude (max value of signed short)
-rho   = rho*b1max/max_pg_iamp;     % Gauss
+rho   = rho*hdr.b1max/max_pg_iamp;     % Gauss
 theta = theta*pi/max_pg_iamp;      % radians
-gx    = gx*gmax/max_pg_iamp;       % Gauss/cm
-gy    = gy*gmax/max_pg_iamp;
-gz    = gz*gmax/max_pg_iamp;
+gx    = gx*hdr.gmax/max_pg_iamp;       % Gauss/cm
+gy    = gy*hdr.gmax/max_pg_iamp;
+gz    = gz*hdr.gmax/max_pg_iamp;
 
 % reshape output
-rho   = reshape(rho,   res, npulses, ncoils);
-theta = reshape(theta, res, npulses, ncoils);
-gx    = reshape(gx,    res, npulses);
-gy    = reshape(gy,    res, npulses);
-gz    = reshape(gz,    res, npulses);
+rho   = reshape(rho,   hdr.res, hdr.npulses, hdr.ncoils);
+theta = reshape(theta, hdr.res, hdr.npulses, hdr.ncoils);
+gx    = reshape(gx,    hdr.res, hdr.npulses);
+gy    = reshape(gy,    hdr.res, hdr.npulses);
+gz    = reshape(gz,    hdr.res, hdr.npulses);
 paramsint16 = paramsint16(3:end)';             % NB! Return only the user-defined ints passed to writemod.m
 paramsfloat = paramsfloat';
 
