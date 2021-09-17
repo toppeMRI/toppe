@@ -20,6 +20,8 @@ function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, v
 %
 %   system             struct specifying hardware system info, see systemspecs.m
 %   drawpause          (boolean) include pauses (textra) or not
+%   gmax               Gauss/cm
+%   rhomax             Gauss
 %
 % Outputs:
 %   rf               Complex RF waveform (Gauss)
@@ -38,6 +40,8 @@ arg.doDisplay       = true;
 arg.doTimeOnly      = false;
 arg.system          = toppe.systemspecs();  % Accept default timing (includes EPIC-related time gaps)
 arg.drawpause       = 1;
+arg.gmax            = 5;     % Gauss/cm
+arg.rhomax          = 0.25;  % Gauss
 arg = toppe.utils.vararg_pair(arg, varargin);
 
 %% read scan files as needed
@@ -111,20 +115,28 @@ for it = nstart:nstop
         nsamples = nsamples + gxlength + round(tdelay/dt);
     else % Calculate RF and gradients as normal
         % get gradients and apply in-plane (xy) rotation
-        gxit = cores{ic}.gx(:,waveform);
-        gyit = cores{ic}.gy(:,waveform);
-        gzit = cores{ic}.gz(:,waveform);
-        iphi = loopArr(it,11);
-        phi = iphi/max_pg_iamp*pi;    % rad, [-pi pi]
-        Gxy = [cos(phi) -sin(phi); sin(phi) cos(phi)]*[gxit(:)'; gyit(:)'];
-        gxit = Gxy(1,:)';
-        gyit = Gxy(2,:)';
+        gxit = ia_gx/max_pg_iamp*cores{ic}.gx(:,waveform);
+        gyit = ia_gy/max_pg_iamp*cores{ic}.gy(:,waveform);
+        gzit = ia_gz/max_pg_iamp*cores{ic}.gz(:,waveform);
+
+        % apply 3d rotation matrix
+        Rv = loopArr(it,17:25)/max_pg_iamp;  % stored in row-major order
+        R = reshape(Rv, 3, 3);
+        %iphi = loopArr(it,11);
+        %phi = iphi/max_pg_iamp*pi;    % rad, [-pi pi]
+        %Gxy = [cos(phi) -sin(phi); sin(phi) cos(phi)]*[gxit(:)'; gyit(:)'];
+        %gxit = Gxy(1,:)';
+        %gyit = Gxy(2,:)';
+        G = R * [gxit(:)'; gyit(:)'; gzit(:)'];
+        gxit = G(1,:)';
+        gyit = G(2,:)';
+        gzit = G(3,:)';
         
         rho1 = [zeros(round((start_core+coredel)/dt),1); ia_rf/max_pg_iamp*  abs(cores{ic}.rf(:,waveform));  zeros(round((timetrwait+timessi)/dt),1)];
         th1  = [zeros(round((start_core+coredel)/dt),1); ia_th/max_pg_iamp*angle(cores{ic}.rf(:,waveform));  zeros(round((timetrwait+timessi)/dt),1)];
-        gx1  = [zeros(round((start_core)/dt),1);         ia_gx/max_pg_iamp*gxit(:); zeros(round((timetrwait+timessi+coredel)/dt),1)];
-        gy1  = [zeros(round((start_core)/dt),1);         ia_gy/max_pg_iamp*gyit(:); zeros(round((timetrwait+timessi+coredel)/dt),1)];
-        gz1  = [zeros(round((start_core)/dt),1);         ia_gz/max_pg_iamp*gzit(:); zeros(round((timetrwait+timessi+coredel)/dt),1)];
+        gx1  = [zeros(round((start_core)/dt),1);         gxit(:); zeros(round((timetrwait+timessi+coredel)/dt),1)];
+        gy1  = [zeros(round((start_core)/dt),1);         gyit(:); zeros(round((timetrwait+timessi+coredel)/dt),1)];
+        gz1  = [zeros(round((start_core)/dt),1);         gzit(:); zeros(round((timetrwait+timessi+coredel)/dt),1)];
         
         % apply RF phase offset
         if cores{ic}.hasRF
@@ -157,8 +169,8 @@ if arg.doDisplay
         Tend = 1.01*T(end);
     end
     
-    gmax = 5;  % Gauss/cm
-    srho = max(1.1*max(abs(rho(:))),0.05);
+    gmax = arg.gmax; %5;  % Gauss/cm
+    srho = arg.rhomax; %max(1.1*max(abs(rho(:))),0.05);
     lw = 1.5;
     subplot(511); plot(T, rho, 'LineWidth', lw); ylabel('rho (Gauss)'); axis([T(1) Tend -srho srho]);
     subplot(512); plot(T, th, 'LineWidth', lw);  ylabel('theta (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
