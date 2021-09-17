@@ -96,7 +96,7 @@ arg.view            = 1;
 arg.dabmode         = 'on';
 arg.rot             = 0;
 arg.rotmat          = eye(3);
-arg.version         = 2;
+arg.version         = 3;
 arg.system          = toppe.systemspecs();
 arg = toppe.utils.vararg_pair(arg, varargin);
 checkInputs(arg);
@@ -233,9 +233,13 @@ if toppeVer > 2
 	end
 	rt = rotmat';
 	drot = round(max_pg_iamp*rt(:)');   % vectorized, in row-major order
+    phi = 0; % in-plane rotation
 else
 	drot = [];
+    phi = angle(exp(1i*arg.rot));     % inplane rotation. wrap to [-pi pi]
 end;
+
+iphi = 2*round(phi/pi*max_pg_iamp/2);
 
 if module.hasRF % Write RF module
     % Do RF amplitude stuff
@@ -252,13 +256,10 @@ if module.hasRF % Write RF module
         idaqphase = phase2int(arg.DAQphase);
     end
     
-    % Update slice/echo/view
+    % Dummy slice/echo/view
     dabslice = 0;
     dabecho = 0;
     dabview = 1;
-    
-    % rotation
-    phi = arg.rot;
     
     % Frequency offset in Hz
     if arg.RFoffset ~= round(arg.RFoffset)
@@ -268,7 +269,7 @@ if module.hasRF % Write RF module
     f = arg.RFoffset;
  
     % Write line values and increment
-    d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 phi irfphase irfphase textra_us f arg.waveform drot];
+    d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot];
     d_index = d_index + 1;
 elseif module.hasDAQ % Write DAQ module
     % Set slice/echo/view
@@ -282,17 +283,13 @@ elseif module.hasDAQ % Write DAQ module
     dabecho = arg.echo-1; % Index echo from 0 to n-1
     dabview = arg.view;
     
-	 % receive phase
+    % receive phase
     if arg.RFspoil % If spoil is called, replace RF phase with spoil phase
        idaqphase = irfphase;
     else
        idaqphase = phase2int(arg.DAQphase);
     end
 
-    % rotation
-    phi = angle(exp(1i*arg.rot));     % wrap to [-pi pi]
-    iphi = 2*round(phi/pi*max_pg_iamp/2);
-    
     d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot];
     d_index = d_index + 1;
 else
@@ -300,8 +297,6 @@ else
     %error(['Module didn''t have RF or DAQ specified, check ' arg.moduleListFile]);
 
     % rotation
-    phi = angle(exp(1i*arg.rot));     % wrap to [-pi pi]
-    iphi = 2*round(phi/pi*max_pg_iamp/2);
 
     d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot];
     d_index = d_index + 1;
