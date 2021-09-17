@@ -22,9 +22,6 @@ function d = readloop(loopfile)
 % 
 % (c) 2016 The Regents of the University of Michigan
 % Jon-Fredrik Nielsen, jfnielse@umich.edu
-%
-% $Id: readloop.m,v 1.2 2018/10/24 11:05:10 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/readloop.m,v $
 
 if ~exist('loopfile', 'var')
 	loopfile = 'scanloop.txt';
