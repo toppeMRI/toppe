@@ -283,6 +283,9 @@ paramsfloat  = [paramsfloat zeros(1, nparamsfloat-numel(paramsfloat))];
 
 fid = fopen(fname, 'w', 'ieee-be');
 
+% peak gradient amplitude across all pulses
+gmax = max(1.0, max(abs([gx(:); gy(:); gz(:)])));  % to avoid division by zero 
+
 % write header
 globaldesc = sprintf('RF waveform file for ssfpbanding project.\n');  
 globaldesc = sprintf('%sCreated by %s.m on %s.\n', globaldesc, mfilename('fullpath'), datestr(now));  
@@ -299,7 +302,7 @@ fwrite(fid, ncoils,  'int16');          % shorts must be written in binary -- ot
 fwrite(fid, res,     'int16');
 fwrite(fid, npulses, 'int16');
 fprintf(fid, 'b1max:  %f\n', system.maxRf);           % (floats are OK in ASCII on scanner)
-fprintf(fid, 'gmax:   %f\n', system.maxGrad);
+fprintf(fid, 'gmax:   %f\n', gmax);
 
 fwrite(fid, nparamsint16, 'int16');
 fwrite(fid, paramsint16,  'int16');
@@ -312,9 +315,9 @@ end
 max_pg_iamp = 2^15-2;                                   % RF amp is flipped if setting to 2^15 (as observed on scope), so subtract 2
 rho   = 2*round(rho/system.maxRf*max_pg_iamp/2);
 theta = 2*round(theta/pi*max_pg_iamp/2);
-gx    = 2*round(gx/system.maxGrad*max_pg_iamp/2);
-gy    = 2*round(gy/system.maxGrad*max_pg_iamp/2);
-gz    = 2*round(gz/system.maxGrad*max_pg_iamp/2);
+gx    = 2*round(gx/gmax*max_pg_iamp/2);
+gy    = 2*round(gy/gmax*max_pg_iamp/2);
+gz    = 2*round(gz/gmax*max_pg_iamp/2);
 
 for ip = 1:npulses
 	for ic = 1:ncoils
