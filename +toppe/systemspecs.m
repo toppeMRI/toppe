@@ -7,10 +7,9 @@ function sys = systemspecs(varargin)
 % See also struct2cellarg.m.
 %
 % Input options:
-%   maxGrad         Max gradient amplitude. MUST match the physical gradient system limit on your scanner, 
-%                   since gradient waveforms are scaled to this value. Default: 5 Gauss/cm
+%   maxGrad         Max gradient amplitude. Can be less than the physical limit for your scanner. 
 %   gradUnit        Gauss/cm (default) or mT/m 
-%   maxSlew         Default: 20 Gauss/cm/ms. Can be less than the physical slew limit in your scanner.
+%   maxSlew         Default: 20 Gauss/cm/ms. Can be less than the physical slew limit for your scanner.
 %   slewUnit        Gauss/cm/ms (default) or T/m/s
 %   maxRf           Default: 0.25 Gauss. Must be less than or equal to the maximum achievable RF
 %                   amplitude for the transmit coil you're using.
@@ -77,22 +76,8 @@ sys.toppe.nMaxWaveforms = 200;     % Not known at the moment.
 % values on scanner from /w/config/Scandbdt.cfg + GRSubsystemHWO.xml
 sys.gradient = 'xrm';
 
-% Substitute specified system values as appropriate
+%% Substitute specified system values as appropriate
 sys = toppe.utils.vararg_pair(sys, varargin);
-
-% Warn user if setting maxGrad or maxRf; this can lead to wrong gradient/b1 amplitudes on scanner.
-if strcmp(sys.gradUnit, 'Gauss/cm')
-	if sys.maxGrad ~= maxGradDefault
-		warning(sprintf('Are you sure the gradients on your scanner are scaled to peak value %.1f G/cm?', sys.maxGrad));
-	end
-else
-	if sys.maxGrad ~= 10*maxGradDefault
-		warning(sprintf('Are you sure the gradients on your scanner are scaled to peak value %.1f mT/m?', sys.maxGrad));
-	end
-end
-if sys.maxRf ~= maxRfDefault
-	warning(sprintf('Are you sure you want to change maxRf? B1 scaling may be impacted. Recall that peak b1 is determined by maxRf value in tipdown.mod.'));
-end
 
 % If requested, set GE/EPIC-related time gaps to zero
 if ~sys.addDelays
