@@ -22,8 +22,9 @@ function writemod(varargin)
 %   desc          Text string (ASCII) descriptor.
 %   nomflip       Excitation flip angle (degrees). Stored in .mod float header, but has no influence on b1 scaling. Default: 90.
 %   hdrfloats     Additional floats to put in header (max 12)
-%   hdrints       Additional ints to put in header (max 30)
+%   hdrints       Additional ints to put in header (max 29)
 %   system        struct specifying hardware system info, see systemspecs.m
+%   nChop         trim (chop) the end of the RF waveform (or ADC window) by this many samples. Even int.
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
@@ -42,6 +43,9 @@ function writemod(varargin)
 import toppe.*
 import toppe.utils.*
 
+nReservedInts = 3;
+maxHdrInts = 32 - nReservedInts;
+
 %% parse inputs
 % Defaults
 arg.rf = [];
@@ -56,6 +60,7 @@ arg.nomflip   = 90;
 arg.hdrfloats = [];
 arg.hdrints   = [];
 arg.system    = [];
+arg.nChop = 0;  
 
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
@@ -142,7 +147,7 @@ end
 % Fixes to avoid idiosyncratic issues on scanner
 %[rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp);
 
-%% Optional header arrays
+%% Header arrays
 [paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, system);
 if ~isempty(arg.hdrfloats)
 	if length(arg.hdrfloats) > 12
@@ -150,12 +155,12 @@ if ~isempty(arg.hdrfloats)
 	end
 	paramsfloat(20:(19+length(arg.hdrfloats))) = arg.hdrfloats;  % populate header with custom floats 
 end
-paramsint16 = [0 size(rf,1)];
+paramsint16 = [0 size(rf,1) arg.nChop]; % the first three ints are used by interpreter
 if ~isempty(arg.hdrints)
-	if length(arg.hdrints) > 30
-		error('max number of ints in .mod file header is 30');
+	if length(arg.hdrints) > maxHdrInts
+		error(sprintf('max number of custom ints in .mod file header is %d', maxHdrInts));
 	end
-	paramsint16(3:(2+length(arg.hdrints))) = arg.hdrints;  % populate header with custom ints
+	paramsint16((nReservedInts+1):(nReservedInts+length(arg.hdrints))) = arg.hdrints;  % add custom ints
 end
 
 %% Write to .mod file

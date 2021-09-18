@@ -93,7 +93,7 @@ theta = reshape(theta, hdr.res, hdr.npulses, hdr.ncoils);
 gx    = reshape(gx,    hdr.res, hdr.npulses);
 gy    = reshape(gy,    hdr.res, hdr.npulses);
 gz    = reshape(gz,    hdr.res, hdr.npulses);
-paramsint16 = paramsint16(3:end)';             % NB! Return only the user-defined ints passed to writemod.m
+paramsint16 = paramsint16(4:end)';    % NB! Return only the user-defined ints passed to writemod.m
 paramsfloat = paramsfloat';
 
 rf = rho.*exp(1i*theta);
