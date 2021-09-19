@@ -1,7 +1,7 @@
 function [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = readmod(fname,showinfo)
 % Read waveforms, ASCII description, and header arrays from TOPPE .mod file.
 %
-% function [rf,gx,gy,gz,desc,paramsint16,paramsfloat] = readmod(fname,showinfo)
+% function [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = readmod(fname,showinfo)
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
