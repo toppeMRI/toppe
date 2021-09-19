@@ -65,18 +65,17 @@ arg.nChop = 0;
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
 
+if isempty(arg.system)
+    error('Missing system argument');
+end
+
+system = arg.system;
+
+
 %% Detect all-zero RF waveform, treat as empty, and give warning to user
 if ~isempty(arg.rf) & norm(abs(arg.rf(:,1))) == 0
 	arg.rf = [];
 	warning('(First) RF waveform contains all zeros -- ignored');
-end
-
-%% Warn if system struct not provided
-if isempty(arg.system)
-	warning('Using default system limits -- are you sure this is what you want?');
-	system = toppe.systemspecs();
-else
-	system = arg.system;
 end
 
 %% Copy input waveform to rf, gx, gy, and gz (so we don't have to carry the arg. prefix around)
