@@ -8,7 +8,7 @@ function [isValid, gmax, slewmax] = checkwaveforms(varargin)
 %
 % Options 
 %  rf           rf waveform
-%  gx/gy/gz     gradient waveform
+%  gx/gy/gz     [nt npulses]. Gradient waveforms. Can be different size.
 %  rfUnit       Gauss (default) or mT
 %  gradUnit     Gauss/cm (default) or mT/m
 %
@@ -19,6 +19,8 @@ function [isValid, gmax, slewmax] = checkwaveforms(varargin)
 
 import toppe.*
 import toppe.utils.*
+
+isValid = true;
 
 %% parse inputs
 
@@ -47,6 +49,16 @@ for ii = 1:length(fields)
 	eval(cmd);
 end
 
+%% Is (max) waveform duration on a 4 sample (16us) boundary?
+ndat = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
+if mod(ndat, 4)
+	fprintf('Error: waveform duration must be on a 4 sample (16 us) boundary.');
+	isValid = false;
+end
+
+%% Zero-pad at end to equal size
+[rf, gx, gy, gz] = padwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz);
+
 %% Convert input waveforms and system limits to Gauss and Gauss/cm
 if strcmp(arg.rfUnit, 'mT')
 	rf = rf/100;   % Gauss
@@ -68,22 +80,16 @@ if strcmp(system.slewUnit, 'T/m/s')
 end
 
 %% Check against system hardware limits
-isValid = true;
 
-grads = 'xyz';
+axes = 'xyz';
 
 % gradient amplitude and slew
 for ii = 1:3
-	eval(sprintf('g = g%s;', grads(ii))); 
-    if isempty(g)
-        gmax(ii) = 0;
-        slewmax(ii) = 0;
-        continue; 
-    end
+	eval(sprintf('g = g%s;', axes(ii))); 
 
     gmax(ii) = max(abs(g(:)));
     if gmax(ii) > system.maxGrad
-        fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', grads(ii), gmax(ii)/system.maxGrad*100);
+        fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', axes(ii), gmax(ii)/system.maxGrad*100);
         isValid = false;
     end
 
@@ -92,7 +98,7 @@ for ii = 1:3
 	    slewmax(ii) = max(slewmax(ii), max(abs(diff(g(:,jj)/(system.raster*1e3)))));
     end
     if slewmax(ii) > system.maxSlew
-        fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', grads(ii), slewmax(ii)/system.maxSlew*100);
+        fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', axes(ii), slewmax(ii)/system.maxSlew*100);
         isValid = false;
     end
 end
@@ -105,44 +111,24 @@ if maxRf > system.maxRf
 end
 
 %% Check PNS. Warnings if >80% of threshold.
-for ii = 1:3
-	eval(sprintf('g = g%s;', grads(ii))); 
-    if isempty(g)
-        continue; 
-    end
-    nwavs = size(g,2);
-    for jj = 1:size(g,2)   % loop through all waveforms (pulses)
-        clear gtm;
-        gtm(1,:) = g(:,jj)'*1d-2;    % T/m
-        gtm(2,:) = g(:,jj)'*1d-2;
-        gtm(3,:) = g(:,jj)'*1d-2;
-        [pThresh] = toppe.pns(gtm, system.gradient, 'gdt', system.raster, 'plt', false, 'print', false);
-        if max(pThresh) > 80
-            if max(pThresh) > 100
-                warning(sprintf('Slew (%d%%) exceeds first controlled mode (100%%)!!! (g%s, waveform %d)', ...
-                    round(max(pThresh)), grads(ii), jj));
-            else
-                warning(sprintf('Slew (%d%%) exceeds normal mode (80%%)! (g%s, waveform %d)', ...
-                    round(max(pThresh)), grads(ii), jj));
-            end
+for jj = 1:size(gx,2)   % loop through all waveforms (pulses)
+    clear gtm;
+    gtm(1,:) = gx(:,jj)'*1d-2;    % T/m
+    gtm(2,:) = gy(:,jj)'*1d-2;
+    gtm(3,:) = gz(:,jj)'*1d-2;
+    [pThresh] = toppe.pns(gtm, system.gradient, 'gdt', system.raster, 'plt', false, 'print', false);
+    if max(pThresh) > 80
+        if max(pThresh) > 100
+            warning(sprintf('Slew (%d%%) exceeds first controlled mode (100%%)!!! (g%s, waveform %d)', ...
+                round(max(pThresh)), axes(ii), jj));
+        else
+            warning(sprintf('Slew (%d%%) exceeds normal mode (80%%)! (g%s, waveform %d)', ...
+                round(max(pThresh)), axes(ii), jj));
         end
-	end
-end
-
-%% Is (max) waveform duration on a 4 sample (16us) boundary?
-ndat = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
-if mod(ndat, 4)
-	fprintf('Error: waveform duration must be on a 4 sample (16 us) boundary.');
-	isValid = false;
+    end
 end
 
 %% do all waveforms start and end at zero?
-for ii = 1:3
-	eval(sprintf('if isempty(g%s); g%s = 0; end', grads(ii), grads(ii)));
-end
-if isempty(rf)
-	rf = 0;
-end
 if any([gx(1,:) gx(end,:) gy(1,:) gy(end,:) gz(1,:) gz(end,:) rf(1,:) rf(end,:)] ~= 0)
 	fprintf('Error: all waveforms must begin and end with zero\n')
 	isValid = false;
