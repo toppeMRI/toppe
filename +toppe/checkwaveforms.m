@@ -112,6 +112,31 @@ if maxRf > system.maxRf
 	isValid = false;
 end
 
+%% Check PNS. Warnings if >80% of threshold.
+for ii = 1:3
+	eval(sprintf('g = g%s;', grads(ii))); 
+    if isempty(g)
+        continue; 
+    end
+    nwavs = size(g,2);
+    for jj = 1:nwavs
+        clear gtm;
+        gtm(1,:) = g(:,jj)'*1d-2;    % T/m
+        gtm(2,:) = g(:,jj)'*1d-2;
+        gtm(3,:) = g(:,jj)'*1d-2;
+        [pThresh] = toppe.pns(gtm, system.gradient, 'gdt', system.raster, 'plt', false, 'print', false);
+        if max(pThresh) > 80
+            if max(pThresh) > 100
+                warning(sprintf('Slew (%d%%) exceeds first controlled mode (100%%)!!! (g%s, waveform %d)', ...
+                    round(max(pThresh)), grads(ii), jj));
+            else
+                warning(sprintf('Slew (%d%%) exceeds normal mode (80%%)!!! (g%s, waveform %d)', ...
+                    round(max(pThresh)), grads(ii), jj));
+            end
+        end
+	end
+end
+
 %% Is (max) waveform duration on a 4 sample (16us) boundary?
 ndat = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
 if mod(ndat, 4)
