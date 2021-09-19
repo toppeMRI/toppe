@@ -32,16 +32,19 @@ modArr = toppe.readmodulelistfile(moduleListFile);
 %  - .mod files used to acquire data have the same number of gradient samples as readoutFilterFile.
 [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = toppe.readmod(b1CheckFile);
 b1limit = hdr.b1max;
-glimit = hdr.gmax;
+gmax = hdr.gmax;
 [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = toppe.readmod(readoutFilterFile);
 ndaq = hdr.res - hdr.nChop;   % number of 4us samples to acquire
 for ii = 1:length(modArr)
 	[rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = toppe.readmod(modArr{ii}.fname);
+    gmax = max(gmax, hdr.gmax);
 	if modArr{ii}.hasDAQ & hdr.res-hdr.nChop ~= ndaq
-		error(sprintf('Number of samples in %s and %s do not match', readoutFilterFile, modArr{ii}.fname));
+		error(sprintf('Number of samples in %s and %s do not match (must be same across all .mod files containing ADC windows)', ...
+            readoutFilterFile, modArr{ii}.fname));
 	end
-	if hdr.b1max ~= b1limit | hdr.gmax ~= glimit
-		error(sprintf('B1 and/or grad limit in %s does not match %s', modArr{ii}.fname, metaFile));
+	if hdr.b1max ~= b1limit 
+		error(sprintf('B1 limit in %s does not match %s (must be the same across all .mod files)', ...
+            modArr{ii}.fname, metaFile));
 	end
 end
 
@@ -66,7 +69,8 @@ end
 % To stay within SAR limits, TRequiv must be greater than the value returned by 'maxseqsar' in the EPIC code.
 % Also calculate gradient power = energy per TRequiv.
 d = toppe.readloop(loopFile);
-n = min(200, size(d,1));     % number rows in scanloop.txt (= number of 'startseq' calls in the EPIC code).
+n = min(10000, size(d,1));     % number rows in scanloop.txt (= number of 'startseq' calls in the EPIC code).
+n = size(d,1);     % number rows in scanloop.txt (= number of 'startseq' calls in the EPIC code).
 dt = 4e-6;         % RF raster time (sec)
 [b1, gx, gy, gz] = toppe.plotseq(1, n, ...
 	'loopFile',       loopFile, ...
@@ -106,7 +110,7 @@ powerz = peakgzes * TRequiv;        % (G/cm)^2 * usec
 fprintf(fout, '%d\n', TRequiv);
 fprintf(fout, '%d\t%d\t%d\n', round(powerx), round(powery), round(powerz));   % needed in minseq() in the .e file
 fprintf(fout, '%.4f\n', max(abs(rf)));  % needed to scale max_seqsar in .e file
-fprintf(fout, '%.2f\n', glimit);        % hardware gradient limit. Gradient waveforms are scaled to this value.
+fprintf(fout, '%.4f\n', gmax);          % max gradient across all .mod files
 fprintf(fout, '%.2f\n', b1limit);       % hardware b1 limit. 
 
 fclose(fout);
