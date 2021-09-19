@@ -5,7 +5,7 @@ function isValid = checkwaveforms(varargin)
 %
 % Inputs:
 % Options 
-%  system       struct containing hardware specs. See systemspecs.m
+%  system       (required) struct containing hardware specs. See systemspecs.m
 %  rf           rf waveform
 %  gx/gy/gz     gradient waveform
 %  rfUnit       mT (default) or Gauss
@@ -18,6 +18,7 @@ import toppe.*
 import toppe.utils.*
 
 %% parse inputs
+
 % Defaults
 arg.rf = [];
 arg.gx = [];
@@ -25,9 +26,13 @@ arg.gy = [];
 arg.gz = [];
 arg.rfUnit   = 'Gauss';
 arg.gradUnit = 'Gauss/cm';
-arg.system   = toppe.systemspecs();
+arg.system = [];
 
 arg = toppe.utils.vararg_pair(arg, varargin);
+
+if isempty(arg.system)
+    error('Missing system argument');
+end
 
 system = arg.system;
 
