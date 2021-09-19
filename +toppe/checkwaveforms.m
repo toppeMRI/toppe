@@ -14,8 +14,8 @@ function [isValid, gmax, slewmax] = checkwaveforms(varargin)
 %
 % Outputs
 %  isValid    boolean/logical (true/false)
-%  gmax       [1 3] Max gradient amplitude on the three gradient axes (x, y, z) (<gradUnit>)
-%  slewmax    [1 3] Max slew rate on the three gradient axes (x, y, z) (G/cm/ms) (<gradUnit>/ms)
+%  gmax       [1 3] Max gradient amplitude on the three gradient axes (x, y, z) (G/cm)
+%  slewmax    [1 3] Max slew rate on the three gradient axes (x, y, z) (G/cm/ms) (G/cm/ms)
 
 import toppe.*
 import toppe.utils.*
@@ -47,7 +47,7 @@ for ii = 1:length(fields)
 	eval(cmd);
 end
 
-%% Convert input waveforms to Gauss and Gauss/cm
+%% Convert input waveforms and system limits to Gauss and Gauss/cm
 if strcmp(arg.rfUnit, 'mT')
 	rf = rf/100;   % Gauss
 end
@@ -57,7 +57,6 @@ if strcmp(arg.gradUnit, 'mT/m')
 	gz = gz/10;
 end
 
-%% Convert system limits to Gauss and Gauss/cm
 if strcmp(system.rfUnit, 'mT')
 	system.maxRf = system.maxRf/100;      % Gauss
 end
@@ -71,41 +70,34 @@ end
 %% Check against system hardware limits
 isValid = true;
 
-tol = 1;     %
-
 grads = 'xyz';
 
-% gradient amplitude
+% gradient amplitude and slew
 for ii = 1:3
-	cmd = sprintf('gmtmp = max(abs(g%s(:)));', grads(ii)); 
-	eval(cmd);
-    if isempty(gmtmp)
+	eval(sprintf('g = g%s;', grads(ii))); 
+    if isempty(g)
         gmax(ii) = 0;
-    else
-        gmax(ii) = gmtmp;
-	    if gmax(ii) > system.maxGrad
-	    	fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', grads(ii), gmax(ii)/system.maxGrad*100);
-	    	isValid = false;
-	    end
+        slewmax(ii) = 0;
+        continue; 
+    end
+
+    gmax(ii) = max(abs(g(:)));
+    if gmax(ii) > system.maxGrad
+        fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', grads(ii), gmax(ii)/system.maxGrad*100);
+        isValid = false;
+    end
+
+    slewmax(ii) = 0;
+    for jj = 1:size(g,2)   % loop through all waveforms (pulses)
+	    slewmax(ii) = max(slewmax(ii), max(abs(diff(g(:,jj)/(system.raster*1e3)))));
+    end
+    if slewmax(ii) > system.maxSlew
+        fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', grads(ii), slewmax(ii)/system.maxSlew*100);
+        isValid = false;
     end
 end
 
-% gradient slew
-for ii = 1:3
-	cmd = sprintf('smtmp = max(abs(diff(g%s/(system.raster*1e3))));', grads(ii));
-	eval(cmd);
-    if isempty(smtmp)
-        slewmax(ii) = 0;
-    else
-        slewmax(ii) = smtmp;
-	    if slewmax(ii) > system.maxSlew
-		    fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', grads(ii), slewmax(ii)/system.maxSlew*100);
-		    isValid = false;
-        end
-	end
-end
-
-% rf
+% peak rf
 maxRf = max(abs(rf));
 if maxRf > system.maxRf
 	fprintf('Error: rf amplitude exceeds system limit (%.1f%%)\n', maxRf/system.maxRf*100);
@@ -119,7 +111,7 @@ for ii = 1:3
         continue; 
     end
     nwavs = size(g,2);
-    for jj = 1:nwavs
+    for jj = 1:size(g,2)   % loop through all waveforms (pulses)
         clear gtm;
         gtm(1,:) = g(:,jj)'*1d-2;    % T/m
         gtm(2,:) = g(:,jj)'*1d-2;
@@ -130,7 +122,7 @@ for ii = 1:3
                 warning(sprintf('Slew (%d%%) exceeds first controlled mode (100%%)!!! (g%s, waveform %d)', ...
                     round(max(pThresh)), grads(ii), jj));
             else
-                warning(sprintf('Slew (%d%%) exceeds normal mode (80%%)!!! (g%s, waveform %d)', ...
+                warning(sprintf('Slew (%d%%) exceeds normal mode (80%%)! (g%s, waveform %d)', ...
                     round(max(pThresh)), grads(ii), jj));
             end
         end
