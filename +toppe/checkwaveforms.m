@@ -1,18 +1,21 @@
-function isValid = checkwaveforms(varargin)
+function [isValid, gmax, slewmax] = checkwaveforms(varargin)
 % Check rf/gradient waveforms against system limits.
 %
 % function isValid = checkwaveforms(varargin)
 %
 % Inputs:
-% Options 
 %  system       (required) struct containing hardware specs. See systemspecs.m
+%
+% Options 
 %  rf           rf waveform
 %  gx/gy/gz     gradient waveform
-%  rfUnit       mT (default) or Gauss
-%  gradUnit     mT/m (default) or Gauss/cm
+%  rfUnit       Gauss (default) or mT
+%  gradUnit     Gauss/cm (default) or mT/m
 %
-% Output
+% Outputs
 %  isValid    boolean/logical (true/false)
+%  gmax       [1 3] Max gradient amplitude on the three gradient axes (x, y, z) (<gradUnit>)
+%  slewmax    [1 3] Max slew rate on the three gradient axes (x, y, z) (G/cm/ms) (<gradUnit>/ms)
 
 import toppe.*
 import toppe.utils.*
@@ -74,21 +77,31 @@ grads = 'xyz';
 
 % gradient amplitude
 for ii = 1:3
-	cmd = sprintf('maxg = max(abs(g%s(:)));', grads(ii));   % Gauss
+	cmd = sprintf('gmtmp = max(abs(g%s(:)));', grads(ii)); 
 	eval(cmd);
-	if maxg > system.maxGrad
-		fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', grads(ii), maxg/system.maxGrad*100);
-		isValid = false;
-	end
+    if isempty(gmtmp)
+        gmax(ii) = 0;
+    else
+        gmax(ii) = gmtmp;
+	    if gmax(ii) > system.maxGrad
+	    	fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', grads(ii), gmax(ii)/system.maxGrad*100);
+	    	isValid = false;
+	    end
+    end
 end
 
 % gradient slew
 for ii = 1:3
-	cmd = sprintf('maxSlew = max(abs(diff(g%s/(system.raster*1e3))));', grads(ii));
+	cmd = sprintf('smtmp = max(abs(diff(g%s/(system.raster*1e3))));', grads(ii));
 	eval(cmd);
-	if maxSlew > system.maxSlew
-		fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', grads(ii), maxSlew/system.maxSlew*100);
-		isValid = false;
+    if isempty(smtmp)
+        slewmax(ii) = 0;
+    else
+        slewmax(ii) = smtmp;
+	    if slewmax(ii) > system.maxSlew
+		    fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', grads(ii), slewmax(ii)/system.maxSlew*100);
+		    isValid = false;
+        end
 	end
 end
 
