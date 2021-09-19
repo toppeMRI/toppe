@@ -1,5 +1,5 @@
 function writemod(varargin)
-% Write waveforms to .mod file, for use with toppev2 psd on GE scanners.
+% Write waveforms to .mod file, for use with toppe psd on GE scanners.
 %
 % function writemod(varargin)
 %
@@ -25,20 +25,6 @@ function writemod(varargin)
 %   hdrints       Additional ints to put in header (max 29)
 %   system        struct specifying hardware system info, see systemspecs.m
 %   nChop         trim (chop) the end of the RF waveform (or ADC window) by this many samples. Even int.
-
-% This file is part of the TOPPE development environment for platform-independent MR pulse programming.
-%
-% TOPPE is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Library General Public License as published by
-% the Free Software Foundation version 2.0 of the License.
-%
-% TOPPE is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU Library General Public License for more details.
-%
-% You should have received a copy of the GNU Library General Public License
-% along with TOPPE. If not, see <http://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>.
 
 import toppe.*
 import toppe.utils.*
@@ -96,55 +82,16 @@ if strcmp(arg.gradUnit, 'mT/m')
 	gz = gz/10;
 end
 
-%% Check against system hardware limits
-if ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
-	error('Waveforms failed system hardware checks -- exiting');
-end
-
-%% Force all waveform arrays to have the same dimensions (required by toppev2.e)
-ndat    = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
-npulses = max( [size(rf,2) size(gx,2) size(gy,2) size(gz,2)] );
-if ndat == 0
-	error('At least one waveform must be non-empty');
-end
-if ndat > 2^15
-	error(sprintf('Max waveform length is 32768 (samples) -- found %d samples', ndat));
-end
-
-% make length divisible by 4 (EPIC seems to behave best this way)
-if mod(ndat, 4)
-	warning('Waveform duration will be padded to 4 sample boundary.')
-	ndat = ndat - mod(ndat, 4) + 4;
-end
-
-for ii = 1:length(fields)
-	wavtype = fields{ii} ;                    % 'rf', 'gx', 'gy', or 'gz'
-	wav = eval(fields{ii}) ;                  % [ndat npulses]
-
-	if wavtype == 'rf' & isempty(wav)
-		wav = 0.01*ones(ndat, npulses);        % Must have non-zero RF waveform to make toppev2.e happy (even if it's not actually played out)
-	end
-
-	% enforce equal number of rows and columns
-	[nrows n2] = size(wav);
-
-	if (nrows ~=0 & nrows < ndat) 
-		warning('Padding %s with zero rows', wavtype);
-	end
-	if (n2 ~= 0 & n2 < npulses) 
-		warning('Padding %s with zero columns', wavtype);
-	end
-
-	wav = [wav; zeros(ndat-nrows,n2)];
-	wav = [wav  zeros(ndat,npulses-n2)];
-
-	% copy to corresponding wav type (rf, gx, gy, or gz)
-	cmd = sprintf('%s = %s;', wavtype, 'wav') ;
-	eval (cmd);
-end
+%% Force all waveform arrays to have the same dimensions 
+[rf, gx, gy, gz] = padwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz);
 	
 % Fixes to avoid idiosyncratic issues on scanner
 %[rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp);
+
+%% Check waveforms against system hardware limits
+if ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
+	error('Waveforms failed system hardware checks -- exiting');
+end
 
 %% Header arrays
 [paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, system);
