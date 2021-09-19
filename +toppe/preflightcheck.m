@@ -9,7 +9,7 @@ function preflightcheck(metaFile, seqstampFile, sys)
 %  >> sys = toppe.systemspecs();   % use default system limits
 %  >> preflightcheck('toppe0.meta', 'seqstamp.txt', sys);
 
-fprintf('preflight check...');
+fprintf('Preflight check (for GE)...');
 
 fout = fopen(seqstampFile, 'w');
 
@@ -31,15 +31,14 @@ modArr = toppe.readmodulelistfile(moduleListFile);
 
 % Check that:
 %  - all .mod files use the same peak RF limit (e.g., 0.25 Gauss)
-%  - .mod files used to acquire data have the same number of gradient samples as readoutFilterFile.
-[rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = toppe.readmod(b1CheckFile);
+%  - all .mod files used to acquire data have the same number of ADC samples as readoutFilterFile.
+[~,~,~,~,~,~,~,hdr] = toppe.readmod(b1CheckFile);
 b1limit = hdr.b1max;
-gmax = hdr.gmax;
-[rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = toppe.readmod(readoutFilterFile);
+[~,~,~,~,~,~,~,hdr] = toppe.readmod(readoutFilterFile);
 ndaq = hdr.res - hdr.nChop;   % number of 4us samples to acquire
 for ii = 1:length(modArr)
-	[rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = toppe.readmod(modArr{ii}.fname);
-    gmax = max(gmax, hdr.gmax);
+	[~,~,~,~,~,~,~,hdr] = toppe.readmod(modArr{ii}.fname); 
+
 	if modArr{ii}.hasDAQ & hdr.res-hdr.nChop ~= ndaq
 		error(sprintf('Number of samples in %s and %s do not match (must be same across all .mod files containing ADC windows)', ...
             readoutFilterFile, modArr{ii}.fname));
@@ -48,6 +47,21 @@ for ii = 1:length(modArr)
 		error(sprintf('B1 limit in %s does not match %s (must be the same across all .mod files)', ...
             modArr{ii}.fname, metaFile));
 	end
+end
+
+% Get peak gradient and slew across all .mod files.
+% This also issues any PNS warnings (in checkwaveforms).
+gmax = 0;
+slewmax = 0;
+for ii = 1:length(modArr)
+	[~,gx,gy,gz,~,~,~,~] = toppe.readmod(modArr{ii}.fname); 
+    [isValid, gmaxtmp, slewmaxtmp] = toppe.checkwaveforms('system', sys, ...
+        'gx', gx, 'gy', gy, 'gz', gz);
+    if ~isValid
+        error('checkwaveforms failed for module %d', ii);
+    end
+    gmax = max(gmax, max(gmaxtmp));
+    slewmax = max(slewmax, max(slewmaxtmp));
 end
 
 % write file checksums
@@ -106,17 +120,15 @@ powerx = peakgxes * TRequiv;        % (G/cm)^2 * usec. Will be converted to Ampe
 powery = peakgyes * TRequiv;        % (G/cm)^2 * usec
 powerz = peakgzes * TRequiv;        % (G/cm)^2 * usec
 
-% PNS checks are done in the .e file (interpreter). TODO: do them here too
-
 % Print various parameters to file
 fprintf(fout, '%d\n', TRequiv);
 fprintf(fout, '%d\t%d\t%d\n', round(powerx), round(powery), round(powerz));   % needed in minseq() in the .e file
 fprintf(fout, '%.4f\n', max(abs(rf)));  % needed to scale max_seqsar in .e file
-fprintf(fout, '%.4f\n', gmax);          % max gradient across all .mod files
-fprintf(fout, '%.2f\n', b1limit);       % hardware b1 limit. 
+fprintf(fout, '%.4f\n', gmax);          % max gradient across all .mod files (Gauss)
+fprintf(fout, '%.4f\n', slewmax);       % max slew across all .mod files (G/cm/ms)
+fprintf(fout, '%.4f\n', b1limit);       % hardware b1 limit (Gauss) 
 
 fclose(fout);
 
 fprintf(' done\n');
-
 
