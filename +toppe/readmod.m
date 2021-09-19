@@ -52,6 +52,9 @@ for n = 1:nparamsfloat
 	paramsfloat(n)  = fscanf(fid, '%f\n', 1);
 end
 
+% get nChop (added in v4)
+hdr.nChop = paramsint16(3);
+
 if showinfo
 	fprintf(1, '\n%s', desc);
 	fprintf(1, 'number of coils/channels:  %d\n', hdr.ncoils);
