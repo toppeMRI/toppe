@@ -57,14 +57,14 @@ arg = toppe.utils.vararg_pair(arg, varargin);
 
 %% read scan files
 if isempty(arg.loopArr)
-    loopArr = toppe.utils.tryread(@toppe.readloop, arg.loopFile); % read scanloop
+    loopArr = toppe.tryread(@toppe.readloop, arg.loopFile); % read scanloop
 else
     loopArr = arg.loopArr;
 end
 
 % read module content
 if isempty(arg.mods)
-   mods = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+   mods = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
 else
    mods = arg.mods;
 end

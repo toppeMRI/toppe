@@ -59,10 +59,10 @@ arg = toppe.utils.vararg_pair(arg, varargin);
 
 %% Load files and display
 % read scanloop
-loopArr = toppe.utils.tryread(@toppe.readloop, arg.loopFile);
+loopArr = toppe.tryread(@toppe.readloop, arg.loopFile);
 
 % read module waveforms
-modules = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+modules = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
 
 % display
 for ii = 1 : ((1+arg.nTRskip)*nModPerTR) : size(loopArr,1)

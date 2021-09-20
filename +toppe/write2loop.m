@@ -116,7 +116,7 @@ if strcmp(modname,'setup')
     rf_spoil_seed_cnt = 0;
     
     % Load modules in only once and keep persistent for speed
-    modules = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+    modules = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
     
     % Preallocate 
     switch toppeVer

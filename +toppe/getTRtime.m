@@ -32,10 +32,10 @@ arg = toppe.utils.vararg_pair(arg, varargin);
 
 %% read scan files
 % read scanloop
-loopArr = toppe.utils.tryread(@toppe.readloop, arg.loopFile);
+loopArr = toppe.tryread(@toppe.readloop, arg.loopFile);
 
 % read module content
-mods = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+mods = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
 
 %% Check inputs
 if LineStart > LineEnd

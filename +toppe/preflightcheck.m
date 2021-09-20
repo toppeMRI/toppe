@@ -26,8 +26,9 @@ b1CheckFile       = fgetl(fid);    % .mod file used for b1 scaling and SAR check
 readoutFilterFile = fgetl(fid);    % .mod file used to set receive filter, e.g., 'readout.mod'
 fclose(fid);
 
-% get modules
-modArr = toppe.readmodulelistfile(moduleListFile);
+% Get modules.
+% This step also checks the formatting of the module list file.
+modArr = toppe.tryread(@toppe.readmodulelistfile, moduleListFile);
 
 % Check that:
 %  - all .mod files use the same peak RF limit (e.g., 0.25 Gauss)
