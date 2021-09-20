@@ -11,7 +11,7 @@ function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
 %  oprbw       Receive bandwidth. Default: +/- 125/4 kHz
 %  ncycles     Number of cycles of phase across voxel dimension, added to x gradient. Default: 0 (balanced readout).
 %  system      struct specifying system info, see systemspecs.m
-%  ofname      Output file name. Default: 'readout.mod'
+%  ofname      Output file name. Default: 'readout.mod'. If empty, no file is written.
 %  extrafiles  [bool] If true, writes z phase-encode and spoiler to separate .mod files.
 %  slewDerate  Reduce slew rate by this factor during prewinders/crushers
 
@@ -137,16 +137,14 @@ gz = makeGElength(gz(:));
 
 %[areacrush-sum(gx)*dt*1e-3]   % check that net gradient area is equal to areacrush 
 
-% make number of waveform samples divisible by 4 (so that rhfrsize matches full length) 
-%npad = mod(numel(gx),4);
-%gx = [gx; zeros(npad,1)];
-%gy = [gy; zeros(npad,1)];
-%gz = [gz; zeros(npad,1)];
-
 if arg.flip
 	gx = flipud(gx);
 	gy = flipud(gy);
 	gz = flipud(gz);
+end
+
+if isempty(arg.ofname)
+    return;
 end
 
 %% Write to file(s)
