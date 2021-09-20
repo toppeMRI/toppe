@@ -147,7 +147,7 @@ area          = abs(sum(b1)) / abs(sum(hardpulse));
 dtycyc        = length(find(abs(b1)>0.2236*max(abs(b1)))) / length(b1);
 maxpw         = dtycyc;
 num           = 1;
-max_b1        = system.maxRf;                       	% Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
+max_b1        = system.maxRF;                       	% Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
 																		% as long as other RF .mod files (if any) use the same max_b1.
 max_int_b1_sq = max( cumsum(abs(b1).^2)*dt*1e3 );   	% Gauss^2 - ms
 max_rms_b1    = sqrt(mean(abs(b1).^2));              	% Gauss
@@ -199,10 +199,10 @@ npulses = size(rf,2);
 nparamsint16 = 32;
 nparamsfloat = 32;
 
-% RF waveform is scaled relative to system.maxRf.
+% RF waveform is scaled relative to system.maxRF.
 % This may be 0.25G/0.125G for quadrature/body RF coils (according to John Pauly RF class notes), but haven't verified...
 if strcmp(system.rfUnit, 'mT')
-	system.maxRf = system.maxRf/100;   % Gauss
+	system.maxRF = system.maxRF/100;   % Gauss
 end
 
 % gradient waveforms are scaled relative to system.maxGrad
@@ -247,7 +247,7 @@ fwrite(fid, desc, 'uchar');
 fwrite(fid, ncoils,  'int16');          % shorts must be written in binary -- otherwise it won't work on scanner 
 fwrite(fid, res,     'int16');
 fwrite(fid, npulses, 'int16');
-fprintf(fid, 'b1max:  %f\n', system.maxRf);           % (floats are OK in ASCII on scanner)
+fprintf(fid, 'b1max:  %f\n', system.maxRF);           % (floats are OK in ASCII on scanner)
 fprintf(fid, 'gmax:   %f\n', gmax);
 
 fwrite(fid, nparamsint16, 'int16');
@@ -259,7 +259,7 @@ end
 
 % write binary waveforms (*even* short integers -- the toppe driver/interpreter sets the EOS bit, so don't have to worry about it here)
 max_pg_iamp = 2^15-2;                                   % RF amp is flipped if setting to 2^15 (as observed on scope), so subtract 2
-rho   = 2*round(rho/system.maxRf*max_pg_iamp/2);
+rho   = 2*round(rho/system.maxRF*max_pg_iamp/2);
 theta = 2*round(theta/pi*max_pg_iamp/2);
 gx    = 2*round(gx/gmax*max_pg_iamp/2);
 gy    = 2*round(gy/gmax*max_pg_iamp/2);
