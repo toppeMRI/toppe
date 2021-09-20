@@ -70,7 +70,7 @@ if strcmp(arg.gradUnit, 'mT/m')
 end
 
 if strcmp(system.rfUnit, 'mT')
-	system.maxRf = system.maxRf/100;      % Gauss
+	system.maxRF = system.maxRF/100;      % Gauss
 end
 if strcmp(system.gradUnit, 'mT/m')
 	system.maxGrad = system.maxGrad/10;   % Gauss/cm
@@ -104,9 +104,9 @@ for ii = 1:3
 end
 
 % peak rf
-maxRf = max(abs(rf));
-if maxRf > system.maxRf
-	fprintf('Error: rf amplitude exceeds system limit (%.1f%%)\n', maxRf/system.maxRf*100);
+maxRF = max(abs(rf));
+if maxRF > system.maxRF
+	fprintf('Error: rf amplitude exceeds system limit (%.1f%%)\n', maxRF/system.maxRF*100);
 	isValid = false;
 end
 
