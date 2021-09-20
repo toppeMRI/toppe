@@ -11,8 +11,7 @@ function sys = systemspecs(varargin)
 %   gradUnit        Gauss/cm (default) or mT/m 
 %   maxSlew         Default: 20 Gauss/cm/ms. Can be less than the physical slew limit for your scanner.
 %   slewUnit        Gauss/cm/ms (default) or T/m/s
-%   maxRf           Default: 0.25 Gauss. Must be less than or equal to the maximum achievable RF
-%                   amplitude for the transmit coil you're using.
+%   maxRF           Default: 0.25 Gauss. Using the default should ensure correct b1 scaling.
 %   rfUnit          Gauss (default) or mT 
 %   raster          Default: 4e-6 sec
 %   gamma           Default: 4.2576e3 Hz/Gauss
@@ -38,13 +37,12 @@ function sys = systemspecs(varargin)
 %  >> sys = system('maxSlice', 50);          % sets maxSlice to 50; otherwise contains default values
 
 %% Defaults
-maxGradDefault = 5;
-sys.maxGrad  = maxGradDefault;
+maxRFDefault = 0.25;
+sys.maxGrad  = 4;
 sys.gradUnit = 'Gauss/cm';
-sys.maxSlew  = 20;
+sys.maxSlew  = 10;
 sys.slewUnit = 'Gauss/cm/ms';
-maxRfDefault = 0.25;
-sys.maxRf    = maxRfDefault;           % NB! Not sure what the hardware limit is here.
+sys.maxRF    = maxRFDefault;           % NB! Not sure what the hardware limit is here.
 sys.rfUnit   = 'Gauss';
 sys.raster   = 4e-6;           % sec
 sys.gamma    = 4.2576e3;       % Hz/Gauss
@@ -55,7 +53,7 @@ sys.addDelays = true ;         % False: set time gaps to zero.
 
 % sys.toppe struct relates to the TOPPE interpreter/driver.
 % You probably shouldn't edit these.
-sys.toppe.version = 'v2';
+sys.toppe.version = 'v4';
 sys.toppe.start_core_rf  = 0;      % minimum start time (us) for rf modules
 sys.toppe.start_core_daq = 126;    % minimum start time (us) for data acquisition modules
 sys.toppe.start_core_grad = 0;     % minimum start time (us) for gradient-only modules
@@ -78,6 +76,10 @@ sys.gradient = 'xrm';
 
 %% Substitute specified system values as appropriate
 sys = toppe.utils.vararg_pair(sys, varargin);
+
+if sys.maxRF ~= maxRFDefault
+    warning('Using non-default max RF setting -- b1 scaling may be incorrect!');
+end
 
 % If requested, set GE/EPIC-related time gaps to zero
 if ~sys.addDelays
