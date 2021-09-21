@@ -34,13 +34,14 @@ modArr = toppe.tryread(@toppe.readmodulelistfile, moduleListFile);
 %  - all .mod files use the same peak RF limit (e.g., 0.25 Gauss)
 %  - all .mod files used to acquire data have the same number of ADC samples as readoutFilterFile.
 [~,~,~,~,~,~,~,hdr] = toppe.readmod(b1CheckFile);
+hdr
 b1limit = hdr.b1max;
 [~,~,~,~,~,~,~,hdr] = toppe.readmod(readoutFilterFile);
-ndaq = hdr.res - hdr.nChop;   % number of 4us samples to acquire
+ndaq = hdr.rfres;   % number of 4us samples to acquire
 for ii = 1:length(modArr)
 	[~,~,~,~,~,~,~,hdr] = toppe.readmod(modArr{ii}.fname); 
 
-	if modArr{ii}.hasDAQ & hdr.res-hdr.nChop ~= ndaq
+	if modArr{ii}.hasDAQ & hdr.rfres ~= ndaq
 		error(sprintf('Number of samples in %s and %s do not match (must be same across all .mod files containing ADC windows)', ...
             readoutFilterFile, modArr{ii}.fname));
 	end
