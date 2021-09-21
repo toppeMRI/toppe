@@ -20,16 +20,19 @@ function writemod(varargin)
 %   gradUnit      'Gauss/cm' (default) or 'mT/m'
 %   ofname        Output filename.
 %   desc          Text string (ASCII) descriptor.
-%   nomflip       Excitation flip angle (degrees). Stored in .mod float header, but has no influence on b1 scaling. Default: 90.
+%   nomflip       Excitation flip angle (degrees). Stored in .mod float header, 
+%                 but has no influence on b1 scaling. Default: 90.
 %   hdrfloats     Additional floats to put in header (max 12)
 %   hdrints       Additional ints to put in header (max 29)
 %   system        struct specifying hardware system info, see systemspecs.m
-%   nChop         trim (chop) the end of the RF waveform (or ADC window) by this many samples. Even int.
+%   nChop         [1 2] (int) trim (chop) the start and end of the RF waveform 
+%                 (or ADC window) by this many samples. Even int.
+%                 Using non-zero nChop can reduce module duration on scanner.
 
 import toppe.*
 import toppe.utils.*
 
-nReservedInts = 3;
+nReservedInts = 2;   % [nChop(1) rfres], rfres = # samples in RF/ADC window
 maxHdrInts = 32 - nReservedInts;
 
 %% parse inputs
@@ -46,7 +49,7 @@ arg.nomflip   = 90;
 arg.hdrfloats = [];
 arg.hdrints   = [];
 arg.system    = [];
-arg.nChop = 0;  
+arg.nChop = [0 0];  
 
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
@@ -101,7 +104,8 @@ if ~isempty(arg.hdrfloats)
 	end
 	paramsfloat(20:(19+length(arg.hdrfloats))) = arg.hdrfloats;  % populate header with custom floats 
 end
-paramsint16 = [0 size(rf,1) arg.nChop]; % the first three ints are used by interpreter
+%paramsint16 = [0 size(rf,1) arg.nChop]; % the first three ints are used by interpreter
+paramsint16 = [arg.nChop(1) size(rf,1)-sum(arg.nChop)]; % the first three ints are used by interpreter
 if ~isempty(arg.hdrints)
 	if length(arg.hdrints) > maxHdrInts
 		error(sprintf('max number of custom ints in .mod file header is %d', maxHdrInts));
