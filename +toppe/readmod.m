@@ -53,7 +53,8 @@ for n = 1:nparamsfloat
 end
 
 % get nChop (added in v4)
-hdr.nChop = paramsint16(3);
+hdr.npre = paramsint16(1);  % number of discarded RF/ADC samples at start
+hdr.rfres = paramsint16(2); % total number of RF/ADC samples
 
 if showinfo
 	fprintf(1, '\n%s', desc);
