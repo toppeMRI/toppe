@@ -14,6 +14,9 @@ function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
 %  ofname      Output file name. Default: 'readout.mod'. If empty, no file is written.
 %  extrafiles  [bool] If true, writes z phase-encode and spoiler to separate .mod files.
 %  slewDerate  Reduce slew rate by this factor during prewinders/crushers
+%  nChop       [1 2] (int) trim (chop) the start and end of the RF waveform 
+%              (or ADC window) by this many samples. Even int.
+%              Using non-zero nChop can reduce module duration on scanner.
 
 zres = zres*10;   % mm
 
@@ -29,6 +32,7 @@ arg.extrafiles = false;
 arg.flip   = false;
 arg.isdess = 0;
 arg.slewDerate = 0.8;
+arg.nChop = [0 0];  
 
 % Substitute varargin values as appropriate
 arg = vararg_pair(arg, varargin);      % requires MIRT
@@ -153,7 +157,9 @@ end
 %end
 hdrints = [npre npixro iref];    % some useful numbers for recon
 hdrfloats = [arg.oprbw];
-writemod('gx', gx(:), 'gy', gy(:), 'gz', gz(:), 'ofname', arg.ofname, 'system', arg.system, ...
+writemod('gx', gx(:), 'gy', gy(:), 'gz', gz(:), ...
+         'ofname', arg.ofname, 'system', arg.system, ...
+         'nChop', arg.nChop, ...
          'desc', '3D spin-warp (GRE) waveform', 'hdrints', hdrints, 'hdrfloats', hdrfloats);
 
 if arg.extrafiles
