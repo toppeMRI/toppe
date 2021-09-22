@@ -32,7 +32,7 @@ arg.extrafiles = false;
 arg.flip   = false;
 arg.isdess = 0;
 arg.slewDerate = 0.8;
-arg.nChop = [0 0];  
+arg.nChop = [48 48];  
 
 % Substitute varargin values as appropriate
 arg = vararg_pair(arg, varargin);      % requires MIRT

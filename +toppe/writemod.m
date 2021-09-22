@@ -20,13 +20,13 @@ function writemod(varargin)
 %   gradUnit      'Gauss/cm' (default) or 'mT/m'
 %   ofname        Output filename.
 %   desc          Text string (ASCII) descriptor.
-%   nomflip       Excitation flip angle (degrees). Stored in .mod float header, 
+%   nomflip       Excitation flip angle (degrees). Stored in .mod float header,
 %                 but has no influence on b1 scaling. Default: 90.
 %   hdrfloats     Additional floats to put in header (max 12)
 %   hdrints       Additional ints to put in header (max 29)
 %   system        struct specifying hardware system info, see systemspecs.m
-%   nChop         [1 2] (int) trim (chop) the start and end of the RF waveform 
-%                 (or ADC window) by this many 4us samples. Even int.
+%   nChop         [1 2] (int, multiple of 4) trim (chop) the start and end of
+%                 the RF wavevorm (or ADC window) by this many 4us samples.
 %                 Using non-zero nChop can reduce module duration on scanner.
 %                 Default: [50 50] (= [200us 200us])
 
@@ -36,7 +36,7 @@ import toppe.utils.*
 nReservedInts = 2;   % [nChop(1) rfres], rfres = # samples in RF/ADC window
 maxHdrInts = 32 - nReservedInts;
 
-nChopDefault = [50 50];
+nChopDefault = [48 48];
 
 %% parse inputs
 % Defaults
@@ -63,8 +63,9 @@ end
 
 system = arg.system;
 
+%% Check nChop
 if arg.nChop(1) < nChopDefault(1) | arg.nChop(2) < nChopDefault(2)
-    msg = ['nChop < 50 samples. Module duration (on scanner) will be ', ...
+    msg = ['nChop < 48 samples. Module duration (on scanner) will be ', ...
           'extended to account for RF/ADC dead/ringdown times as needed.'];
     warning(msg);
 end
@@ -77,6 +78,9 @@ if ~isempty(arg.rf)
     end
 end
 
+if mod(arg.nChop(1),4) | mod(arg.nChop(2),4)
+    error('Each entry in nChop must be multiple of 4');
+end
 
 %% Detect all-zero RF waveform, treat as empty, and give warning to user
 if ~isempty(arg.rf) & norm(abs(arg.rf(:,1))) == 0
