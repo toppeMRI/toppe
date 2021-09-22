@@ -26,14 +26,17 @@ function writemod(varargin)
 %   hdrints       Additional ints to put in header (max 29)
 %   system        struct specifying hardware system info, see systemspecs.m
 %   nChop         [1 2] (int) trim (chop) the start and end of the RF waveform 
-%                 (or ADC window) by this many samples. Even int.
+%                 (or ADC window) by this many 4us samples. Even int.
 %                 Using non-zero nChop can reduce module duration on scanner.
+%                 Default: [50 50] (= [200us 200us])
 
 import toppe.*
 import toppe.utils.*
 
 nReservedInts = 2;   % [nChop(1) rfres], rfres = # samples in RF/ADC window
 maxHdrInts = 32 - nReservedInts;
+
+nChopDefault = [50 50];
 
 %% parse inputs
 % Defaults
@@ -49,7 +52,7 @@ arg.nomflip   = 90;
 arg.hdrfloats = [];
 arg.hdrints   = [];
 arg.system    = [];
-arg.nChop = [0 0];  
+arg.nChop = nChopDefault;
 
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
@@ -59,6 +62,20 @@ if isempty(arg.system)
 end
 
 system = arg.system;
+
+if arg.nChop(1) < nChopDefault(1) | arg.nChop(2) < nChopDefault(2)
+    msg = ['nChop < 50 samples. Module duration (on scanner) will be ', ...
+          'extended to account for RF/ADC dead/ringdown times as needed.'];
+    warning(msg);
+end
+
+if ~isempty(arg.rf)
+    if sum(abs(arg.rf([1:arg.nChop(1) (end-arg.nChop(2)+1):end]))) > 0
+        msg = ['RF waveform must be zero during the first/last ', ...
+              sprintf('%d/%d (nChop) samples.', arg.nChop(1), arg.nChop(2))]; 
+        error(msg);
+    end
+end
 
 
 %% Detect all-zero RF waveform, treat as empty, and give warning to user
