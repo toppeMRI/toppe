@@ -64,17 +64,6 @@ else
     cores = arg.mods;
 end
 
-%% timing CVs
-% As long as nChop(1)*4us > start_core_daq, start_core_daq does not impact timing.
-% As long as nChop(2)*4us > mydaqdel, mydaqdel does not impact timing.
-% As long as nChop(2)*4us > myrfdel, myrfdel does not impact timing.
-% start_core_rf and start_core_grad = 0 anyway, but kept in TOPPE for
-% future use if needed.
-c = struct2cell(arg.system.toppe);
-TPARAMS = cell2mat(c(2:8));
-[start_core_rf start_core_daq start_core_grad myrfdel daqdel timetrwait timessi] = ...
-	deal(TPARAMS(1), TPARAMS(2), TPARAMS(3), TPARAMS(4), TPARAMS(5),  TPARAMS(6),  TPARAMS(7)); 
-
 %% Initialize counter and turn off display if we're only doing timings
 if arg.doTimeOnly
     nsamples = 0;
@@ -102,11 +91,11 @@ for it = nstart:nstop
     
     % start of core
     if cores{ic}.hasRF
-        start_core = max(start_core_rf - dt*cores{ic}.npre, 0);
+        start_core = max(arg.system.start_core_rf - dt*cores{ic}.npre, 0);
     elseif cores{ic}.hasDAQ
-        start_core = max(start_core_daq - dt*cores{ic}.npre, 0);
+        start_core = max(arg.system.start_core_daq - dt*cores{ic}.npre, 0);
     else
-        start_core = max(start_core_grad - dt*cores{ic}.npre, 0);
+        start_core = max(arg.system.start_core_grad - dt*cores{ic}.npre, 0);
     end
 
     % number of discarded samples at end of RF/ADC window
@@ -114,20 +103,16 @@ for it = nstart:nstop
 
     % gradient delay
     if cores{ic}.hasRF
-        coredel = max(myrfdel - dt*nChopEnd, 0);
+        coredel = max(arg.system.myrfdel - dt*nChopEnd, 0);
     elseif cores{ic}.hasDAQ
-        coredel = max(daqdel - dt*nChopEnd, 0);
+        coredel = max(arg.system.daqdel - dt*nChopEnd, 0);
     else
         coredel = 0;
     end
 
-    % Min duration of wait pulse.
-    % Should match the EPIC CV with the same name.
-    tminwait = 12; % us 
-
     % Mimimum core duration (us).
     % Should be identical to the CV 'mindur' in the EPIC code.
-    mindur = start_core + cores{ic}.wavdur + timetrwait + coredel + tminwait + timessi;
+    mindur = start_core + cores{ic}.wavdur + arg.system.timetrwait + coredel + arg.system.tminwait + arg.system.timessi;
 
     % silence at end of core
     tdelay = max(cores{ic}.dur - mindur, 0); 
@@ -135,41 +120,50 @@ for it = nstart:nstop
         tdelay = tdelay + loopArr(it,14);  % add textra
     end
     
-    waveform = loopArr(it,16);
+    waveform = loopArr(it,16); % waveform index
     
     if arg.doTimeOnly % Calculate the length of one waveform and add it to our sample counter
-        gxlength = round((start_core)/dt) + core_size(ic) + round((timetrwait+timessi+coredel)/dt);
+        gxlength = round((start_core)/dt) + core_size(ic) + round((arg.system.timetrwait+arg.system.timessi+coredel)/dt);
         nsamples = nsamples + gxlength + round(tdelay/dt);
     else % Calculate RF and gradients as normal
-        % get gradients and apply in-plane (xy) rotation
+        % get gradients
         gxit = ia_gx/max_pg_iamp*cores{ic}.gx(:,waveform);
         gyit = ia_gy/max_pg_iamp*cores{ic}.gy(:,waveform);
         gzit = ia_gz/max_pg_iamp*cores{ic}.gz(:,waveform);
 
-        % apply 3d rotation matrix
+        % apply 3d rotation matrix 
+        % (which also accounts for any in-plane 2D rotation, i.e., 'phi' in write2loop.m)
         Rv = loopArr(it,17:25)/max_pg_iamp;  % stored in row-major order
         R = reshape(Rv, 3, 3);
-        %iphi = loopArr(it,11);
-        %phi = iphi/max_pg_iamp*pi;    % rad, [-pi pi]
-        %Gxy = [cos(phi) -sin(phi); sin(phi) cos(phi)]*[gxit(:)'; gyit(:)'];
-        %gxit = Gxy(1,:)';
-        %gyit = Gxy(2,:)';
         G = R * [gxit(:)'; gyit(:)'; gzit(:)'];
         gxit = G(1,:)';
         gyit = G(2,:)';
         gzit = G(3,:)';
         
-        rho1 = [zeros(round((start_core+coredel)/dt),1); ia_rf/max_pg_iamp*  abs(cores{ic}.rf(:,waveform));  zeros(round((timetrwait+timessi)/dt),1)];
-        th1  = [zeros(round((start_core+coredel)/dt),1); ia_th/max_pg_iamp*angle(cores{ic}.rf(:,waveform));  zeros(round((timetrwait+timessi)/dt),1)];
-        gx1  = [zeros(round((start_core)/dt),1);         gxit(:); zeros(round((timetrwait+timessi+coredel)/dt),1)];
-        gy1  = [zeros(round((start_core)/dt),1);         gyit(:); zeros(round((timetrwait+timessi+coredel)/dt),1)];
-        gz1  = [zeros(round((start_core)/dt),1);         gzit(:); zeros(round((timetrwait+timessi+coredel)/dt),1)];
+        % build waveforms for this startseq call
+        rho1 = [zeros(round((start_core+coredel)/dt),1); ...
+                ia_rf/max_pg_iamp*  abs(cores{ic}.rf(:,waveform)); ...
+                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi)/dt),1)];
+        th1  = [zeros(round((start_core+coredel)/dt),1); ...
+                ia_th/max_pg_iamp*angle(cores{ic}.rf(:,waveform)); ...
+                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi)/dt),1)];
+        gx1  = [zeros(round((start_core)/dt),1); ...
+                gxit(:); ...
+                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi+coredel)/dt),1)];
+        gy1  = [zeros(round((start_core)/dt),1); ...
+                gyit(:); ...
+                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi+coredel)/dt),1)];
+        gz1  = [zeros(round((start_core)/dt),1); ...
+                gzit(:); ...
+                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi+coredel)/dt),1)];
         
         % apply RF phase offset
         if cores{ic}.hasRF
             th1 = th1 + loopArr(it,12)/max_pg_iamp*pi;
             th1 = angle(exp(1i*th1));   % wrap to [-pi pi] range
         end
+
+        % add to running waveform
         rho = [rho; rho1; zeros(round(tdelay/dt),1)];
         th  = [th;  th1;  zeros(round(tdelay/dt),1)];
         gx  = [gx;  gx1;  zeros(round(tdelay/dt),1)];
@@ -177,7 +171,7 @@ for it = nstart:nstop
         gz  = [gz;  gz1;  zeros(round(tdelay/dt),1)];
     end
     
-    %fprintf(1, 'it %d: mindur = %.3f ms, rf t = %.3f ms, grad t = %.3f ms\n', it, mindur/1000, numel(rho)*dt*1e-3, numel(gx)*dt*1e-3);
+    fprintf(1, 'it %d: mindur = %d us, rf t = %d us, grad t = %d us\n', it, mindur, numel(rho)*dt, numel(gx)*dt);
 end
 
 if arg.doTimeOnly % Make all vectors the correct length but zeros
