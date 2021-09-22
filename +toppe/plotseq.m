@@ -7,6 +7,7 @@ function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, v
 %   nstart,nstop       first and last startseq calls (as specified in scanloop.txt)
 %
 % Input options:
+%   system             (required) struct specifying hardware system info, see systemspecs.m
 %   loopFile           default: 'scanloop.txt'
 %   loopArr            scan loop array (see readloop.m). Default: read from loopFile.
 %   moduleListFile     default: 'modules.txt'
@@ -18,10 +19,9 @@ function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, v
 %                      to speed up calculation of scan time.
 %                      False (default) or true
 %
-%   system             struct specifying hardware system info, see systemspecs.m
 %   drawpause          (boolean) include pauses (textra) or not
-%   gmax               Gauss/cm
-%   rhomax             Gauss
+%   gmax               display limit, Gauss/cm
+%   rhomax             display limit, Gauss
 %
 % Outputs:
 %   rf               Complex RF waveform (Gauss)
@@ -38,11 +38,16 @@ arg.mods            = [];
 arg.moduleListFile  = 'modules.txt';
 arg.doDisplay       = true;
 arg.doTimeOnly      = false;
-arg.system          = toppe.systemspecs();  % Accept default timing (includes EPIC-related time gaps)
+arg.system          = [];
 arg.drawpause       = 1;
 arg.gmax            = 5;     % Gauss/cm
 arg.rhomax          = 0.25;  % Gauss
+
 arg = toppe.utils.vararg_pair(arg, varargin);
+
+if isempty(arg.system)
+    error('Missing system argument');
+end
 
 %% read scan files as needed
 % scanloop array
@@ -60,6 +65,11 @@ else
 end
 
 %% timing CVs
+% As long as nChop(1)*4us > start_core_daq, start_core_daq does not impact timing.
+% As long as nChop(2)*4us > mydaqdel, mydaqdel does not impact timing.
+% As long as nChop(2)*4us > myrfdel, myrfdel does not impact timing.
+% start_core_rf and start_core_grad = 0 anyway, but kept in TOPPE for
+% future use if needed.
 c = struct2cell(arg.system.toppe);
 TPARAMS = cell2mat(c(2:8));
 [start_core_rf start_core_daq start_core_grad myrfdel daqdel timetrwait timessi] = ...
@@ -70,7 +80,7 @@ if arg.doTimeOnly
     nsamples = 0;
     arg.doDisplay = false;
     for ic = 1:size(cores,2) % Compute table of core durations
-    core_size(ic) = size(cores{ic}.gx(:,1),1);
+        core_size(ic) = size(cores{ic}.gx(:,1),1);
     end
 end
 
@@ -90,22 +100,39 @@ for it = nstart:nstop
     ia_gy = loopArr(it,5);
     ia_gz = loopArr(it,6);
     
+    % start of core
     if cores{ic}.hasRF
-        coredel = myrfdel;
-        start_core = start_core_rf;
+        start_core = max(start_core_rf - dt*cores{ic}.npre, 0);
     elseif cores{ic}.hasDAQ
-        coredel = daqdel;
-        start_core = start_core_daq;
+        start_core = max(start_core_daq - dt*cores{ic}.npre, 0);
+    else
+        start_core = max(start_core_grad - dt*cores{ic}.npre, 0);
+    end
+
+    % number of discarded samples at end of RF/ADC window
+    nChopEnd = cores{ic}.res - cores{ic}.rfres - cores{ic}.npre;
+
+    % gradient delay
+    if cores{ic}.hasRF
+        coredel = max(myrfdel - dt*nChopEnd, 0);
+    elseif cores{ic}.hasDAQ
+        coredel = max(daqdel - dt*nChopEnd, 0);
     else
         coredel = 0;
-        start_core = start_core_grad;
     end
-    
-    tmin = start_core + coredel + cores{ic}.wavdur + timetrwait + timessi;   % mimimum core duration (us).
-    tdelay = max(cores{ic}.dur - tmin, 0);                                   % silence at end of core
-    tminwait = 12;   % (us) min length of wait pulse.
+
+    % Min duration of wait pulse.
+    % Should match the EPIC CV with the same name.
+    tminwait = 12; % us 
+
+    % Mimimum core duration (us).
+    % Should be identical to the CV 'mindur' in the EPIC code.
+    mindur = start_core + cores{ic}.wavdur + timetrwait + coredel + tminwait + timessi;
+
+    % silence at end of core
+    tdelay = max(cores{ic}.dur - mindur, 0); 
     if size(loopArr,2)>13
-        tdelay = tdelay + max(loopArr(it,14),tminwait);    % waitcore duration (see toppev2.e)
+        tdelay = tdelay + loopArr(it,14);  % add textra
     end
     
     waveform = loopArr(it,16);
@@ -150,7 +177,7 @@ for it = nstart:nstop
         gz  = [gz;  gz1;  zeros(round(tdelay/dt),1)];
     end
     
-    %fprintf(1, 'it %d: tmin = %.3f ms, rf t = %.3f ms, grad t = %.3f ms\n', it, tmin/1000, numel(rho)*dt*1e-3, numel(gx)*dt*1e-3);
+    %fprintf(1, 'it %d: mindur = %.3f ms, rf t = %.3f ms, grad t = %.3f ms\n', it, mindur/1000, numel(rho)*dt*1e-3, numel(gx)*dt*1e-3);
 end
 
 if arg.doTimeOnly % Make all vectors the correct length but zeros
