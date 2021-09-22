@@ -43,6 +43,7 @@ for ic = 1:ncores
     end
 	[modArr{ic}.rf, modArr{ic}.gx, modArr{ic}.gy, modArr{ic}.gz, ...
     desc, modArr{ic}.paramsint16, modArr{ic}.paramsfloat, hdr] = toppe.readmod(modArr{ic}.fname,false);
+    modArr{ic}.res = hdr.res;
     modArr{ic}.npre = hdr.npre;
     modArr{ic}.rfres = hdr.rfres;
 	modArr{ic}.wavdur = numel(modArr{ic}.gx(:,1))*4;   % waveform duration [us]
