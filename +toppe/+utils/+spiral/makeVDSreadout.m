@@ -19,6 +19,7 @@ function [gx_tmp, gy_tmp, gz_tmp, paramsint16, paramsfloat] = ...
 %                           out for spiral in - out sequence
 %   nFIDstart   [1 1]      # of times to sample k=0 at beginning of readout
 %   nFIDend     [1 1]      # of times to sample k=0 at end of readout
+%   gmax        [1 1]      peak gradient (G/cm). Default: 5 G/cm
 
 % inital version by Amos Cao
 % updated June 2020 by Melissa Haskell, mhask@umich.edu
