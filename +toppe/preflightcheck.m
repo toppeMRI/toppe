@@ -34,7 +34,6 @@ modArr = toppe.tryread(@toppe.readmodulelistfile, moduleListFile);
 %  - all .mod files use the same peak RF limit (e.g., 0.25 Gauss)
 %  - all .mod files used to acquire data have the same number of ADC samples as readoutFilterFile.
 [~,~,~,~,~,~,~,hdr] = toppe.readmod(b1CheckFile);
-hdr
 b1limit = hdr.b1max;
 [~,~,~,~,~,~,~,hdr] = toppe.readmod(readoutFilterFile);
 ndaq = hdr.rfres;   % number of 4us samples to acquire
