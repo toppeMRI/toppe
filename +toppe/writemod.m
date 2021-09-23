@@ -28,7 +28,7 @@ function writemod(varargin)
 %   nChop         [1 2] (int, multiple of 4) trim (chop) the start and end of
 %                 the RF wavevorm (or ADC window) by this many 4us samples.
 %                 Using non-zero nChop can reduce module duration on scanner.
-%                 Default: [50 50] (= [200us 200us])
+%                 Default: [48 48] (= [192us 192us])
 
 import toppe.*
 import toppe.utils.*
