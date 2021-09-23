@@ -15,7 +15,7 @@ function preflightcheck(metaFile, seqstampFile, sys)
 %  >> sys = toppe.systemspecs();  % use default system limits
 %  >> preflightcheck('toppe0.meta', 'seqstamp.txt', sys, '/usr/g/research/pulseq');
 
-fprintf('Preflight check (for GE)...');
+fprintf('Preflight check (for GE)...\n');
 
 % open output file
 fout = fopen(seqstampFile, 'w');
@@ -31,6 +31,7 @@ fid = fopen(metaFile, 'r');
 if fid == -1
     error('Failed to open meta file');
 end
+fpath = fgetl(fid);  % full path -- don't need it here
 moduleListFile    = fgetl(fid);    % e.g., 'modules.txt'
 loopFile          = fgetl(fid);    % e.g., 'scanloop.txt'
 b1CheckFile       = fgetl(fid);    % .mod file used for b1 scaling and SAR checks, e.g., 'tipdown.mod'
@@ -49,16 +50,16 @@ b1limit = hdr.b1max;
 [~,~,~,~,~,~,~,hdr] = toppe.readmod(readoutFilterFile);
 ndaq = hdr.rfres;   % number of 4us samples to acquire
 for ii = 1:length(modArr)
-	[~,~,~,~,~,~,~,hdr] = toppe.readmod(modArr{ii}.fname); 
+    [~,~,~,~,~,~,~,hdr] = toppe.readmod(modArr{ii}.fname); 
 
-	if modArr{ii}.hasDAQ & hdr.rfres ~= ndaq
-		error(sprintf('Number of samples in %s and %s do not match (must be same across all .mod files containing ADC windows)', ...
+    if modArr{ii}.hasDAQ & hdr.rfres ~= ndaq
+        error(sprintf('Number of samples in %s and %s do not match (must be same across all .mod files containing ADC windows)', ...
             readoutFilterFile, modArr{ii}.fname));
-	end
-	if hdr.b1max ~= b1limit 
-		error(sprintf('B1 limit in %s does not match %s (must be the same across all .mod files)', ...
+    end
+    if hdr.b1max ~= b1limit 
+        error(sprintf('B1 limit in %s does not match %s (must be the same across all .mod files)', ...
             modArr{ii}.fname, metaFile));
-	end
+    end
 end
 
 % Get peak gradient and slew across all .mod files.
@@ -66,7 +67,7 @@ end
 gmax = 0;
 slewmax = 0;
 for ii = 1:length(modArr)
-	[~,gx,gy,gz,~,~,~,~] = toppe.readmod(modArr{ii}.fname); 
+    [~,gx,gy,gz,~,~,~,~] = toppe.readmod(modArr{ii}.fname); 
     [isValid, gmaxtmp, slewmaxtmp] = toppe.checkwaveforms('system', sys, ...
         'gx', gx, 'gy', gy, 'gz', gz);
     if ~isValid
@@ -87,8 +88,8 @@ fprintf(fout, '%s', cs);
 fprintf(fout, '%s', cs);
 fprintf(fout, '%d\n', length(modArr));  % number of .mod files ('cores' in .e file)
 for ii = 1:length(modArr)
-	[status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', modArr{ii}.fname));
-	fprintf(fout, '%s', cs);
+    [status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', modArr{ii}.fname));
+    fprintf(fout, '%s', cs);
 end
 
 % Calculate 'equivalent' TR (TRequiv) corresponding to worst-case 10-sec SAR.
@@ -96,35 +97,50 @@ end
 % (TODO: consider replacing with a fixed reference pulse, e.g., 90 deg tbw=6 dur=2.3ms sinc as in 3dgrass.e)
 % To stay within SAR limits, TRequiv must be greater than the value returned by 'maxseqsar' in the EPIC code.
 % Also calculate gradient power = energy per TRequiv.
-%  TODO: handle long scans 
+% Do it in small chunks to limit memory usage.
 d = toppe.readloop(loopFile);
-n = min(5000, size(d,1));     % number rows in scanloop.txt (= number of 'startseq' calls in the EPIC code).
+nStartseq = size(d,1);   % number rows in scanloop.txt (= number of 'startseq' calls in the EPIC code).
 dt = 4e-6;         % RF raster time (sec)
-[b1, gx, gy, gz] = toppe.plotseq(1, n, ...
-	'loopFile',       loopFile, ...
-	'moduleListFile', moduleListFile, ...
-	'doDisplay',      false, ...
-	'system',         sys);
-b1s = abs(b1).^2;    % RF power waveform (energy per 4us sample)
-gxes = gx.^2;        % gradient power waveform (energy per 4us sample)
-gyes = gy.^2;        % gradient power waveform (energy per 4us sample)
-gzes = gz.^2;        % gradient power waveform (energy per 4us sample)
-n10s = round(10/dt);  % number of rf samples in 10s
-if length(b1s) > n10s
-	b1s = movmean(b1s, n10s, 'Endpoints', 'discard');
-	peaksar = max(b1s);
-	gxes = movmean(gxes, n10s, 'Endpoints', 'discard');
-	gyes = movmean(gyes, n10s, 'Endpoints', 'discard');
-	gzes = movmean(gzes, n10s, 'Endpoints', 'discard');
-	peakgxes = max(gxes);
-	peakgyes = max(gyes);
-	peakgzes = max(gzes);
-else
-	peaksar = mean(b1s)/n10s*length(b1s);
-	peakgxes = mean(gxes)/n10s*length(b1s);
-	peakgyes = mean(gyes)/n10s*length(b1s);
-	peakgzes = mean(gzes)/n10s*length(b1s);
+nStartseqPerIter = 5000;
+nit = ceil(nStartseq/nStartseqPerIter);
+peaksar = 0;
+peakgxes = 0;
+peakgyes = 0;
+peakgzes = 0;
+for ii = 1:nit
+    for ib = 1:30
+        fprintf('\b');
+    end
+    fprintf('\titer %d of %d', ii, nit);
+    iStart = (ii-1)*nStartseqPerIter + 1;
+    iStop = min(ii*nStartseqPerIter + 1000, nStartseq); % overlap a bit
+    [b1, gx, gy, gz] = toppe.plotseq(iStart, iStop, ...
+        'loopFile',       loopFile, ...
+        'moduleListFile', moduleListFile, ...
+        'doDisplay',      false, ...
+        'system',         sys);
+    b1s = abs(b1).^2;    % RF power waveform (energy per 4us sample)
+    gxes = gx.^2;        % gradient power waveform (energy per 4us sample)
+    gyes = gy.^2;        % gradient power waveform (energy per 4us sample)
+    gzes = gz.^2;        % gradient power waveform (energy per 4us sample)
+    n10s = round(10/dt);  % number of rf samples in 10s
+    if length(b1s) > n10s
+        b1s = movmean(b1s, n10s, 'Endpoints', 'discard');
+        peaksar = max(peaksar, max(b1s));
+        gxes = movmean(gxes, n10s, 'Endpoints', 'discard');
+        gyes = movmean(gyes, n10s, 'Endpoints', 'discard');
+        gzes = movmean(gzes, n10s, 'Endpoints', 'discard');
+        peakgxes = max(peakgxes, max(gxes));
+        peakgyes = max(peakgyes, max(gyes));
+        peakgzes = max(peakgzes, max(gzes));
+    else
+        peaksar = mean(b1s)/n10s*length(b1s);
+        peakgxes = mean(gxes)/n10s*length(b1s);
+        peakgyes = mean(gyes)/n10s*length(b1s);
+        peakgzes = mean(gzes)/n10s*length(b1s);
+    end
 end
+
 rf = toppe.readmod(b1CheckFile);
 energy = sum(abs(rf).^2) * dt;  % energy per RF pulse
 TRequiv = 2*floor(1e6 * energy / peaksar / 2);     % microsec
