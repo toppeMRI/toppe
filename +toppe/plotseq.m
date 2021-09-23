@@ -171,7 +171,7 @@ for it = nstart:nstop
         gz  = [gz;  gz1;  zeros(round(tdelay/dt),1)];
     end
     
-    fprintf(1, 'it %d: mindur = %d us, rf t = %d us, grad t = %d us\n', it, mindur, numel(rho)*dt, numel(gx)*dt);
+    %fprintf(1, 'it %d: mindur = %d us, rf t = %d us, grad t = %d us\n', it, mindur, numel(rho)*dt, numel(gx)*dt);
 end
 
 if arg.doTimeOnly % Make all vectors the correct length but zeros
