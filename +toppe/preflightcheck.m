@@ -13,7 +13,7 @@ function preflightcheck(metaFile, seqstampFile, sys)
 %
 % Example usage:
 %  >> sys = toppe.systemspecs();  % use default system limits
-%  >> preflightcheck('toppe0.meta', 'seqstamp.txt', sys, '/usr/g/research/pulseq');
+%  >> preflightcheck('toppe0.meta', 'seqstamp.txt', sys);
 
 fprintf('Preflight check (for GE)...\n');
 
@@ -31,7 +31,7 @@ fid = fopen(metaFile, 'r');
 if fid == -1
     error('Failed to open meta file');
 end
-fpath = fgetl(fid);  % full path -- don't need it here
+fpath = fgetl(fid);  % location of TOPPE scan file -- don't need it here
 moduleListFile    = fgetl(fid);    % e.g., 'modules.txt'
 loopFile          = fgetl(fid);    % e.g., 'scanloop.txt'
 b1CheckFile       = fgetl(fid);    % .mod file used for b1 scaling and SAR checks, e.g., 'tipdown.mod'
