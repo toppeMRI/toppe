@@ -2,9 +2,10 @@ function sys = systemspecs(varargin)
 % Create struct containing scanner hardware specs and related info.
 %
 % function sys = systemspecs(varargin)
-%
-% varargin is a comma-separated list of field/value pairs.
-% See also struct2cellarg.m.
+% 
+% 'maxSlew' and 'maxGrad' options can be < scanner limit, and can vary across .mod files. 
+% The usual mode of operation in TOPPE is to use the default value for 
+% maxRF (0.25G) for all .mod files, to ensure accurate b1 scaling in the interpreter.
 %
 % Input options:
 %   maxGrad         Max gradient amplitude. Can be less than the physical limit for your scanner. 
@@ -31,12 +32,18 @@ function sys = systemspecs(varargin)
 %   nMaxModules     max number of .mod files. Not known. Default: 30.
 %   nMaxWaveforms   max number of columns in waveform array. Not known. Default: 200.
 %
-% Typical usage:
-%  >> sys = systemspecs();         % use default values (this is probably rarely what you want)
-%  >> sys = toppe.systemspecs('maxSlew', 12.3, 'slewUnit', 'Gauss/cm/ms', ...
-%    'maxGrad', 5, 'gradUnit', 'Gauss/cm', ...
-%    'myrfdel', 78, ...    % psd_rf_wait (RF/gradient delay)
-%    'daqdel', 84);        % psd_grd_wait (ADC/gradient delay)
+% Example 1 (typical usage):
+% >> GE.sys = toppe.systemspecs('maxSlew', 12.3, 'slewUnit', 'Gauss/cm/ms', ...
+% >> 'maxGrad', 5, 'gradUnit', 'Gauss/cm');
+% 
+% Example 2: Specify detailed timing info to match scanner:
+% >> GE.sys = toppe.systemspecs('maxSlew', 12.3, ...
+%    'maxGrad', 5, ...
+%    'start_core_daq', 126, ...
+%    'myrfdel', 94, ...
+%    'daqdel', 100, ...
+%    'timetrwait', 0, ...
+%    'timessi', 100);
 
 
 %% Defaults
