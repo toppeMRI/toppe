@@ -1,8 +1,8 @@
-function dur = getTRtime(LineStart,LineEnd,varargin)
+function dur = getTRtime(LineStart,LineEnd,system,varargin)
 % Get scan time to run lines LineStart through LineEnd of a scanloop.
 % Useful for calculating the TR of just a portion of your scan
 %
-% function dur = getTRtime(LineStart,LineEnd,varargin)
+% function dur = getTRtime(LineStart,LineEnd,system,varargin)
 %
 %
 % Input options:
@@ -25,7 +25,6 @@ import toppe.utils.*
 % Default values 
 arg.loopFile       = 'scanloop.txt';
 arg.moduleListFile = 'modules.txt';
-arg.system         = toppe.systemspecs();
 
 % Substitute varargin values as appropriate
 arg = toppe.utils.vararg_pair(arg, varargin);
@@ -52,7 +51,7 @@ end
 dt = 4e-6;    % duration of one gradient/rf sample (sec)
 dur = 0;
 for ii = LineStart:LineEnd
-	rho = toppe.plotseq(ii, ii, 'loopArr', loopArr, 'mods', mods, 'doDisplay', false, 'system', arg.system);
+	rho = toppe.plotseq(ii, ii, system, 'loopArr', loopArr, 'mods', mods, 'doDisplay', false);
 	dur = dur + size(rho,1)*dt;
 end
 
