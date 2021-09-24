@@ -1,5 +1,5 @@
-function write2loop(modname,varargin)
-% function write2loop(modname,varargin)
+function write2loop(modname, system, varargin)
+% function write2loop(modname, system, varargin)
 %
 % Writes a module and settings to the scanloop file for a sequence
 % To create a scanloop, first initialize the file using:
@@ -19,6 +19,9 @@ function write2loop(modname,varargin)
 %
 %    Without calling 'finish', your sequence will not run!
 %
+% Input:
+%    system             [1 1]    struct specifying hardware system info, see systemspecs.m
+%
 % Regular input options:
 %    modname            [string] Name of module to call, ex. "tipdown.mod"
 %                                OR initialization/completion calls
@@ -34,7 +37,6 @@ function write2loop(modname,varargin)
 %    rotmat             [3 3]    3x3 rotation matrix (for toppe >= v3). If 'version'=2, then 'rot' is applied and 'rotmat' is ignored.
 %    trig               [1 1]    Trigger mode (int): internal (0) or cardiac (1)
 %    version            [1 1]    Default: 4
-%    system             [1 1]    struct specifying hardware system info, see systemspecs.m
 %
 % RF module input options:
 %    RFamplitude        [1 1]    Amplitude scaling of RF waveform
@@ -81,7 +83,6 @@ arg.rot             = 0;
 arg.rotmat          = eye(3);
 arg.trig            = trig_intern;
 arg.version         = 4;
-arg.system          = toppe.systemspecs();
 
 % substitute with explicit inputs
 arg = toppe.utils.vararg_pair(arg, varargin);
@@ -150,17 +151,17 @@ if strcmp(modname,'finish')
     maxview = max(d(:,9));
 
     % check if max 'slice', 'echo', and 'view' numbers in scanloop.txt exceed system limits
-    if maxslice > arg.system.maxSlice
+    if maxslice > system.maxSlice
         warning('maxslice > system.maxSlice -- scan may not run!'); 
     end
-    if maxecho + 1 > arg.system.maxEcho    % +1 since 'echo' starts at 0
+    if maxecho + 1 > system.maxEcho    % +1 since 'echo' starts at 0
         warning('maxecho > system.maxEcho -- scan may not run!');   
     end
-    if maxview > arg.system.maxView
+    if maxview > system.maxView
         warning('maxview > system.maxView -- scan may not run!');   
     end
 
-    dur = toppe.getscantime(arg.system,'loopArr',d,'mods',modules);
+    dur = toppe.getscantime(system,'loopArr',d,'mods',modules);
     udur = round(dur * 1e6);
     if toppeVer > 2
         newParams = [nt maxslice maxecho maxview udur toppeVer];
