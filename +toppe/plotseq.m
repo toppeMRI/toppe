@@ -1,13 +1,13 @@
-function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, varargin)
+function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, system, varargin)
 % Display pulse sequence, as specified in modules.txt, scanloop.txt, and timing.txt
 %
-% function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, varargin)
+% function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, system, varargin)
 %
 % Inputs:
 %   nstart,nstop       first and last startseq calls (as specified in scanloop.txt)
+%   system             struct specifying hardware system info, see systemspecs.m
 %
 % Input options:
-%   system             (required) struct specifying hardware system info, see systemspecs.m
 %   loopFile           default: 'scanloop.txt'
 %   loopArr            scan loop array (see readloop.m). Default: read from loopFile.
 %   moduleListFile     default: 'modules.txt'
@@ -18,10 +18,10 @@ function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, v
 %   doTimeOnly         Returns outputs as zeros (but with correct length)
 %                      to speed up calculation of scan time.
 %                      False (default) or true
-%
 %   drawpause          (boolean) include pauses (textra) or not
 %   gmax               display limit, Gauss/cm
 %   rhomax             display limit, Gauss
+%   printTime          False (default) or true
 %
 % Outputs:
 %   rf               Complex RF waveform (Gauss)
@@ -38,16 +38,13 @@ arg.mods            = [];
 arg.moduleListFile  = 'modules.txt';
 arg.doDisplay       = true;
 arg.doTimeOnly      = false;
-arg.system          = [];
 arg.drawpause       = 1;
 arg.gmax            = 5;     % Gauss/cm
 arg.rhomax          = 0.25;  % Gauss
+arg.printTime       = false;
 
 arg = toppe.utils.vararg_pair(arg, varargin);
 
-if isempty(arg.system)
-    error('Missing system argument');
-end
 
 %% read scan files as needed
 % scanloop array
@@ -91,11 +88,11 @@ for it = nstart:nstop
     
     % start of core
     if cores{ic}.hasRF
-        start_core = max(arg.system.start_core_rf - dt*cores{ic}.npre, 0);
+        start_core = max(system.start_core_rf - dt*cores{ic}.npre, 0);
     elseif cores{ic}.hasDAQ
-        start_core = max(arg.system.start_core_daq - dt*cores{ic}.npre, 0);
+        start_core = max(system.start_core_daq - dt*cores{ic}.npre, 0);
     else
-        start_core = max(arg.system.start_core_grad - dt*cores{ic}.npre, 0);
+        start_core = max(system.start_core_grad - dt*cores{ic}.npre, 0);
     end
 
     % number of discarded samples at end of RF/ADC window
@@ -103,16 +100,16 @@ for it = nstart:nstop
 
     % gradient delay
     if cores{ic}.hasRF
-        coredel = max(arg.system.myrfdel - dt*nChopEnd, 0);
+        coredel = max(system.myrfdel - dt*nChopEnd, 0);
     elseif cores{ic}.hasDAQ
-        coredel = max(arg.system.daqdel - dt*nChopEnd, 0);
+        coredel = max(system.daqdel - dt*nChopEnd, 0);
     else
         coredel = 0;
     end
 
     % Mimimum core duration (us).
     % Should be identical to the CV 'mindur' in the EPIC code.
-    mindur = start_core + cores{ic}.wavdur + arg.system.timetrwait + coredel + arg.system.tminwait + arg.system.timessi;
+    mindur = start_core + cores{ic}.wavdur + system.timetrwait + coredel + system.tminwait + system.timessi;
 
     % silence at end of core
     tdelay = max(cores{ic}.dur - mindur, 0); 
@@ -123,7 +120,7 @@ for it = nstart:nstop
     waveform = loopArr(it,16); % waveform index
     
     if arg.doTimeOnly % Calculate the length of one waveform and add it to our sample counter
-        gxlength = round((start_core)/dt) + core_size(ic) + round((arg.system.timetrwait+arg.system.timessi+coredel)/dt);
+        gxlength = round((start_core)/dt) + core_size(ic) + round((system.timetrwait+system.timessi+coredel)/dt);
         nsamples = nsamples + gxlength + round(tdelay/dt);
     else % Calculate RF and gradients as normal
         % get gradients
@@ -143,19 +140,19 @@ for it = nstart:nstop
         % build waveforms for this startseq call
         rho1 = [zeros(round((start_core+coredel)/dt),1); ...
                 ia_rf/max_pg_iamp*  abs(cores{ic}.rf(:,waveform)); ...
-                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi)/dt),1)];
+                zeros(round((system.tminwait+system.timetrwait+system.timessi)/dt),1)];
         th1  = [zeros(round((start_core+coredel)/dt),1); ...
                 ia_th/max_pg_iamp*angle(cores{ic}.rf(:,waveform)); ...
-                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi)/dt),1)];
+                zeros(round((system.tminwait+system.timetrwait+system.timessi)/dt),1)];
         gx1  = [zeros(round((start_core)/dt),1); ...
                 gxit(:); ...
-                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi+coredel)/dt),1)];
+                zeros(round((system.tminwait+system.timetrwait+system.timessi+coredel)/dt),1)];
         gy1  = [zeros(round((start_core)/dt),1); ...
                 gyit(:); ...
-                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi+coredel)/dt),1)];
+                zeros(round((system.tminwait+system.timetrwait+system.timessi+coredel)/dt),1)];
         gz1  = [zeros(round((start_core)/dt),1); ...
                 gzit(:); ...
-                zeros(round((arg.system.tminwait+arg.system.timetrwait+arg.system.timessi+coredel)/dt),1)];
+                zeros(round((system.tminwait+system.timetrwait+system.timessi+coredel)/dt),1)];
         
         % apply RF phase offset
         if cores{ic}.hasRF
@@ -171,7 +168,9 @@ for it = nstart:nstop
         gz  = [gz;  gz1;  zeros(round(tdelay/dt),1)];
     end
     
-    %fprintf(1, 'it %d: mindur = %d us, rf t = %d us, grad t = %d us\n', it, mindur, numel(rho)*dt, numel(gx)*dt);
+    if arg.printTime
+        fprintf(1, 'it %d: mindur = %d us, rf t = %d us, grad t = %d us\n', it, mindur, numel(rho)*dt, numel(gx)*dt);
+    end
 end
 
 if arg.doTimeOnly % Make all vectors the correct length but zeros
