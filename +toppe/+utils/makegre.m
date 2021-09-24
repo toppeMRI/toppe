@@ -1,4 +1,4 @@
-function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
+function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
 % function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
 %
 % Make gradients for 3D spin-warp (cartesian gradient-echo) readout
@@ -7,10 +7,10 @@ function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
 %  fov        [1 1]    in-plane fov (cm)
 %  npix       [1 1]    number of pixels along fov
 %  zres       [1 1]    resolution along z (partition) encoding direction (cm)
+%  system     struct specifying system info, see systemspecs.m
 % Options:
 %  oprbw       Receive bandwidth. Default: +/- 125/4 kHz
 %  ncycles     Number of cycles of phase across voxel dimension, added to x gradient. Default: 0 (balanced readout).
-%  system      struct specifying system info, see systemspecs.m
 %  ofname      Output file name. Default: 'readout.mod'. If empty, no file is written.
 %  extrafiles  [bool] If true, writes z phase-encode and spoiler to separate .mod files.
 %  slewDerate  Reduce slew rate by this factor during prewinders/crushers
@@ -26,7 +26,6 @@ import toppe.utils.*
 % defaults
 arg.oprbw  = 125/4;  % kHz
 arg.ncycles = 0;
-arg.system = systemspecs();
 arg.ofname = 'readout.mod';
 arg.extrafiles = false;
 arg.flip   = false;
@@ -42,12 +41,12 @@ if arg.oprbw > 125
 end
 
 % Gradient limits
-mxg = arg.system.maxGrad;          
-if strcmp(arg.system.gradUnit, 'mT/m')
+mxg = system.maxGrad;          
+if strcmp(system.gradUnit, 'mT/m')
 	mxg = mxg/10;     % Gauss/cm
 end
-mxs = arg.system.maxSlew;
-if strcmp(arg.system.slewUnit, 'T/m/s')
+mxs = system.maxSlew;
+if strcmp(system.slewUnit, 'T/m/s')
 	mxs = mxs/10;     % Gauss/cm/ms
 end
 
@@ -157,10 +156,12 @@ end
 %end
 hdrints = [npre npixro iref];    % some useful numbers for recon
 hdrfloats = [arg.oprbw];
-writemod('gx', gx(:), 'gy', gy(:), 'gz', gz(:), ...
-         'ofname', arg.ofname, 'system', arg.system, ...
-         'nChop', arg.nChop, ...
-         'desc', '3D spin-warp (GRE) waveform', 'hdrints', hdrints, 'hdrfloats', hdrfloats);
+writemod(system, ...
+        'gx', gx(:), 'gy', gy(:), 'gz', gz(:), ...
+        'ofname', arg.ofname, ...
+        'nChop', arg.nChop, ...
+        'desc', '3D spin-warp (GRE) waveform', ...
+        'hdrints', hdrints, 'hdrfloats', hdrfloats);
 
 if arg.extrafiles
 	% write z phase-encode gradient to file (useful for spiral scans with toppe)

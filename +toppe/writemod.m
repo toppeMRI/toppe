@@ -1,4 +1,4 @@
-function writemod(varargin)
+function writemod(system, varargin)
 % Write waveforms to .mod file, for use with toppe psd on GE scanners.
 %
 % function writemod(varargin)
@@ -10,6 +10,9 @@ function writemod(varargin)
 % >> writemod('gz', gzwaveform, 'desc', 'my spoiler gradient');
 % >> lims = toppe.systemspecs('maxGrad', 130, 'gradUnit', 'mT/m');
 % >> writemod('rf', myrf, 'gx', gzwav, 'system', lims);
+%
+% Input:
+%   system        struct specifying hardware system info, see systemspecs.m
 %
 % Input options:
 %   rf            Complex RF waveform, [ndat nrfpulses]
@@ -24,7 +27,6 @@ function writemod(varargin)
 %                 but has no influence on b1 scaling. Default: 90.
 %   hdrfloats     Additional floats to put in header (max 12)
 %   hdrints       Additional ints to put in header (max 29)
-%   system        struct specifying hardware system info, see systemspecs.m
 %   nChop         [1 2] (int, multiple of 4) trim (chop) the start and end of
 %                 the RF wavevorm (or ADC window) by this many 4us samples.
 %                 Using non-zero nChop can reduce module duration on scanner.
@@ -51,17 +53,10 @@ arg.desc      = 'TOPPE module';
 arg.nomflip   = 90;
 arg.hdrfloats = [];
 arg.hdrints   = [];
-arg.system    = [];
 arg.nChop = nChopDefault;
 
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
-
-if isempty(arg.system)
-    error('Missing system argument');
-end
-
-system = arg.system;
 
 %% Check nChop
 if arg.nChop(1) < nChopDefault(1) | arg.nChop(2) < nChopDefault(2)
@@ -113,7 +108,7 @@ end
 %[rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp);
 
 %% Check waveforms against system hardware limits
-if ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
+if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
 	error('Waveforms failed system hardware checks -- exiting');
 end
 

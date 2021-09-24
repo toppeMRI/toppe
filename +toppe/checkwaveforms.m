@@ -1,4 +1,4 @@
-function [isValid, gmax, slewmax] = checkwaveforms(varargin)
+function [isValid, gmax, slewmax] = checkwaveforms(system, varargin)
 % Check rf/gradient waveforms against system limits.
 %
 % function isValid = checkwaveforms(varargin)
@@ -31,15 +31,9 @@ arg.gy = [];
 arg.gz = [];
 arg.rfUnit   = 'Gauss';
 arg.gradUnit = 'Gauss/cm';
-arg.system = [];
 
 arg = toppe.utils.vararg_pair(arg, varargin);
 
-if isempty(arg.system)
-    error('Missing system argument');
-end
-
-system = arg.system;
 
 %% Copy input waveform to rf, gx, gy, and gz (so we don't have to carry the arg. prefix around)
 fields = {'rf' 'gx' 'gy' 'gz'};
