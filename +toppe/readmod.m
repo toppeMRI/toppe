@@ -26,6 +26,8 @@ function [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = readmod(fname,showinfo
 import toppe.*
 import toppe.utils.*
 
+nReservedInts = 2;   % [nChop(1) rfres], rfres = # samples in RF/ADC window
+
 if ~exist('showinfo','var')
 	showinfo = false;
 end
@@ -97,7 +99,7 @@ theta = reshape(theta, hdr.res, hdr.npulses, hdr.ncoils);
 gx    = reshape(gx,    hdr.res, hdr.npulses);
 gy    = reshape(gy,    hdr.res, hdr.npulses);
 gz    = reshape(gz,    hdr.res, hdr.npulses);
-paramsint16 = paramsint16(4:end)';    % NB! Return only the user-defined ints passed to writemod.m
+paramsint16 = paramsint16((nReservedInts+1):end)';    % NB! Return only the user-defined ints passed to writemod.m
 paramsfloat = paramsfloat';
 
 rf = rho.*exp(1i*theta);
