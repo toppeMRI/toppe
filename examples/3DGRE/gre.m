@@ -1,34 +1,61 @@
-function main
-% 3D SPGR sequence example
+function sys = gre
+% 3D RF-spoiled gradient-echo sequence example
+%
+% This script generates the following files:
+%  modules.txt
+%  scanloop.txt
+%  tipdown.mod
+%  readout.mod
+%  seqstamp.txt
+%
+% These must be copied to the scanner host, in the folder specified on the first line in toppe0.meta.
+% toppe0.meta (provided in this folder) is the entry point for the TOPPE interpreter,
+% and must be placed in /usr/g/research/pulseq/ on the scanner host.
 
-% Set hardware limits (for design)
+% Set hardware limits (for design and detailed timing calculations)
 % 'maxSlew' and 'maxGrad' options can be < scanner limit, and can vary across .mod files. 
 sys = toppe.systemspecs('maxSlew', 12.3, 'slewUnit', 'Gauss/cm/ms', ...
+    'timetrwait', 64, ...
+    'timessi', 200, ...
+    'start_core_rf', 0, ...
+    'start_core_daq', 126, ...
+    'start_core_grad', 0, ...
     'maxGrad', 5, 'gradUnit', 'Gauss/cm');
-
 
 % Acquisition parameters
 % fov and voxel size must be square (in-plane)
-matrix = [240 240 10];
-fov  = [24 24 10];       % cm
-flip = 8;               % excitation flip angle (degrees)
+matrix = [120 120 60];
+fov  = [24 24 24];       % cm
+flip = 8;                % excitation flip angle (degrees)
 ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x and z)
 
 if matrix(1) ~= matrix(2) | fov(1) ~= fov(2)
     error('In-plane fov and voxel size must be square');
 end
 
-% Make .mod file containing z spoiler gradient and RF excitation
-dur = 2;                    % RF pulse duration (msec)
-slthick = fov(3)*0.8;       % Slab thickness (cm). A bit smaller than fov(3) to avoid aliasing.
-ftype = 'min';              % minimum-phase SLR pulse (good for 3D imaging)
-tbw = 8;                    % time-bandwidth product of SLR pulse 
-toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncyclesspoil*matrix(3), sys, ...
-                       'ftype', ftype, 'ofname', 'tipdown.mod');
+% Non-selective excitation
+gamG = 4.2576e3;     % Hz/Gauss
+nhard = 20; % number of waveform samples in hard pulse
+nChop = [0 0];
+rf = [(flip/360) / (gamG * nhard * sys.raster) * ones(nhard,1)];
+rf = [zeros(nChop(1)+2,1); rf; zeros(nChop(2)+2,1)];  % TOPPE wants waveforms to start and end with 0
+rf = toppe.makeGElength(rf); % force number of samples to be multiple of 4
+toppe.writemod(sys, ...
+    'ofname', 'tipdown.mod', ...
+    'nChop', nChop, ...
+    'rf', rf);
 
-% Create readout.mod
+% Create readout waveforms and write to readout.mod.
+% Here we use the helper function 'makegre' to do that, but
+% that's not a requirement
 toppe.utils.makegre(fov(1), matrix(1), fov(3)/matrix(3), sys, ... 
-                    'ofname', 'readout.mod', 'ncycles', ncyclesspoil); 
+    'nChop', nChop, ...
+    'ofname', 'readout.mod', ...
+    'ncycles', ncyclesspoil); 
+
+% Display .mod files.
+%
+toppe.plotmod('all');
 
 % Write modules.txt
 modFileText = ['' ...
@@ -70,8 +97,7 @@ for iz = 0:nz     % We'll use iz=0 for approach to steady-state
     end
 end
 
-% finalize scanloop.txt
-toppe.write2loop('finish', sys);
+toppe.write2loop('finish', sys);  % finalize file
 
 % Play sequence in loop (movie) mode
 %nModulesPerTR = 2;
@@ -82,8 +108,6 @@ toppe.write2loop('finish', sys);
 toppe.preflightcheck('toppe0.meta', 'seqstamp.txt', sys);
 
 % Write files to tar archive (for convenience only).
-% toppe0.meta must be placed in /usr/g/research/pulseq/ on scanner host.
-% The other files go in the folder specified on the first line in toppe0.meta.
 system('tar cf gre.tar toppe0.meta modules.txt scanloop.txt *.mod seqstamp.txt');
 
 return;
