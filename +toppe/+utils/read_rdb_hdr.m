@@ -9,6 +9,8 @@ function a = read_rdb_hdr( my_file,rdbm_rev )
 
 % Copyright (c) 2012 by General Electric Company. All rights reserved.
 
+import toppe.utils.freadc
+
 if rdbm_rev < 9
     a.rdbm_rev          = fread( my_file, 1, 'float32');
     a.run_int           = fread( my_file, 1, 'int32');
