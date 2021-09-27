@@ -26,7 +26,7 @@ sys = toppe.systemspecs('maxSlew', 12.3, 'slewUnit', 'Gauss/cm/ms', ...
 % fov and voxel size must be square (in-plane)
 matrix = [120 120 60];
 fov  = [24 24 24];       % cm
-flip = 8;                % excitation flip angle (degrees)
+flip = 5;                % excitation flip angle (degrees)
 ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x and z)
 
 if matrix(1) ~= matrix(2) | fov(1) ~= fov(2)
