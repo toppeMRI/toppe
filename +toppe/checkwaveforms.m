@@ -1,7 +1,7 @@
 function [isValid, gmax, slewmax] = checkwaveforms(system, varargin)
 % Check rf/gradient waveforms against system limits.
 %
-% function isValid = checkwaveforms(varargin)
+% function [isValid, gmax, slewmax] = checkwaveforms(system, varargin)
 %
 % Inputs:
 %  system       (required) struct containing hardware specs. See systemspecs.m
