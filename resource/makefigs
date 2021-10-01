@@ -1,0 +1,1 @@
+inkscape --export-png=workflow.png workflow.svg
