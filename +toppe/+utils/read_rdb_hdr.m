@@ -9,8 +9,6 @@ function a = read_rdb_hdr( my_file,rdbm_rev )
 
 % Copyright (c) 2012 by General Electric Company. All rights reserved.
 
-import toppe.utils.freadc
-
 if rdbm_rev < 9
     a.rdbm_rev          = fread( my_file, 1, 'float32');
     a.run_int           = fread( my_file, 1, 'int32');
@@ -13537,9 +13535,21 @@ if rdbm_rev == 28.002
   a.airiq_config = fread(my_file, 1, 'uint32');
   a.airiq_level_a = fread(my_file, 1, 'float32');
   a.airiq_level_b = fread(my_file, 1, 'float32');
-  a.airiq_win_r = fread(my_file, 1, 'float32');
+  a.airiq_win_ir = fread(my_file, 1, 'float32');
   a.airiq_win_w = fread(my_file, 1, 'float32');
-  a.excess = fread(my_file, 432, 'int16');
+  a.a2dpc_pnt = fread(my_file, 1, 'float32');
+  a.a2dpc_mt = fread(my_file, 1, 'float32');
+  a.radial2D_control = fread(my_file, 1, 'uint16');
+  a.nspokes_washin = fread(my_file, 1, 'uint16');
+  a.nspokes_delayed = fread(my_file, 1, 'uint16');
+  a.nphases_washin = fread(my_file, 1, 'uint16');
+  a.radial2D_vs_direction = fread(my_file, 1, 'float32');
+  a.radial2D_vs_base = fread(my_file, 1, 'float32');
+  a.radial2D_vs_top = fread(my_file, 1, 'float32');
+  a.segment_time = fread(my_file, 1, 'uint32');
+  a.airiq_win_xr = fread(my_file, 1, 'float32');
+  a.airiq_win_yr = fread(my_file, 1, 'float32');
+  a.excess = fread(my_file, 412, 'int16');
 
 
 end
