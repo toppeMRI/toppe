@@ -6,6 +6,8 @@
 %| annoyingly does not tell the file/line where the error occured.
 %| this call ensures that the file/line is always displayed.
 
+import toppe.utils.*
+
 [name line] = caller_name(1);
 if length(varargin)
 	printf(['Fail: %s %d: ' varargin{1}], name, line, varargin{2:end})

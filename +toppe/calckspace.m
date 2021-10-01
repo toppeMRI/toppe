@@ -56,7 +56,7 @@ kztraj = (gamma * cumtrapz(gz) * raster) * 0.1; % kztraj in 1/mm
 kspace = cat(3, kxtraj,kytraj, kztraj);
 
 %% read scanloop and get info needed for k-space recon
-loopArr = toppe.utils.tryread(@toppe.readloop, arg.loopFile);
+loopArr = toppe.tryread(@toppe.readloop, arg.loopFile);
 
 % extract loop rows where data is saved to P-file
 loopArr_dabslice = loopArr(:,7);

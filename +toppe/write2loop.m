@@ -1,5 +1,5 @@
-function write2loop(modname,varargin)
-% function write2loop(modname,varargin)
+function write2loop(modname, system, varargin)
+% function write2loop(modname, system, varargin)
 %
 % Writes a module and settings to the scanloop file for a sequence
 % To create a scanloop, first initialize the file using:
@@ -19,6 +19,9 @@ function write2loop(modname,varargin)
 %
 %    Without calling 'finish', your sequence will not run!
 %
+% Input:
+%    system             [1 1]    struct specifying hardware system info, see systemspecs.m
+%
 % Regular input options:
 %    modname            [string] Name of module to call, ex. "tipdown.mod"
 %                                OR initialization/completion calls
@@ -31,9 +34,9 @@ function write2loop(modname,varargin)
 %                                Default: 1
 %    textra             [1 1]    Extra time at end of waveform (ms)
 %    rot                [1 1]    In-plane gradient rotation angle (radians), around the axis of rotation defined by rotmat.
-%    rotmat             [3 3]    3x3 rotation matrix (for toppev3). If 'version'=2, then 'rot' is applied and 'rotmat' is ignored.
-%    version            [1 1]    Default: 2 (for backward compatibility) 
-%    system             [1 1]    struct specifying hardware system info, see systemspecs.m
+%    rotmat             [3 3]    3x3 rotation matrix (for toppe >= v3). If 'version'=2, then 'rot' is applied and 'rotmat' is ignored.
+%    trig               [1 1]    Trigger mode (int): internal (0) or cardiac (1)
+%    version            [1 1]    Default: 4
 %
 % RF module input options:
 %    RFamplitude        [1 1]    Amplitude scaling of RF waveform
@@ -56,24 +59,6 @@ function write2loop(modname,varargin)
 %                                'off'   No acq
 %                                'add'   Average with existing
 %                                'reset' Erase data (?)
-%
-%
-% This file is part of the TOPPE development environment for platform-independent MR pulse programming.
-%
-% TOPPE is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Library General Public License as published by
-% the Free Software Foundation version 2.0 of the License.
-%
-% TOPPE is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU Library General Public License for more details.
-%
-% You should have received a copy of the GNU Library General Public License
-% along with TOPPE. If not, see <http://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>.
-%
-% (c) 2017-18 The Regents of the University of Michigan
-% Jon-Fredrik Nielsen, jfnielse@umich.edu
 
 import toppe.*
 import toppe.utils.*
@@ -96,9 +81,13 @@ arg.view            = 1;
 arg.dabmode         = 'on';
 arg.rot             = 0;
 arg.rotmat          = eye(3);
-arg.version         = 3;
-arg.system          = toppe.systemspecs();
+arg.trig            = trig_intern;
+arg.version         = 4;
+
+% substitute with explicit inputs
 arg = toppe.utils.vararg_pair(arg, varargin);
+
+% check inputs
 checkInputs(arg);
 
 %% Apply in-plane rotation angle 'rot' to arg.rotmat
@@ -120,7 +109,7 @@ persistent toppeVer
 %% If modname is setup, then init the file
 if strcmp(modname,'setup')    
 
-	toppeVer = arg.version;
+    toppeVer = arg.version;
 
     % Zero out spoiling angle tracking variables
     rf_spoil_phase = 0;
@@ -128,15 +117,17 @@ if strcmp(modname,'setup')
     rf_spoil_seed_cnt = 0;
     
     % Load modules in only once and keep persistent for speed
-    modules = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+    modules = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
     
     % Preallocate 
-	switch toppeVer
-		case 3
-			d = zeros(1000000,25);
-		otherwise
-			d = zeros(1000000,16);
-	end
+    switch toppeVer
+        case 4
+            d = zeros(1000000,26);   % 26th column is trigger mode (0 or 1)
+        case 3
+            d = zeros(1000000,25);   % Columns 17-25 contain 3D rotation matrix
+        otherwise
+            d = zeros(1000000,16);
+    end
     d_index = 1; % Current line to write to
     
     % Mark we're set up
@@ -159,41 +150,44 @@ if strcmp(modname,'finish')
     maxecho = max(d(:,8));
     maxview = max(d(:,9));
 
-	% check if max 'slice', 'echo', and 'view' numbers in scanloop.txt exceed system limits
-	if maxslice > arg.system.maxSlice
-		warning('maxslice > system.maxSlice -- scan may not run!');	
-	end
-	if maxecho + 1 > arg.system.maxEcho    % +1 since 'echo' starts at 0
-		warning('maxecho > system.maxEcho -- scan may not run!');	
-	end
-	if maxview > arg.system.maxView
-		warning('maxview > system.maxView -- scan may not run!');	
-	end
+    % check if max 'slice', 'echo', and 'view' numbers in scanloop.txt exceed system limits
+    if maxslice > system.maxSlice
+        warning('maxslice > system.maxSlice -- scan may not run!'); 
+    end
+    if maxecho + 1 > system.maxEcho    % +1 since 'echo' starts at 0
+        warning('maxecho > system.maxEcho -- scan may not run!');   
+    end
+    if maxview > system.maxView
+        warning('maxview > system.maxView -- scan may not run!');   
+    end
 
-    dur = toppe.getscantime('loopArr',d,'mods',modules);
+    dur = toppe.getscantime(system,'loopArr',d,'mods',modules);
     udur = round(dur * 1e6);
-	if toppeVer > 2
-    	newParams = [nt maxslice maxecho maxview udur toppeVer];
-	else
-    	newParams = [nt maxslice maxecho maxview udur];
- 	end
+    if toppeVer > 2
+        newParams = [nt maxslice maxecho maxview udur toppeVer];
+    else
+        newParams = [nt maxslice maxecho maxview udur];
+    end
     
-	% Write scanloop lines from d matrix
-	fid = fopen(arg.loopFile, 'w+', 'ieee-be');
-	if toppeVer > 2
-    	fprintf(fid, 'nt\tmaxslice\taxecho\tmaxview\tscandur\tversion\n');
-	else
-    	fprintf(fid, 'nt\tmaxslice\tmaxecho\tmaxview\tscandur\n');
-	end
-	if toppeVer > 2
-		lineformat = '%d\t%d\t%d\t%d\t%d\t%d\n';
-	else
-		lineformat = '%d\t%d\t%d\t%d\t%d\n';
-	end
+    % Write file header
+    fid = fopen(arg.loopFile, 'w+', 'ieee-be');
+    if toppeVer > 2
+        fprintf(fid, 'nt\tmaxslice\tmaxecho\tmaxview\tscandur\tversion\n');
+    else
+        fprintf(fid, 'nt\tmaxslice\tmaxecho\tmaxview\tscandur\n');
+    end
+    if toppeVer > 2
+        lineformat = '%d\t%d\t%d\t%d\t%d\t%d\n';
+    else
+        lineformat = '%d\t%d\t%d\t%d\t%d\n';
+    end
     fprintf(fid, lineformat, newParams); % Updated line
     fprintf(fid, headerline);
     fclose(fid);
-    dlmwrite(arg.loopFile, d, '-append','delimiter', '\t', 'precision', 8);  % precision=8 needed to avoid large numbers written in scientific notation
+
+    % Write scanloop lines from d matrix.
+    % Precision=8 needed to avoid large numbers written in scientific notation.
+    dlmwrite(arg.loopFile, d, '-append','delimiter', '\t', 'precision', 8);  
     
     % Disable setup flag to conclude file
     modules = []; % Erase modules struct from mem for safety in case .mod files get updated
@@ -228,18 +222,26 @@ textra_us = 2*round(1000*arg.textra/2);
 
 % 3d rotation matrix
 if toppeVer > 2
-	if ndims(rotmat) ~= 2 | ~all(size(rotmat)==3) % | norm(rotmat) ~= 1
-		error('rotmat must be a 3x3 orthonormal matrix');
-	end
-	rt = rotmat';
-	drot = round(max_pg_iamp*rt(:)');   % vectorized, in row-major order
-    phi = 0; % in-plane rotation
+    if ndims(rotmat) ~= 2 | ~all(size(rotmat)==3) % | norm(rotmat) ~= 1
+        error('rotmat must be a 3x3 orthonormal matrix');
+    end
+    rt = rotmat';
+    drot = round(max_pg_iamp*rt(:)');   % vectorized, in row-major order
+    phi = 0; % in-plane rotation (already applied to 3D rotation matrix)
 else
-	drot = [];
+    drot = [];
     phi = angle(exp(1i*arg.rot));     % inplane rotation. wrap to [-pi pi]
 end;
 
+% 2D in-plane rotation ('iphi' only applies to v2)
 iphi = 2*round(phi/pi*max_pg_iamp/2);
+
+% trigger
+if toppeVer > 3
+    trig = arg.trig;
+else
+    trig = []; 
+end
 
 if module.hasRF % Write RF module
     % Do RF amplitude stuff
@@ -269,7 +271,7 @@ if module.hasRF % Write RF module
     f = arg.RFoffset;
  
     % Write line values and increment
-    d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot];
+    d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot trig];
     d_index = d_index + 1;
 elseif module.hasDAQ % Write DAQ module
     % Set slice/echo/view
@@ -290,7 +292,7 @@ elseif module.hasDAQ % Write DAQ module
        idaqphase = phase2int(arg.DAQphase);
     end
 
-    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot];
+    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig];
     d_index = d_index + 1;
 else
     % gradients only
@@ -298,7 +300,7 @@ else
 
     % rotation
 
-    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot];
+    d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot trig];
     d_index = d_index + 1;
 end
 return
@@ -362,8 +364,8 @@ end
 if arg.view ~= round(abs(arg.view)) || arg.view < 1
     error('View must be an integer > 0');
 end
-if arg.version < 2 || arg.version > 3
-	error('version must be 2 or 3');
+if arg.version < 2 || arg.version > 5
+    error('version must be 2, 3, or 4');
 end
 end
 
@@ -376,8 +378,17 @@ function h = rf_spoil_seed
 h = 117;
 end
 
+function t = trig_intern
+t = 0;
+end
+
+function t = trig_ecg
+t = 1;
+end
+
 function h = dformat
-h = '%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d \n';
+%h = '%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d \n';
+h = '%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d \n';
 end
 
 function h = headerline

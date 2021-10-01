@@ -1,23 +1,29 @@
-function isValid = checkwaveforms(varargin)
+function [isValid, gmax, slewmax] = checkwaveforms(system, varargin)
 % Check rf/gradient waveforms against system limits.
 %
-% function isValid = checkwaveforms(varargin)
+% function [isValid, gmax, slewmax] = checkwaveforms(system, varargin)
 %
 % Inputs:
-% Options 
-%  system       struct containing hardware specs. See systemspecs.m
-%  rf           rf waveform
-%  gx/gy/gz     gradient waveform
-%  rfUnit       mT (default) or Gauss
-%  gradUnit     mT/m (default) or Gauss/cm
+%  system       (required) struct containing hardware specs. See systemspecs.m
 %
-% Output
+% Options 
+%  rf           rf waveform
+%  gx/gy/gz     [nt npulses]. Gradient waveforms. Can be different size.
+%  rfUnit       Gauss (default) or mT
+%  gradUnit     Gauss/cm (default) or mT/m
+%
+% Outputs
 %  isValid    boolean/logical (true/false)
+%  gmax       [1 3] Max gradient amplitude on the three gradient axes (x, y, z) (G/cm)
+%  slewmax    [1 3] Max slew rate on the three gradient axes (x, y, z) (G/cm/ms) (G/cm/ms)
 
 import toppe.*
 import toppe.utils.*
 
+isValid = true;
+
 %% parse inputs
+
 % Defaults
 arg.rf = [];
 arg.gx = [];
@@ -25,11 +31,9 @@ arg.gy = [];
 arg.gz = [];
 arg.rfUnit   = 'Gauss';
 arg.gradUnit = 'Gauss/cm';
-arg.system   = toppe.systemspecs();
 
 arg = toppe.utils.vararg_pair(arg, varargin);
 
-system = arg.system;
 
 %% Copy input waveform to rf, gx, gy, and gz (so we don't have to carry the arg. prefix around)
 fields = {'rf' 'gx' 'gy' 'gz'};
@@ -39,7 +43,17 @@ for ii = 1:length(fields)
 	eval(cmd);
 end
 
-%% Convert input waveforms to Gauss and Gauss/cm
+%% Is (max) waveform duration on a 4 sample (16us) boundary?
+ndat = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
+if mod(ndat, 4)
+	fprintf('Error: waveform duration must be on a 4 sample (16 us) boundary.');
+	isValid = false;
+end
+
+%% Zero-pad at end to equal size
+[rf, gx, gy, gz] = padwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz);
+
+%% Convert input waveforms and system limits to Gauss and Gauss/cm
 if strcmp(arg.rfUnit, 'mT')
 	rf = rf/100;   % Gauss
 end
@@ -49,9 +63,8 @@ if strcmp(arg.gradUnit, 'mT/m')
 	gz = gz/10;
 end
 
-%% Convert system limits to Gauss and Gauss/cm
 if strcmp(system.rfUnit, 'mT')
-	system.maxRf = system.maxRf/100;      % Gauss
+	system.maxRF = system.maxRF/100;      % Gauss
 end
 if strcmp(system.gradUnit, 'mT/m')
 	system.maxGrad = system.maxGrad/10;   % Gauss/cm
@@ -61,53 +74,55 @@ if strcmp(system.slewUnit, 'T/m/s')
 end
 
 %% Check against system hardware limits
-isValid = true;
 
-tol = 1;     %
+axes = 'xyz';
 
-grads = 'xyz';
-
-% gradient amplitude
+% gradient amplitude and slew
 for ii = 1:3
-	cmd = sprintf('maxg = max(abs(g%s(:)));', grads(ii));   % Gauss
-	eval(cmd);
-	if maxg > system.maxGrad
-		fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', grads(ii), maxg/system.maxGrad*100);
-		isValid = false;
-	end
+	eval(sprintf('g = g%s;', axes(ii))); 
+
+    gmax(ii) = max(abs(g(:)));
+    if gmax(ii) > system.maxGrad
+        fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', axes(ii), gmax(ii)/system.maxGrad*100);
+        isValid = false;
+    end
+
+    slewmax(ii) = 0;
+    for jj = 1:size(g,2)   % loop through all waveforms (pulses)
+	    slewmax(ii) = max(slewmax(ii), max(abs(diff(g(:,jj)/(system.raster*1e3)))));
+    end
+    if slewmax(ii) > system.maxSlew
+        fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', axes(ii), slewmax(ii)/system.maxSlew*100);
+        isValid = false;
+    end
 end
 
-% gradient slew
-for ii = 1:3
-	cmd = sprintf('maxSlew = max(abs(diff(g%s/(system.raster*1e3))));', grads(ii));
-	eval(cmd);
-	if maxSlew > system.maxSlew
-		fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', grads(ii), maxSlew/system.maxSlew*100);
-		isValid = false;
-	end
-end
-
-% rf
-maxRf = max(abs(rf));
-if maxRf > system.maxRf
-	fprintf('Error: rf amplitude exceeds system limit (%.1f%%)\n', maxRf/system.maxRf*100);
+% peak rf
+maxRF = max(abs(rf));
+if maxRF > system.maxRF
+	fprintf('Error: rf amplitude exceeds system limit (%.1f%%)\n', maxRF/system.maxRF*100);
 	isValid = false;
 end
 
-%% Is (max) waveform duration on a 4 sample (16us) boundary?
-ndat = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
-if mod(ndat, 4)
-	fprintf('Error: waveform duration must be on a 4 sample (16 us) boundary.');
-	isValid = false;
+%% Check PNS. Warnings if >80% of threshold.
+for jj = 1:size(gx,2)   % loop through all waveforms (pulses)
+    clear gtm;
+    gtm(1,:) = gx(:,jj)'*1d-2;    % T/m
+    gtm(2,:) = gy(:,jj)'*1d-2;
+    gtm(3,:) = gz(:,jj)'*1d-2;
+    [pThresh] = toppe.pns(gtm, system.gradient, 'gdt', system.raster, 'plt', false, 'print', false);
+    if max(pThresh) > 80
+        if max(pThresh) > 100
+            warning(sprintf('PNS (%d%%) exceeds first controlled mode (100%%)!!! (waveform %d)', ...
+                round(max(pThresh)), jj));
+        else
+            warning(sprintf('PNS(%d%%) exceeds normal mode (80%%)! (waveform %d)', ...
+                round(max(pThresh)), jj));
+        end
+    end
 end
 
 %% do all waveforms start and end at zero?
-for ii = 1:3
-	eval(sprintf('if isempty(g%s); g%s = 0; end', grads(ii), grads(ii)));
-end
-if isempty(rf)
-	rf = 0;
-end
 if any([gx(1,:) gx(end,:) gy(1,:) gy(end,:) gz(1,:) gz(end,:) rf(1,:) rf(end,:)] ~= 0)
 	fprintf('Error: all waveforms must begin and end with zero\n')
 	isValid = false;

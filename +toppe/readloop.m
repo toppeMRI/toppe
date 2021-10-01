@@ -1,4 +1,4 @@
-function d = readloop(loopfile)
+function [d, hdr] = readloop(loopfile)
 % read scanloop.txt (toppe.e scan loop definition, used with modules.txt).
 %
 % function d = readloop(loopfile)
@@ -27,20 +27,15 @@ if ~exist('loopfile', 'var')
 	loopfile = 'scanloop.txt';
 end
 
-%NL = 11;   % toppe2
-%NL = 10;   % toppe.e and toppe_so.e
-%NL = 13;   % toppe3, toppe4
-%NL = 14;   % toppe5, toppe7e
-%NL = 15;   % toppe8*
-
 % read header
 fid = fopen(loopfile, 'r', 'ieee-be');
-s = fgets(fid);  % read a whole line
-nt       = fscanf(fid, '%d\t', 1);
-maxslice = fscanf(fid, '%d\t', 1);
-maxecho  = fscanf(fid, '%d\t', 1);
-maxview  = fscanf(fid, '%d\n', 1);
-%rhrecon = fscanf(fid, '%d\n', 1);
+s = fgets(fid);  % read a whole line (here we just skip it)
+hdr.nt       = fscanf(fid, '%d\t', 1);
+hdr.maxslice = fscanf(fid, '%d\t', 1);
+hdr.maxecho  = fscanf(fid, '%d\t', 1);
+hdr.maxview  = fscanf(fid, '%d\t', 1);
+hdr.scandur  = fscanf(fid, '%d\t', 1);
+hdr.version  = fscanf(fid, '%d\n', 1);
 fclose(fid);
 
 % read data (tab-separated, starting at row 4)

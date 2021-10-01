@@ -1,9 +1,9 @@
-function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, varargin)
+function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, system, varargin)
 % Create slice-selective SLR pulse with gradient crusher (or balancing blip) before it.
 %
 % This code has gotten pretty messy and needs a cleanup for readability.
 %
-% function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, varargin)
+% function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, system, varargin)
 % 
 % Inputs:
 %   flip                 flip angle (degrees)
@@ -11,9 +11,9 @@ function [rf, g, freq, fnamestem] = makeslr(flip, slthick, tbw, dur, ncycles, va
 %   tbw                  time-bandwidth product of SLR pulse (e.g., 4 or higher)
 %   dur                  pulse duration (msec)
 %   ncycles              number of cycles of phase (spoiler) (0 = balanced)
+%   system               struct specifying hardware system info, see systemspecs.m
 % Options:
 %   ofname               output file name
-%   system               struct specifying hardware system info, see systemspecs.m
 %   type                 'st' (default), 'se', 'ex', ... (John Pauly's SLR toolbox: dzrf.m)
 %   ftype                'ls' (default), 'min', ... 
 %   sliceOffset          (cm) Default: 0. Determines the return value 'freq', to be used in scanloop.txt.
@@ -48,7 +48,6 @@ end
 % Default values 
 arg.ofname          = [];
 arg.sliceOffset     = 0;
-arg.system          = toppe.systemspecs();
 arg.type            = 'st';
 arg.ftype           = 'ls';
 arg.forBlochSiegert = false;
@@ -72,12 +71,12 @@ if round(tbw) ~= tbw
 %	error('tbw must be an integer');
 end
 
-mxg = arg.system.maxGrad;          
-if strcmp(arg.system.gradUnit, 'mT/m')
+mxg = system.maxGrad;          
+if strcmp(system.gradUnit, 'mT/m')
 	mxg = mxg/10;     % Gauss/cm
 end
-mxs = arg.system.maxSlew;
-if strcmp(arg.system.slewUnit, 'T/m/s')
+mxs = system.maxSlew;
+if strcmp(system.slewUnit, 'T/m/s')
 	mxs = mxs/10;     % Gauss/cm/ms
 end
 
@@ -89,7 +88,7 @@ else
 	isBalanced=0;
 end
 
-dt = arg.system.raster*1e3;        % msec
+dt = system.raster*1e3;        % msec
 
 % 
 %switch arg.type
@@ -101,7 +100,7 @@ dt = arg.system.raster*1e3;        % msec
 
 %% Design rf pulse and slice-select gradient
 resex = round(dur/dt);  % number of (4us) samples in RF waveform
-[rfex,gex,irep,iref,gplateau] = sub_myslrrf(flip, dt*resex, tbw, arg.type, slthick, mxg, 0.99*mxs, arg.ftype, isBalanced, arg.system, arg.spoilDerate);
+[rfex,gex,irep,iref,gplateau] = sub_myslrrf(flip, dt*resex, tbw, arg.type, slthick, mxg, 0.99*mxs, arg.ftype, isBalanced, system, arg.spoilDerate);
 
 % remove balancing (pre-phaser) gradient at beginning of pulse
 if arg.discardPrephaser & ncycles == 0
@@ -109,15 +108,15 @@ if arg.discardPrephaser & ncycles == 0
 	J = find(I>10);      % go past any zeros that may be present at start of gradient
 	gex = gex(I(J(1)):end);
 	rfex = rfex(I(J(1)):end);
-	gex = toppe.utils.makeGElength(gex);
-	rfex  = toppe.utils.makeGElength(rfex);
+	gex = makeGElength(gex);
+	rfex  = makeGElength(rfex);
 end
 
 % add spoiler gradient along slice-select
 if ncycles > 0 & ~strcmp(arg.type, 'se')
 	gspoil = toppe.utils.makecrusher(ncycles, slthick, 0, 0.99*mxs, mxg); 
-	areaSpoil = sum(gspoil)*arg.system.raster;  % G/cm*sec
-	areass = sum(gex)*arg.system.raster;        % area of slice-select gradient [G/cm*sec]
+	areaSpoil = sum(gspoil)*system.raster;  % G/cm*sec
+	areass = sum(gex)*system.raster;        % area of slice-select gradient [G/cm*sec]
 	if areass > areaSpoil
   		% no need to add spoiler (already big enough)
 	else
@@ -158,7 +157,7 @@ if ~isempty(arg.ofname)
 end
 
 % slice offset frequency
-freq = arg.system.gamma*gplateau*sliceOffset; % Hz
+freq = system.gamma*gplateau*sliceOffset; % Hz
 
 % crusher
 if isBalanced | arg.isPresto
@@ -204,16 +203,16 @@ if arg.forBlochSiegert
 	rfex1 = makeGElength(rfex1);
 	gex1 = makeGElength(gex1);
 	if arg.writeModFile
-		writemod('rf', rfex1(:), 'gz', gex1(:), 'nomflip', flip, ...
-			'ofname', sprintf('%s-norep.mod',fnamestem), 'desc', 'SLR pulse, less rephaser', 'system', arg.system);
+		writemod(system, 'rf', rfex1(:), 'gz', gex1(:), 'nomflip', flip, ...
+			'ofname', sprintf('%s-norep.mod',fnamestem), 'desc', 'SLR pulse, less rephaser');
 	end
 	rfex2 = [0; rfex((irep+1):end); 0];
 	rfex2 = makeGElength(rfex2);
 	gex2 = [0; gex((irep+1):end); 0];
 	gex2 = makeGElength(gex2);
 	if arg.writeModFile
-		writemod('gz', gex2(:), 'nomflip', flip, ...
-			'ofname', sprintf('%s-rephaser.mod',fnamestem), 'desc', 'SLR pulse, rephaser', 'system', arg.system);
+		writemod(system, 'gz', gex2(:), 'nomflip', flip, ...
+			'ofname', sprintf('%s-rephaser.mod',fnamestem), 'desc', 'SLR pulse, rephaser');
 	end
 end
 

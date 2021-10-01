@@ -1,7 +1,7 @@
 function [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = readmod(fname,showinfo)
 % Read waveforms, ASCII description, and header arrays from TOPPE .mod file.
 %
-% function [rf,gx,gy,gz,desc,paramsint16,paramsfloat] = readmod(fname,showinfo)
+% function [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = readmod(fname,showinfo)
 
 % This file is part of the TOPPE development environment for platform-independent MR pulse programming.
 %
@@ -25,6 +25,8 @@ function [rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = readmod(fname,showinfo
 
 import toppe.*
 import toppe.utils.*
+
+nReservedInts = 2;   % [nChop(1) rfres], rfres = # samples in RF/ADC window
 
 if ~exist('showinfo','var')
 	showinfo = false;
@@ -51,6 +53,10 @@ nparamsfloat = fread(fid, 1,            'int16');
 for n = 1:nparamsfloat
 	paramsfloat(n)  = fscanf(fid, '%f\n', 1);
 end
+
+% get nChop (added in v4)
+hdr.npre = paramsint16(1);  % number of discarded RF/ADC samples at start
+hdr.rfres = paramsint16(2); % total number of RF/ADC samples
 
 if showinfo
 	fprintf(1, '\n%s', desc);
@@ -93,7 +99,7 @@ theta = reshape(theta, hdr.res, hdr.npulses, hdr.ncoils);
 gx    = reshape(gx,    hdr.res, hdr.npulses);
 gy    = reshape(gy,    hdr.res, hdr.npulses);
 gz    = reshape(gz,    hdr.res, hdr.npulses);
-paramsint16 = paramsint16(3:end)';             % NB! Return only the user-defined ints passed to writemod.m
+paramsint16 = paramsint16((nReservedInts+1):end)';    % NB! Return only the user-defined ints passed to writemod.m
 paramsfloat = paramsfloat';
 
 rf = rho.*exp(1i*theta);

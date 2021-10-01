@@ -1,5 +1,5 @@
-function writemod(varargin)
-% Write waveforms to .mod file, for use with toppev2 psd on GE scanners.
+function writemod(system, varargin)
+% Write waveforms to .mod file, for use with toppe psd on GE scanners.
 %
 % function writemod(varargin)
 %
@@ -11,6 +11,9 @@ function writemod(varargin)
 % >> lims = toppe.systemspecs('maxGrad', 130, 'gradUnit', 'mT/m');
 % >> writemod('rf', myrf, 'gx', gzwav, 'system', lims);
 %
+% Input:
+%   system        struct specifying hardware system info, see systemspecs.m
+%
 % Input options:
 %   rf            Complex RF waveform, [ndat nrfpulses]
 %   gx            [ndat ngxpulses]
@@ -20,27 +23,22 @@ function writemod(varargin)
 %   gradUnit      'Gauss/cm' (default) or 'mT/m'
 %   ofname        Output filename.
 %   desc          Text string (ASCII) descriptor.
-%   nomflip       Excitation flip angle (degrees). Stored in .mod float header, but has no influence on b1 scaling. Default: 90.
+%   nomflip       Excitation flip angle (degrees). Stored in .mod float header,
+%                 but has no influence on b1 scaling. Default: 90.
 %   hdrfloats     Additional floats to put in header (max 12)
-%   hdrints       Additional ints to put in header (max 30)
-%   system        struct specifying hardware system info, see systemspecs.m
-
-% This file is part of the TOPPE development environment for platform-independent MR pulse programming.
-%
-% TOPPE is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Library General Public License as published by
-% the Free Software Foundation version 2.0 of the License.
-%
-% TOPPE is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU Library General Public License for more details.
-%
-% You should have received a copy of the GNU Library General Public License
-% along with TOPPE. If not, see <http://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>.
+%   hdrints       Additional ints to put in header (max 29)
+%   nChop         [1 2] (int, multiple of 4) trim (chop) the start and end of
+%                 the RF wavevorm (or ADC window) by this many 4us samples.
+%                 Using non-zero nChop can reduce module duration on scanner.
+%                 Default: [0 0] 
 
 import toppe.*
 import toppe.utils.*
+
+nReservedInts = 2;   % [nChop(1) rfres], rfres = # samples in RF/ADC window
+maxHdrInts = 32 - nReservedInts;
+
+nChopDefault = [0 0];
 
 %% parse inputs
 % Defaults
@@ -55,23 +53,34 @@ arg.desc      = 'TOPPE module';
 arg.nomflip   = 90;
 arg.hdrfloats = [];
 arg.hdrints   = [];
-arg.system    = [];
+arg.nChop = nChopDefault;
 
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
+
+%% Check nChop
+if arg.nChop(1) < nChopDefault(1) | arg.nChop(2) < nChopDefault(2)
+    msg = ['nChop < 48 samples. Module duration (on scanner) will be ', ...
+          'extended to account for RF/ADC dead/ringdown times as needed.'];
+    warning(msg);
+end
+
+if ~isempty(arg.rf)
+    if sum(abs(arg.rf([1:arg.nChop(1) (end-arg.nChop(2)+1):end]))) > 0
+        msg = ['RF waveform must be zero during the first/last ', ...
+              sprintf('%d/%d (nChop) samples.', arg.nChop(1), arg.nChop(2))]; 
+        error(msg);
+    end
+end
+
+if mod(arg.nChop(1),4) | mod(arg.nChop(2),4)
+    error('Each entry in nChop must be multiple of 4');
+end
 
 %% Detect all-zero RF waveform, treat as empty, and give warning to user
 if ~isempty(arg.rf) & norm(abs(arg.rf(:,1))) == 0
 	arg.rf = [];
 	warning('(First) RF waveform contains all zeros -- ignored');
-end
-
-%% Warn if system struct not provided
-if isempty(arg.system)
-	warning('Using default system limits -- are you sure this is what you want?');
-	system = toppe.systemspecs();
-else
-	system = arg.system;
 end
 
 %% Copy input waveform to rf, gx, gy, and gz (so we don't have to carry the arg. prefix around)
@@ -92,57 +101,18 @@ if strcmp(arg.gradUnit, 'mT/m')
 	gz = gz/10;
 end
 
-%% Check against system hardware limits
-if ~checkwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz, 'system', system)
-	error('Waveforms failed system hardware checks -- exiting');
-end
-
-%% Force all waveform arrays to have the same dimensions (required by toppev2.e)
-ndat    = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
-npulses = max( [size(rf,2) size(gx,2) size(gy,2) size(gz,2)] );
-if ndat == 0
-	error('At least one waveform must be non-empty');
-end
-if ndat > 2^15
-	error(sprintf('Max waveform length is 32768 (samples) -- found %d samples', ndat));
-end
-
-% make length divisible by 4 (EPIC seems to behave best this way)
-if mod(ndat, 4)
-	warning('Waveform duration will be padded to 4 sample boundary.')
-	ndat = ndat - mod(ndat, 4) + 4;
-end
-
-for ii = 1:length(fields)
-	wavtype = fields{ii} ;                    % 'rf', 'gx', 'gy', or 'gz'
-	wav = eval(fields{ii}) ;                  % [ndat npulses]
-
-	if wavtype == 'rf' & isempty(wav)
-		wav = 0.01*ones(ndat, npulses);        % Must have non-zero RF waveform to make toppev2.e happy (even if it's not actually played out)
-	end
-
-	% enforce equal number of rows and columns
-	[nrows n2] = size(wav);
-
-	if (nrows ~=0 & nrows < ndat) 
-		warning('Padding %s with zero rows', wavtype);
-	end
-	if (n2 ~= 0 & n2 < npulses) 
-		warning('Padding %s with zero columns', wavtype);
-	end
-
-	wav = [wav; zeros(ndat-nrows,n2)];
-	wav = [wav  zeros(ndat,npulses-n2)];
-
-	% copy to corresponding wav type (rf, gx, gy, or gz)
-	cmd = sprintf('%s = %s;', wavtype, 'wav') ;
-	eval (cmd);
-end
+%% Force all waveform arrays to have the same dimensions 
+[rf, gx, gy, gz] = padwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz);
 	
 % Fixes to avoid idiosyncratic issues on scanner
 %[rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp);
 
-%% Optional header arrays
+%% Check waveforms against system hardware limits
+if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
+	error('Waveforms failed system hardware checks -- exiting');
+end
+
+%% Header arrays
 [paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, system);
 if ~isempty(arg.hdrfloats)
 	if length(arg.hdrfloats) > 12
@@ -150,12 +120,13 @@ if ~isempty(arg.hdrfloats)
 	end
 	paramsfloat(20:(19+length(arg.hdrfloats))) = arg.hdrfloats;  % populate header with custom floats 
 end
-paramsint16 = [0 size(rf,1)];
+%paramsint16 = [0 size(rf,1) arg.nChop]; % the first three ints are used by interpreter
+paramsint16 = [arg.nChop(1) size(rf,1)-sum(arg.nChop)]; % the first three ints are used by interpreter
 if ~isempty(arg.hdrints)
-	if length(arg.hdrints) > 30
-		error('max number of ints in .mod file header is 30');
+	if length(arg.hdrints) > maxHdrInts
+		error(sprintf('max number of custom ints in .mod file header is %d', maxHdrInts));
 	end
-	paramsint16(3:(2+length(arg.hdrints))) = arg.hdrints;  % populate header with custom ints
+	paramsint16((nReservedInts+1):(nReservedInts+length(arg.hdrints))) = arg.hdrints;  % add custom ints
 end
 
 %% Write to .mod file
@@ -196,7 +167,7 @@ area          = abs(sum(b1)) / abs(sum(hardpulse));
 dtycyc        = length(find(abs(b1)>0.2236*max(abs(b1)))) / length(b1);
 maxpw         = dtycyc;
 num           = 1;
-max_b1        = system.maxRf;                       	% Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
+max_b1        = system.maxRF;                       	% Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
 																		% as long as other RF .mod files (if any) use the same max_b1.
 max_int_b1_sq = max( cumsum(abs(b1).^2)*dt*1e3 );   	% Gauss^2 - ms
 max_rms_b1    = sqrt(mean(abs(b1).^2));              	% Gauss
@@ -248,10 +219,10 @@ npulses = size(rf,2);
 nparamsint16 = 32;
 nparamsfloat = 32;
 
-% RF waveform is scaled relative to system.maxRf.
+% RF waveform is scaled relative to system.maxRF.
 % This may be 0.25G/0.125G for quadrature/body RF coils (according to John Pauly RF class notes), but haven't verified...
 if strcmp(system.rfUnit, 'mT')
-	system.maxRf = system.maxRf/100;   % Gauss
+	system.maxRF = system.maxRF/100;   % Gauss
 end
 
 % gradient waveforms are scaled relative to system.maxGrad
@@ -278,6 +249,9 @@ paramsfloat  = [paramsfloat zeros(1, nparamsfloat-numel(paramsfloat))];
 
 fid = fopen(fname, 'w', 'ieee-be');
 
+% peak gradient amplitude across all pulses
+gmax = max(1.0, max(abs([gx(:); gy(:); gz(:)])));  % to avoid division by zero 
+
 % write header
 globaldesc = sprintf('RF waveform file for ssfpbanding project.\n');  
 globaldesc = sprintf('%sCreated by %s.m on %s.\n', globaldesc, mfilename('fullpath'), datestr(now));  
@@ -293,8 +267,8 @@ fwrite(fid, desc, 'uchar');
 fwrite(fid, ncoils,  'int16');          % shorts must be written in binary -- otherwise it won't work on scanner 
 fwrite(fid, res,     'int16');
 fwrite(fid, npulses, 'int16');
-fprintf(fid, 'b1max:  %f\n', system.maxRf);           % (floats are OK in ASCII on scanner)
-fprintf(fid, 'gmax:   %f\n', system.maxGrad);
+fprintf(fid, 'b1max:  %f\n', system.maxRF);           % (floats are OK in ASCII on scanner)
+fprintf(fid, 'gmax:   %f\n', gmax);
 
 fwrite(fid, nparamsint16, 'int16');
 fwrite(fid, paramsint16,  'int16');
@@ -305,11 +279,11 @@ end
 
 % write binary waveforms (*even* short integers -- the toppe driver/interpreter sets the EOS bit, so don't have to worry about it here)
 max_pg_iamp = 2^15-2;                                   % RF amp is flipped if setting to 2^15 (as observed on scope), so subtract 2
-rho   = 2*round(rho/system.maxRf*max_pg_iamp/2);
+rho   = 2*round(rho/system.maxRF*max_pg_iamp/2);
 theta = 2*round(theta/pi*max_pg_iamp/2);
-gx    = 2*round(gx/system.maxGrad*max_pg_iamp/2);
-gy    = 2*round(gy/system.maxGrad*max_pg_iamp/2);
-gz    = 2*round(gz/system.maxGrad*max_pg_iamp/2);
+gx    = 2*round(gx/gmax*max_pg_iamp/2);
+gy    = 2*round(gy/gmax*max_pg_iamp/2);
+gz    = 2*round(gz/gmax*max_pg_iamp/2);
 
 for ip = 1:npulses
 	for ic = 1:ncoils

@@ -1,4 +1,4 @@
-function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
+function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
 % function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
 %
 % Make gradients for 3D spin-warp (cartesian gradient-echo) readout
@@ -7,13 +7,16 @@ function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
 %  fov        [1 1]    in-plane fov (cm)
 %  npix       [1 1]    number of pixels along fov
 %  zres       [1 1]    resolution along z (partition) encoding direction (cm)
+%  system     struct specifying system info, see systemspecs.m
 % Options:
 %  oprbw       Receive bandwidth. Default: +/- 125/4 kHz
 %  ncycles     Number of cycles of phase across voxel dimension, added to x gradient. Default: 0 (balanced readout).
-%  system      struct specifying system info, see systemspecs.m
-%  ofname      Output file name. Default: 'readout.mod'
+%  ofname      Output file name. Default: 'readout.mod'. If empty, no file is written.
 %  extrafiles  [bool] If true, writes z phase-encode and spoiler to separate .mod files.
 %  slewDerate  Reduce slew rate by this factor during prewinders/crushers
+%  nChop       [1 2] (int) trim (chop) the start and end of the RF waveform 
+%              (or ADC window) by this many samples. Even int.
+%              Using non-zero nChop can reduce module duration on scanner.
 
 zres = zres*10;   % mm
 
@@ -23,12 +26,12 @@ import toppe.utils.*
 % defaults
 arg.oprbw  = 125/4;  % kHz
 arg.ncycles = 0;
-arg.system = systemspecs();
 arg.ofname = 'readout.mod';
 arg.extrafiles = false;
 arg.flip   = false;
 arg.isdess = 0;
 arg.slewDerate = 0.8;
+arg.nChop = [48 48];  
 
 % Substitute varargin values as appropriate
 arg = vararg_pair(arg, varargin);      % requires MIRT
@@ -38,12 +41,12 @@ if arg.oprbw > 125
 end
 
 % Gradient limits
-mxg = arg.system.maxGrad;          
-if strcmp(arg.system.gradUnit, 'mT/m')
+mxg = system.maxGrad;          
+if strcmp(system.gradUnit, 'mT/m')
 	mxg = mxg/10;     % Gauss/cm
 end
-mxs = arg.system.maxSlew;
-if strcmp(arg.system.slewUnit, 'T/m/s')
+mxs = system.maxSlew;
+if strcmp(system.slewUnit, 'T/m/s')
 	mxs = mxs/10;     % Gauss/cm/ms
 end
 
@@ -137,16 +140,14 @@ gz = makeGElength(gz(:));
 
 %[areacrush-sum(gx)*dt*1e-3]   % check that net gradient area is equal to areacrush 
 
-% make number of waveform samples divisible by 4 (so that rhfrsize matches full length) 
-%npad = mod(numel(gx),4);
-%gx = [gx; zeros(npad,1)];
-%gy = [gy; zeros(npad,1)];
-%gz = [gz; zeros(npad,1)];
-
 if arg.flip
 	gx = flipud(gx);
 	gy = flipud(gy);
 	gz = flipud(gz);
+end
+
+if isempty(arg.ofname)
+    return;
 end
 
 %% Write to file(s)
@@ -155,8 +156,12 @@ end
 %end
 hdrints = [npre npixro iref];    % some useful numbers for recon
 hdrfloats = [arg.oprbw];
-writemod('gx', gx(:), 'gy', gy(:), 'gz', gz(:), 'ofname', arg.ofname, 'system', arg.system, ...
-         'desc', '3D spin-warp (GRE) waveform', 'hdrints', hdrints, 'hdrfloats', hdrfloats);
+writemod(system, ...
+        'gx', gx(:), 'gy', gy(:), 'gz', gz(:), ...
+        'ofname', arg.ofname, ...
+        'nChop', arg.nChop, ...
+        'desc', '3D spin-warp (GRE) waveform', ...
+        'hdrints', hdrints, 'hdrfloats', hdrfloats);
 
 if arg.extrafiles
 	% write z phase-encode gradient to file (useful for spiral scans with toppe)
