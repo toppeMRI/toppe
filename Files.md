@@ -3,8 +3,10 @@
 The TOPPE interpreter is a 'universal' pulse sequence description (PSD) 
 executable that loads all RF and gradient waveforms from external `.mod` files,
 and executes those waveforms according to the instructions listed in `scanloop.txt`.
-The various `.mod` files are listed in yet another files, conventionally named `modules.txt`.
-Thus, several different files operate in concert to specify the pulse sequence.
+The various `.mod` files are listed in yet another file, conventionally named `modules.txt`.
+Thus, several different files operate in concert to specify the pulse sequence:
+
+![workflow](resource/workflow.png)
 
 See the [README](README.md) in this repository for example usage.
 
