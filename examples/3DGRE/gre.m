@@ -8,8 +8,8 @@ function sys = gre
 %  readout.mod
 %  seqstamp.txt
 %
-% These must be copied to the scanner host, in the folder specified on the first line in toppe0.meta.
-% toppe0.meta (provided in this folder) is the entry point for the TOPPE interpreter,
+% These must be copied to the scanner host, in the folder specified on the first line in toppe0.entry.
+% toppe0.entry (provided in this folder) is the entry point for the TOPPE interpreter,
 % and must be placed in /usr/g/research/pulseq/ on the scanner host.
 
 % Set hardware limits (for design and detailed timing calculations)
@@ -55,7 +55,7 @@ toppe.utils.makegre(fov(1), matrix(1), fov(3)/matrix(3), sys, ...
 
 % Display .mod files.
 %
-toppe.plotmod('all');
+%toppe.plotmod('all');
 
 % Write modules.txt
 modFileText = ['' ...
@@ -104,11 +104,11 @@ toppe.write2loop('finish', sys);  % finalize file
 %toppe.playseq(nModulesPerTR, 'nTRskip', 10);
 
 % Create 'sequence stamp' file for TOPPE.
-% This file is listed in the 5th row in toppe0.meta
-toppe.preflightcheck('toppe0.meta', 'seqstamp.txt', sys);
+% This file is listed in the 5th row in toppe0.entry
+toppe.preflightcheck('toppe0.entry', 'seqstamp.txt', sys);
 
 % Write files to tar archive (for convenience only).
-system('tar cf gre.tar toppe0.meta modules.txt scanloop.txt *.mod seqstamp.txt');
+system('tar cf gre.tar toppe0.entry modules.txt scanloop.txt *.mod seqstamp.txt');
 
 return;
 
