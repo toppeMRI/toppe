@@ -188,10 +188,11 @@ if arg.isPresto
 end
 
 if arg.writeModFile
-	rfex = makeGElength(rfex);
-	gex = makeGElength(gex);
-	writemod(system, 'rf', rfex(:), 'gz', gex(:), ...
-		'nomflip', flip, 'ofname', sprintf('%s.mod',fnamestem), 'desc', 'SLR pulse');
+	rfex = toppe.makeGElength(rfex);
+	gex = toppe.makeGElength(gex);
+	%writemod('rf', rfex(:), 'gx', gspoil(:), 'gy', gspoil(:), 'gz', gex(:), ...
+	writemod('rf', rfex(:), 'gz', gex(:), ...
+		'nomflip', flip, 'ofname', sprintf('%s.mod',fnamestem), 'desc', 'SLR pulse', 'system', arg.system);
 end
 %plotmod(sprintf('%s.mod',fnamestem));
 
