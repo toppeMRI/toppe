@@ -1,15 +1,14 @@
-function dur = getscantime(varargin)
+function dur = getscantime(system, varargin)
 % Get total scan time for a TOPPE scan.
 %
-% function dur = getscantime(varargin)
+% function dur = getscantime(system, varargin)
 %
+% Input:
+%   system             struct specifying hardware system info, see systemspecs.m
 %
 % Input options:
 %   loopFile           Default: 'scanloop.txt'
 %   moduleListFile     Default: 'modules.txt'
-%   system             struct specifying hardware system info, see systemspecs.m
-%                      Default: arg.system = systemspecs();
-%
 %   loopArr            Directly specify contents of loopFile   
 %   mods               Directly specify contents of module list
 %
@@ -48,7 +47,6 @@ import toppe.utils.*
 % Default values
 arg.loopFile       = 'scanloop.txt';
 arg.moduleListFile = 'modules.txt';
-arg.system         = toppe.systemspecs();
 arg.loopArr        = [];
 arg.mods           = [];
 
@@ -57,14 +55,14 @@ arg = toppe.utils.vararg_pair(arg, varargin);
 
 %% read scan files
 if isempty(arg.loopArr)
-    loopArr = toppe.utils.tryread(@toppe.readloop, arg.loopFile); % read scanloop
+    loopArr = toppe.tryread(@toppe.readloop, arg.loopFile); % read scanloop
 else
     loopArr = arg.loopArr;
 end
 
 % read module content
 if isempty(arg.mods)
-   mods = toppe.utils.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+   mods = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
 else
    mods = arg.mods;
 end
@@ -77,14 +75,14 @@ nl = size(loopArr,1);   % number of rows in scanloop.txt (startseq() calls)
 nlPerGroup = 1e3;
 if nl > 2*nlPerGroup
 	for ii = 1:nlPerGroup:(nl-nlPerGroup)   %size(loopArr,1)
-		rho = toppe.plotseq(ii, ii+nlPerGroup-1, 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true, 'system', arg.system);
+		rho = toppe.plotseq(ii, ii+nlPerGroup-1, system, 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true);
 		dur = dur + size(rho,1)*dt;
 	end
 	nlLeft = max(0, nl - (ii+nlPerGroup-1));
-	rho = toppe.plotseq(ii+1, ii+nlLeft-1, 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true, 'system', arg.system);
+	rho = toppe.plotseq(ii+1, ii+nlLeft-1, system, 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true);
 	dur = dur + size(rho,1)*dt;
 else
-	rho = toppe.plotseq(1, size(loopArr,1), 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true, 'system', arg.system);
+	rho = toppe.plotseq(1, size(loopArr,1), system, 'loopArr', loopArr, 'mods', mods, 'doTimeOnly', true);
 	dur = dur + size(rho,1)*dt;
 end
 %dur = round(dur);
