@@ -79,7 +79,7 @@ and the RF phase, are changing.
 1. Place `modules.txt`, `scanloop.txt`, `seqstamp.txt`, and  the two `.mod` files 
    in **/usr/g/research/pulseq/gre/** on the scanner host computer.
 1. Copy the file `toppe0.entry` to **/usr/g/research/pulseq/** on scanner host. This is the entry point for the interpreter.
-1. Run the interpreter. For details, see the README file in the [intepreter source code repository](https://github.com/jfnielsen/TOPPEpsdSourceCode)
+1. Run the interpreter. For details, see the README file in the [interpreter source code repository](https://github.com/jfnielsen/TOPPEpsdSourceCode)
 ```
 
 
