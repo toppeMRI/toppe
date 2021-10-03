@@ -14,30 +14,26 @@ function sys = gre
 
 % Set hardware limits (for design and detailed timing calculations)
 % 'maxSlew' and 'maxGrad' options can be < scanner limit, and can vary across .mod files. 
-sys = toppe.systemspecs('maxSlew', 12.3, 'slewUnit', 'Gauss/cm/ms', ...
-    'timetrwait', 64, ...
-    'timessi', 200, ...
-    'start_core_rf', 0, ...
-    'start_core_daq', 126, ...
-    'start_core_grad', 0, ...
+sys = toppe.systemspecs('maxSlew', 15, 'slewUnit', 'Gauss/cm/ms', ...
+    'gradient', 'xrm', ... % MR750 scanner
     'maxGrad', 5, 'gradUnit', 'Gauss/cm');
 
 % Acquisition parameters
-% fov and voxel size must be square (in-plane)
 matrix = [120 120 60];
 fov  = [24 24 24];       % cm
 flip = 5;                % excitation flip angle (degrees)
 ncyclesspoil = 2;        % number of cycles of spoiler phase across voxel dimension (applied along x and z)
 
+% Since we are using the helper function 'makegre' below,
+% the in-plane FOV and matrix size must be square.
 if matrix(1) ~= matrix(2) | fov(1) ~= fov(2)
-    error('In-plane fov and voxel size must be square');
+    error('This example requires that in-plane FOV and matrix be square.');
 end
 
 % Non-selective excitation
-gamG = 4.2576e3;     % Hz/Gauss
 nhard = 20; % number of waveform samples in hard pulse
-nChop = [0 0];
-rf = [(flip/360) / (gamG * nhard * sys.raster) * ones(nhard,1)];
+nChop = [0 0]; % discarded samples before + after RF waveform. For advanced timing control.
+rf = [(flip/360) / (sys.gamma * nhard * sys.raster) * ones(nhard,1)];
 rf = [zeros(nChop(1)+2,1); rf; zeros(nChop(2)+2,1)];  % TOPPE wants waveforms to start and end with 0
 rf = toppe.makeGElength(rf); % force number of samples to be multiple of 4
 toppe.writemod(sys, ...
@@ -47,7 +43,7 @@ toppe.writemod(sys, ...
 
 % Create readout waveforms and write to readout.mod.
 % Here we use the helper function 'makegre' to do that, but
-% that's not a requirement
+% that's not a requirement.
 toppe.utils.makegre(fov(1), matrix(1), fov(3)/matrix(3), sys, ... 
     'nChop', nChop, ...
     'ofname', 'readout.mod', ...
@@ -99,16 +95,20 @@ end
 
 toppe.write2loop('finish', sys);  % finalize file
 
-% Play sequence in loop (movie) mode
-%nModulesPerTR = 2;
-%toppe.playseq(nModulesPerTR, 'nTRskip', 10);
-
 % Create 'sequence stamp' file for TOPPE.
-% This file is listed in the 5th row in toppe0.entry
+% This file is listed in line 6 of toppe0.entry
 toppe.preflightcheck('toppe0.entry', 'seqstamp.txt', sys);
 
-% Write files to tar archive (for convenience only).
+% Write files to tar archive (for convenience).
 system('tar cf gre.tar toppe0.entry modules.txt scanloop.txt *.mod seqstamp.txt');
+
+% Play sequence in loop (movie) mode
+nModulesPerTR = 2;
+%toppe.playseq(nModulesPerTR, sys, ...
+%    'moduleListFile', 'modules.txt', ...
+%    'loopFile', 'scanloop.txt', ...
+%    'tpause', 0.01, ...
+%    'nTRskip', 10);
 
 return;
 

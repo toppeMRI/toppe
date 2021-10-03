@@ -21,7 +21,12 @@ function sys = systemspecs(varargin)
 %   maxEcho         Max echo index in Pfile data storage. Default: 16. 
 %   addDelays       Set toppe.<start_core*/myrfdel/daqdel/timetrwait/timessi> = 0 (e.g., for converting to/from Pulseq)
 %   version         Default: 'v4'
-%   gradient        Currently suppports 'xrmw', 'xrm', 'whole', 'zoom'. See toppe.pns(). Default: 'xrm'.
+%   gradient        For PNS calculation (see toppe.pns()). Currently suppports:
+%                   'xrm' (MR750) (default)
+%                   'xrmw' (MR750W) 
+%                   'whole' (HDx) 
+%                   'zoom' (HDx) 
+%                   'hrmb' (UHP)
 %   start_core_rf   Minimum start time (us) for rf modules. Default: 0. 
 %   start_core_daq  Minimum start time (us) for data acquisition modules. Default: 126
 %   start_core_grad Minimum start time (us) for gradient-only modules. Default: 0.

@@ -33,13 +33,17 @@ function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
 % MR750    XRM             334d-6    23.4     0.333  50    200
 % HDx      TRM WHOLE       370d-6    23.7     0.344  23    77
 % HDx      TRM ZOOM        354d-6    29.1     0.309  40    150
+% UHP      HRMB            359d-6    26.5     0.370  100   200
 %
 % values on scanner from /w/config/Scandbdt.cfg + GRSubsystemHWO.xml
+% (alpha = EffectivedBdTlength<X,Y,Z>/100)
 %
 % Literature: "Introduction to dB/dt" presentation by Toni Linz; 6/8/06
 %             DIN EN 60601-2-33
 % 2/2014 Rolf Schulte
+%
 % Modified by Jon-Fredrik Nielsen for TOPPE 2018-2019
+% 2-Oct-2021  JFN  Added PNS model parameters for HRMB (UHP) system
 
 import toppe.utils.*       % vararg_pair
 
@@ -71,6 +75,7 @@ switch lower(coil)
     case 'xrm',   chronaxie=334d-6; rheobase=23.4; alpha=0.333;
     case 'whole', chronaxie=370d-6; rheobase=23.7; alpha=0.344;
     case 'zoom',  chronaxie=354d-6; rheobase=29.1; alpha=0.309;
+    case 'hrmb',  chronaxie=359d-6; rheobase=26.5; alpha=0.370;
     otherwise, error('gradient coil (%s) unkown',chronaxie);
 end
 
