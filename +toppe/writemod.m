@@ -1,7 +1,7 @@
 function writemod(system, varargin)
 % Write waveforms to .mod file, for use with toppe psd on GE scanners.
 %
-% function writemod(varargin)
+% function writemod(system, varargin)
 %
 % Assumes raster time (sample duration) of 4e-6 sec for all waveforms.
 %
