@@ -106,8 +106,8 @@ based on the scan rotation specified on the UI as well as in scanloop.txt.
 It is a convention to place the 'readout' waveform on the logical 'gx' gradient axis,
 but that's not a requirement and you may place any waveform on any axis.
 
-A `.mod` can contain an array of pulse shapes of equal length; which shape to play out
-is determined dynamically at run-time using the instructions in the scan loop file.
+A `.mod` file can contain an array of pulse shapes of equal length; which shape to play out
+is determined dynamically at run-time using the instructions in the scan loop file (column 16).
 
 
 ## scanloop.txt
