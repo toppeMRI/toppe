@@ -70,8 +70,8 @@ There is one line for each .mod file, with each line containing four (tab-separa
 
 | Column | Description | Unit/Type |
 | ---    | ---   | ---         |
-| 1 | string | name of .mod file | text string |
-| 2 | duration of module (us). This is typically set to 0, which indicates that the minimum duration for that .mod file will be used. | integer |
+| 1 | Name of .mod file | text string |
+| 2 | Duration of module (us). This is typically set to 0, which indicates that the minimum duration for that .mod file will be used. | integer |
 | 3 | Set to 1 if module is an excitation module, 0 otherwise | integer (0 or 1) |
 | 4 | Set to 1 if module is an acquisition module, 0 otherwise | integer (0 or 1) |
 
@@ -82,9 +82,11 @@ A module cannot be simultaneously used for both RF excitation and data acquisiti
 
 The `.mod` file format is a custom format that is used for both RF excitation, readout, 
 and gradient-only modules.
-A `.mod` file contains one or more RF and gradient pulse shapes 
-defined on a **4us raster time**, and is created with
-the **`toppe.writemod`** Matlab function.
+A `.mod` file contains one or more RF and gradient pulse shapes,
+and is created with the **`toppe.writemod`** Matlab function.
+
+NB! TOPPE uses **4us raster (sample) time** for RF and gradient shapes,
+as well as the data acquisition window.
 
 To plot the contents of the `.mod` files in our 3D GRE example, do:
 ```
