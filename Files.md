@@ -10,7 +10,6 @@ Thus, several different files operate in concert to specify the pulse sequence:
 
 See the [README](README.md) in this repository for example usage.
 
-Note: In TOPPE, raster time (sample dwell time) is 4us for both RF and gradient waveforms.
 
 
 ## toppe\<CV1\>.entry
@@ -83,7 +82,8 @@ A module cannot be simultaneously used for both RF excitation and data acquisiti
 
 The `.mod` file format is a custom format that is used for both RF excitation, readout, 
 and gradient-only modules.
-A `.mod` file contains one or more RF and gradient pulse shapes, and is created with
+A `.mod` file contains one or more RF and gradient pulse shapes 
+defined on a **4us raster time**, and is created with
 the **`toppe.writemod`** Matlab function.
 
 To plot the contents of the `.mod` files in our 3D GRE example, do:
@@ -106,8 +106,6 @@ but that's not a requirement and you may place any waveform on any axis.
 
 A `.mod` can contain an array of pulse shapes of equal length; which shape to play out
 is determined dynamically at run-time using the instructions in the scan loop file.
-
-The raster time (sample dwell time) is fixed to 4us for both RF and gradient waveforms.
 
 
 ## scanloop.txt
