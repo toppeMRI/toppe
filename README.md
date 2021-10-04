@@ -21,6 +21,8 @@ creates a set of [TOPPE files](Files.md) that together define a 3D RF-spoiled gr
 For a detailed explanation of these files,
 see [Files.md](Files.md).
 
+Note: In TOPPE, raster time (sample dwell time) is 4us for both RF and gradient waveforms.
+
 
 ### Create the sequence files
 

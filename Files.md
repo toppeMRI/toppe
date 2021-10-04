@@ -10,6 +10,8 @@ Thus, several different files operate in concert to specify the pulse sequence:
 
 See the [README](README.md) in this repository for example usage.
 
+Note: In TOPPE, raster time (sample dwell time) is 4us for both RF and gradient waveforms.
+
 
 ## toppe\<CV1\>.entry
 
@@ -104,6 +106,8 @@ but that's not a requirement and you may place any waveform on any axis.
 
 A `.mod` can contain an array of pulse shapes of equal length; which shape to play out
 is determined dynamically at run-time using the instructions in the scan loop file.
+
+The raster time (sample dwell time) is fixed to 4us for both RF and gradient waveforms.
 
 
 ## scanloop.txt
