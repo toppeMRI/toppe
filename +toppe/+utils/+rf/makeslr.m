@@ -191,8 +191,8 @@ if arg.writeModFile
 	rfex = toppe.makeGElength(rfex);
 	gex = toppe.makeGElength(gex);
 	%writemod('rf', rfex(:), 'gx', gspoil(:), 'gy', gspoil(:), 'gz', gex(:), ...
-	writemod('rf', rfex(:), 'gz', gex(:), ...
-		'nomflip', flip, 'ofname', sprintf('%s.mod',fnamestem), 'desc', 'SLR pulse', 'system', arg.system);
+	writemod(system, 'rf', rfex(:), 'gz', gex(:), ...
+		'nomflip', flip, 'ofname', sprintf('%s.mod',fnamestem), 'desc', 'SLR pulse');
 end
 %plotmod(sprintf('%s.mod',fnamestem));
 

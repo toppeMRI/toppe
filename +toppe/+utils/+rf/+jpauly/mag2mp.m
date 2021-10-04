@@ -9,7 +9,7 @@
 % version of, then
 %    1) pad B out by adding zeros up to a factor of 4 or more
 %    2) compute C=abs(fft(B))
-%    3) compute D=ansigm(C)
+%    3) compute D=mag2mp(C)
 %    4) compute E=ifft(D)
 % E is the minimum phase function, also zero padded.  The part you want
 % should be at the beginning.  You will see echos later on if you didn't
