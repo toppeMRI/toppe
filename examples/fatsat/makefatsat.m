@@ -10,19 +10,34 @@
 %                    'Gamplitude', [0 0 0]', ... 
 %                    'RFoffset', -440);
 
-% system hardware specs
-sys = toppe.systemspecs('maxSlew', 20, 'slewUnit', 'Gauss/cm/ms', ...
+% System hardware specs.
+% Reduce slew to reduce noise and PNS
+sys = toppe.systemspecs('maxSlew', 5, 'slewUnit', 'Gauss/cm/ms', ...
     'maxGrad', 5, 'gradUnit', 'Gauss/cm', ...
     'maxRF', 0.25);  % Gauss
 
-% design SLR pulse and write to 'fatsat.mod'
+% Design SLR pulse.
+% As always in TOPPE, raster time is 4us.
 flip = 90;
 tbw = 1.5;       % time-bandwidth product
 dur = 3;         % pulse duration (msec)
-toppe.utils.rf.makeslr(flip, 1e5, tbw, dur, 1e-8, sys, ...
+rf = toppe.utils.rf.makeslr(flip, 1e5, tbw, dur, 1e-8, sys, ...
     'ftype', 'ls', ...
     'type', 'ex', ...
-    'ofname', 'fatsat.mod');
+    'writeModFile', 'false');
+    %'ofname', 'fatsat.mod');
 
-% plot
+% Design spoiler gradient
+nCycleSpoil = 4;  % number of spoiling cycles across slThick
+slThick = 0.5;    % cm
+gsp = toppe.utils.makecrusher(nCycleSpoil, slThick, 0, sys.maxSlew, sys.maxGrad);
+
+% Put together and write to 'fatsat.mod'
+g = [0*rf; gsp];
+rf = [rf; 0*gsp];
+g = toppe.makeGElength(g);
+rf = toppe.makeGElength(rf);
+toppe.writemod(sys, 'rf', rf, 'gz', g, 'ofname', 'fatsat.mod');
+
+% Plot
 toppe.plotmod('fatsat.mod');
