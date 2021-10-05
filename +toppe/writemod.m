@@ -6,10 +6,8 @@ function writemod(system, varargin)
 % Assumes raster time (sample duration) of 4e-6 sec for all waveforms.
 %
 % Examples:
-% >> writemod('rf', rho.*exp(1i*theta), 'gz', gzwaveform, 'nomflip', 30);
-% >> writemod('gz', gzwaveform, 'desc', 'my spoiler gradient');
-% >> lims = toppe.systemspecs('maxGrad', 130, 'gradUnit', 'mT/m');
-% >> writemod('rf', myrf, 'gx', gzwav, 'system', lims);
+% >> writemod(sys, 'rf', rho.*exp(1i*theta), 'gz', gzwaveform, 'ofname', 'tipdown.mod');
+% >> writemod(sys, 'gz', gzwaveform, 'desc', 'my spoiler gradient', 'ofname', 'spoiler.mod');
 %
 % Input:
 %   system        struct specifying hardware system info, see systemspecs.m
