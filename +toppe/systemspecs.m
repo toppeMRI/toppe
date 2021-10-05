@@ -104,13 +104,13 @@ end
 
 % If requested, set GE/EPIC-related time gaps to zero
 if ~sys.addDelays
-	sys.start_core_rf = 0;
-	sys.start_core_daq = 0;
-	sys.start_core_grad = 0;
-	sys.myrfdel    = 0;
-	sys.daqdel     = 0;
-	sys.timetrwait = 0;
-	sys.timessi    = 0;
+	start_core_rf = 0;
+	start_core_daq = 0;
+	start_core_grad = 0;
+	myrfdel    = 0;
+	daqdel     = 0;
+	timetrwait = 0;
+	timessi    = 0;
 end
 
 return
