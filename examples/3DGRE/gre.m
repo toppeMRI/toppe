@@ -50,8 +50,8 @@ toppe.utils.makegre(fov(1), matrix(1), fov(3)/matrix(3), sys, ...
     'ncycles', ncyclesspoil); 
 
 % Display .mod files.
-%
-%toppe.plotmod('all');
+%toppe.plotmod('tipdown.mod', 'gradcoil', sys.gradient);
+%toppe.plotmod('readout.mod', 'gradcoil', sys.gradient);
 
 % Write modules.txt
 modFileText = ['' ...
