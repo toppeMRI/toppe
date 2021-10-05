@@ -40,4 +40,4 @@ rf = toppe.makeGElength(rf);
 toppe.writemod(sys, 'rf', rf, 'gz', g, 'ofname', 'fatsat.mod');
 
 % Plot
-toppe.plotmod('fatsat.mod');
+toppe.plotmod('fatsat.mod', 'gradcoil', sys.gradient);
