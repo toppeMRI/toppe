@@ -1,31 +1,25 @@
 function write2loop(modname, system, varargin)
 % function write2loop(modname, system, varargin)
 %
-% Writes a module and settings to the scanloop file for a sequence
+% Writes a module and settings to the scanloop file for a sequence.
 % To create a scanloop, first initialize the file using:
 %    write2loop('setup')
 %
 % Then write RF or DAQ modules in order they will be played:
-%   Ex.   write2loop('tipdown.mod','RFspoil',true,'RFoffset',-5);
-%         write2loop('readout.mod','slice',1,'view',80,'echo',5);
-%
-%   Note: If a DAQ module is specified with no phase argument, it will 
-%   use the phase of the previous RF module played. In this way, you only
-%   need to specify phase for a DAQ module if it's different than the
-%   excitation phase (ex. PRESTO sequence)
+%   Ex.   write2loop('tipdown.mod',sys,'RFspoil',true,'RFoffset',-5);
+%         write2loop('readout.mod',sys,'slice',1,'view',80,'echo',5);
 %
 % Complete the scanloop using:
 %    write2loop('finish')
 %
 %    Without calling 'finish', your sequence will not run!
 %
-% Input:
-%    system             [1 1]    struct specifying hardware system info, see systemspecs.m
-%
-% Regular input options:
+% Inputs:
 %    modname            [string] Name of module to call, ex. "tipdown.mod"
 %                                OR initialization/completion calls
 %                                "setup" / "finish"
+%    system             [1 1]    struct specifying hardware system info, see systemspecs.m
+% Regular input options:
 %    loopFile           [string] Loop file to write to, default: 'scanloop.txt'
 %    moduleListFile     [string] File that lists modules to use, default: 'modules.txt'
 %    Gamplitude         [3 1]    Amplitude scaling of gradient waveform
