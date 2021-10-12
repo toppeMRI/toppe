@@ -146,7 +146,8 @@ if arg.useParallel
     % loop over images and reconstruct
     parfor ii = 1:nim
         [ims_vec_all(:,ii), ~] = qpwls_pcg1(x0(:,ii), A, W,...
-            data(:,ii), C, 'niter', niter, 'stop_diff_tol', stop_diff_tol);
+            data(:,ii), C, 'niter', niter, 'stop_diff_tol', ...
+            stop_diff_tol, 'isave', 'last');
     end
     
     if ~arg.quiet; fprintf('done.\n'); end
@@ -156,7 +157,8 @@ else
     % loop over images and reconstruct
     for ii = 1:nim
         [ims_vec_all(:,ii), ~] = qpwls_pcg1(arg.x0(:,ii), A, arg.W,...
-            data(:,ii), arg.C, 'niter', 10, 'stop_diff_tol', 1e-3);
+            data(:,ii), arg.C, 'niter', 10, 'stop_diff_tol', 1e-3,...
+            'isave', 'last');
     end
     
     if ~arg.quiet; fprintf('done.\n'); end
