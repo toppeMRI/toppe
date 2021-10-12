@@ -19,6 +19,7 @@ function coppe(varargin)
 % Input options:
 %  target   which scanner to copy pulse sequence to, UM options: 'inside', 'outside'
 %  use_pw   option to allow command line input, in the case a pw is needed
+%  path     where on the scanner to put the files
 %
 % Packages toppe files into toppe-scanfiles.tgz, then copies it to the scanner
 % Assumes you have SSH keys set up to log into romero/toro
@@ -27,13 +28,20 @@ import toppe.utils.*
 
 arg.target = 'inside'; % Default to inside scanner
 arg.use_pw  = false;    % assume we have ssh keys setup to not need a pw
+arg.cv = [];
 arg = vararg_pair(arg, varargin);
 
 fprintf('Making archive...');
-[status,cmdout] = system('tar czf toppe-scanfiles.tgz modules.txt scanloop.txt *.mod'); fprintf('done!\n');
+[status,cmdout] = system('tar czf toppe-scanfiles.tgz modules.txt seqstamp.txt scanloop.txt *.mod'); fprintf('done!\n');
 
 if status
     error(cmdout)
+end
+
+if isempty(arg.cv)
+    script2call = 'pushtoppefiles';
+else
+    script2call = ['pushtoppefiles ', num2str(arg.cv)];
 end
 
 try
@@ -49,7 +57,7 @@ try
     %% create linux commands with correct server target and run
     
     cmd1 = ['scp toppe-scanfiles.tgz fmrilab@',server_str,':~/toppe_utils/'];
-    cmd2 = ['ssh -q fmrilab@',server_str,' "~/toppe_utils/pushtoppefiles"'];
+    cmd2 = ['ssh -q fmrilab@',server_str,' /export/home/fmrilab/toppe_utils/', script2call];
     
     % 1. Send toppe files to server
     fprintf(['Copying to ',server_str,'...']);
