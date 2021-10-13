@@ -17,6 +17,7 @@ function preflightcheck(entryFile, seqstampFile, sys)
 %                  and MUST be copied to /usr/g/research/pulseq/ on the scanner host.
 %                  The various files listed in entryFile and modules.txt must be present
 %                  in the current Matlab working folder.
+%                  See https://github.com/toppeMRI/toppe/blob/main/Files.md for details.
 %   seqstampFile   (string) Output file name. Must be listed in line 6 of entryFile.
 %   sys            GE system struct. See toppe.systemspecs().
 %
