@@ -1,6 +1,6 @@
 function [gx_tmp, gy_tmp, gz_tmp, paramsint16, paramsfloat] = ...
     makeVDSreadout(fov, F0, F1, F2, npix, nshots, maxs_xy, ...
-    spiraldir, varargin)
+    spiraldir, system, varargin)
 % Wrapper for 2D balanced VDS encoding. Optional multishot.
 
 % INPUTS:
@@ -247,7 +247,7 @@ paramsfloat(9) = fov;
 paramsfloat(10) = F1;
 paramsfloat(11) = F2;
 
-toppe.writemod('gx',gx,'gy',gy,'gz',gz_tmp,'ofname','readout.mod','hdrints',paramsint16,'hdrfloats',paramsfloat);
+toppe.writemod(system,'gx',gx,'gy',gy,'gz',gz_tmp,'ofname','readout.mod','hdrints',paramsint16,'hdrfloats',paramsfloat);
 
 end
 

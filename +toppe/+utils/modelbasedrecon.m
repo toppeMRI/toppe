@@ -11,21 +11,23 @@ function [ims] = modelbasedrecon(kspace, data, imsize, fov, varargin)
 % function [im] = modelbasedrecon(A, data, varargin)
 %
 % Inputs:
-%   kspace      [ndat nshot 2|3]   input kspace 
+%   kspace      [ndat nshot 2|3]   input kspace
 %   data        [ndat nshot ncoil nim]   k-space data
-%   imsize      [2 1] or [3 1]     size of output image  
-%   fov         [2 1] or [3 1]     fov of output image  
-                       
+%   imsize      [2 1] or [3 1]     size of output image
+%   fov         [2 1] or [3 1]     fov of output image
+
 % Outputs:
-%   ims         [nx ny | nz] 
+%   ims         [nx ny | nz]
 
 
 % Optional inputs:
 %   sensemaps   [nx ny nz ncoil]
-%   other varargin variables - see defaults below 
+%   other varargin variables - see defaults below
 
 % Melissa Haskell
 % July 2020
+
+if nargin == 1 && streq(kspace, 'test'), modelbasedrecon_test, return, end
 
 
 %% Hardcoded TOPPE variables
@@ -35,8 +37,8 @@ dt = 4e-6; % toppe sampling time is 4 us.
 %% make sure MIRT is installed
 % (note: not sure this is the best way to check this)
 if exist('qpwls_pcg1','file') ~= 2
-   error(['Error: modelbasedrecon.m requires the Michigan Image ',...
-       'Reconstruction Toolbox to run qpwls_pcg1. ']) 
+    error(['Error: modelbasedrecon.m requires the Michigan Image ',...
+        'Reconstruction Toolbox to run qpwls_pcg1. '])
 end
 
 
@@ -48,7 +50,7 @@ nshot = size(kspace,2);
 if numel(size(data)) < 3
     ncoil = 1; nim = 1;
 elseif numel(size(data)) < 4
-    ncoil = size(data,3); nim = 1; 
+    ncoil = size(data,3); nim = 1;
 else
     ncoil = size(data,3); nim = size(data,4);
 end
@@ -65,7 +67,7 @@ arg.zmap          = [];
 arg.useParallel   = false;
 arg.np            = round(.75*(feature('numcores')));  % number of parallel workers
 arg.quiet         = true;
-arg.W             = 1;  % default data weights 
+arg.W             = 1;  % default data weights
 arg.C             = 0;  % default quadratic penalty (i.e. dafult is no reg)
 arg.x0            = zeros(prod(imsize),nim); % initial image estimate
 arg.niter         = 5;  % default number of iteration of pcg
@@ -97,27 +99,27 @@ t = repmat(0:dt:dt*(ndat-1), [1 nshot]);
 if numel(imsize) == 2
     mirt_image_geom = image_geom('nx', nx, 'ny', ny, 'fov', fov);
     if ~isempty(arg.zmap)
-        A0 = Gmri(kspace_cat(:,1:2), mirt_image_geom.mask,'fov',...
-            mirt_image_geom.fov, 'ti', t, 'zmap', 1i*2*pi*arg.zmap,...
-            'L', L,'nufft',nufft_args);
+        mirt_output = evalc(strcat("A0=Gmri(kspace_cat(:,1:2), ",...
+            "mirt_image_geom.mask,'fov', mirt_image_geom.fov, 'ti', t, ",...
+            "'zmap', 1i*2*pi*arg.zmap, 'L', L,'nufft',nufft_args)"));
     else
-        A0 = Gmri(kspace_cat(:,1:2), mirt_image_geom.mask,'fov',...
-            mirt_image_geom.fov, 'ti', t);
+        mirt_output = evalc(strcat("A0=Gmri(kspace_cat(:,1:2), ",...
+            "mirt_image_geom.mask,'fov', mirt_image_geom.fov, 'ti', t)"));
     end
     A = Asense(A0, arg.sensemaps);
-
+    
 else
     %%%%% 7/13/20 note - 3d hasn't been tested yet
     nz = imasize(3);
     mirt_image_geom = image_geom('nx', nx, 'ny', ny, 'nz', nz, ...
         'fov', fov);
     if ~isempty(arg.zmap)
-        A0 = Gmri(kspace_cat, mirt_image_geom.mask,'fov',...
-            mirt_image_geom.fov, 'ti', t, 'zmap', 1i*2*pi*arg.zmap, ...
-            'L', L, 'nufft', nufft_args);
+        mirt_output = evalc(strcat("A0 = Gmri(kspace_cat, mirt_image_geom.mask,",...
+            "'fov', mirt_image_geom.fov, 'ti', t, 'zmap', 1i*2*pi*arg.zmap,", ...
+            "'L', L, 'nufft', nufft_args)"));
     else
-        A0 = Gmri(kspace_cat, mirt_image_geom.mask,'fov',...
-            mirt_image_geom.fov, 'ti', t);
+        mirt_output = evalc(strcat("A0 = Gmri(kspace_cat, mirt_image_geom.mask,",...
+            "'fov', mirt_image_geom.fov, 'ti', t)"));
     end
     A = Asense(A0, arg.sensemaps);
 end
@@ -125,28 +127,30 @@ end
 
 %% call qpwls_pcg1 from MIRT
 
-% initialize 2d matrix to hold image vectors 
+% initialize 2d matrix to hold image vectors
 npix = prod(imsize);
 ims_vec_all = zeros(npix,nim);
+
+% get image recon input parameters
+x0 = arg.x0; W = arg.W; C = arg.C; niter = arg.niter;
+stop_diff_tol = arg.stop_diff_tol;
 
 % call either in parallel or serially
 if arg.useParallel
     if ~arg.quiet; fprintf('Reconstructing in parallel... \n'); end
-   
+    
     % start parallel pool if needed
     p = gcp('nocreate');
     if isempty(p)
         parpool(arg.np)
-    end
-    
-    % get image recon input parameters
-    x0 = arg.x0; W = arg.W; C = arg.C; niter = arg.niter;
-    stop_diff_tol = arg.stop_diff_tol;
+    end   
     
     % loop over images and reconstruct
     parfor ii = 1:nim
-        [ims_vec_all(:,ii), ~] = qpwls_pcg1(x0(:,ii), A, W,...
-            data(:,ii), C, 'niter', niter, 'stop_diff_tol', stop_diff_tol);
+        [ims_vec_all(:,ii), ~] = ...
+            qpwls_pcg1(x0(:,ii), A, W, data(:,ii), C, ...
+            'niter', niter, 'stop_diff_tol', stop_diff_tol,...
+            'isave', 'last');
     end
     
     if ~arg.quiet; fprintf('done.\n'); end
@@ -155,8 +159,11 @@ else
     
     % loop over images and reconstruct
     for ii = 1:nim
-        [ims_vec_all(:,ii), ~] = qpwls_pcg1(arg.x0(:,ii), A, arg.W,...
-            data(:,ii), arg.C, 'niter', 10, 'stop_diff_tol', 1e-3);
+        mirt_output = evalc(strcat("[ims_vec_all(:,ii), ~] = ",...
+            "qpwls_pcg1(arg.x0(:,ii), A, W, data(:,ii), C, ",...
+            "'niter', niter, 'stop_diff_tol', stop_diff_tol,",...
+            "'isave', 'last');"));
+        
     end
     
     if ~arg.quiet; fprintf('done.\n'); end
@@ -169,5 +176,80 @@ else
     ims = reshape(ims_vec_all, [nx ny nz nim]);
 end
 
+
+end
+
+
+
+
+function [] = modelbasedrecon_test
+% basic 2D test 
+
+import toppe.*
+import toppe.utils.*
+imfig = 10;
+
+% image parameters
+n = 128;        % image size 
+FOV = 200;      % field of view (mm)
+pe_dir = 1;     % phase encode direction
+pad = 10;
+ncoil = 4;
+
+%% 2d test
+
+% create image geometry & im, display
+ig = image_geom('nx', n, 'fov', FOV); 
+xtrue = padarray(phantom('Modified Shepp-Logan',n-2*pad),[pad pad], 0);
+figure(imfig); subplot(131); imagesc(abs(xtrue)); title('ground truth')
+axis image; colormap gray; colorbar
+
+% Create k-space data 
+f.traj = 'cartesian';
+[kspace, ~, ~] = mri_trajectory(f.traj, {}, [n n], ig.fov);
+smaps = ir_mri_sensemap_sim('nx',n,'ny',n,'ncoil',ncoil);
+A0 = Gmri(kspace, ig.mask,'fov', ig.fov);
+A = Asense(A0, smaps);
+ktest = A*xtrue(:);
+
+
+% Inputs:
+%   kspace      [ndat nshot 2|3]   input kspace
+%   data        [ndat nshot ncoil nim]   k-space data
+%   imsize      [2 1] or [3 1]     size of output image
+%   fov         [2 1] or [3 1]     fov of output image
+
+% Outputs:
+%   ims         [nx ny | nz]
+
+% recon and display
+kspace = reshape(kspace,[size(kspace,1),1,2]);
+smaps = reshape(smaps,[n n 1 ncoil]);
+ktest = reshape(ktest,[size(ktest,1)/ncoil,1,ncoil]);
+[ims] = modelbasedrecon(kspace, ktest, [n n], [FOV FOV], 'sensemaps', smaps);
+figure(imfig); subplot(132); imagesc(abs(ims)); title('MBIR')
+axis image; colormap gray; colorbar
+disp('2d single slice test complete.')
+
+%% stack of 2d test
+nim=5;
+ktest = repmat(ktest,[1 1 1 nim]);
+[ims] = modelbasedrecon(kspace, ktest, [n n], [FOV FOV], 'sensemaps', smaps);
+figure(imfig); subplot(132); imagesc(abs(ims(:,:,1))); title('MBIR 1st im')
+axis image; colormap gray; colorbar
+subplot(133); imagesc(abs(ims(:,:,end))); title('MBIR last im')
+axis image; colormap gray; colorbar
+disp('2d multisclie test complete.')
+
+%% stack of 2d test parallel
+nim=5;
+ktest = repmat(ktest,[1 1 1 nim]);
+[ims] = modelbasedrecon(kspace, ktest, [n n], [FOV FOV], 'sensemaps', ...
+    smaps, 'useParallel', true);
+figure(imfig); subplot(132); imagesc(abs(ims(:,:,1))); title('MBIR 1st im')
+axis image; colormap gray; colorbar
+subplot(133); imagesc(abs(ims(:,:,end))); title('MBIR last im')
+axis image; colormap gray; colorbar
+disp('2d multisclie parallel compute test complete.')
 
 end
