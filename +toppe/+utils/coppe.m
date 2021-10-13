@@ -19,6 +19,7 @@ function coppe(varargin)
 % Input options:
 %  target   which scanner to copy pulse sequence to, UM options: 'inside', 'outside'
 %  use_pw   option to allow command line input, in the case a pw is needed
+%  cv       CV number, used to determing where on the scanner to put files
 %
 % Packages toppe files into toppe-scanfiles.tgz, then copies it to the scanner
 % Assumes you have SSH keys set up to log into romero/toro
@@ -26,17 +27,26 @@ function coppe(varargin)
 import toppe.utils.*
 
 arg.target = 'inside'; % Default to inside scanner
-arg.use_pw  = false;    % assume we have ssh keys setup to not need a pw
+arg.use_pw  = false;   % assume we have ssh keys setup to not need a pw
+arg.cv = [];           % if no CV given, it will coppe to /usr/g/bin
 arg = vararg_pair(arg, varargin);
 
 fprintf('Making archive...');
-[status,cmdout] = system('tar czf toppe-scanfiles.tgz modules.txt scanloop.txt *.mod'); fprintf('done!\n');
+[status,cmdout] = system('tar czf toppe-scanfiles.tgz modules.txt seqstamp.txt scanloop.txt *.mod'); fprintf('done!\n');
 
 if status
     error(cmdout)
 end
 
+% Create string for calling bash script on server
+if isempty(arg.cv)
+    script2call = 'pushtoppefiles';
+else
+    script2call = ['pushtoppefiles ', num2str(arg.cv)];
+end
+
 try
+    % set server names
     switch arg.target
         case 'inside'
             server_str = 'romero';
@@ -49,7 +59,7 @@ try
     %% create linux commands with correct server target and run
     
     cmd1 = ['scp toppe-scanfiles.tgz fmrilab@',server_str,':~/toppe_utils/'];
-    cmd2 = ['ssh -q fmrilab@',server_str,' "~/toppe_utils/pushtoppefiles"'];
+    cmd2 = ['ssh -q fmrilab@',server_str,' /export/home/fmrilab/toppe_utils/', script2call];
     
     % 1. Send toppe files to server
     fprintf(['Copying to ',server_str,'...']);
@@ -75,7 +85,7 @@ try
     scanloop_struc = importdata('scanloop.txt');
     scanloop_struc_data = scanloop_struc.data;
     max_sli = scanloop_struc_data(2);
-    fprintf('Set minimum # of slices on scanner to %d.\n',max_sli+1);
+    fprintf('Set # of slices on scanner to %d or greater.\n',max_sli+1);
     
     disp('Ready to scan.');
 catch
