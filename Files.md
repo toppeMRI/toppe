@@ -103,6 +103,8 @@ these waveforms are scaled down as needed during the scan as specified in scanlo
 These waveforms are placed along **logical gradient axes** in the `.mod` file, 
 i.e., they will be converted to physical gradients on the scanner 
 based on the scan rotation specified on the UI as well as in scanloop.txt.
+Specifically, the 3D rotation matrix in scanloop.txt is applied on top of (multiplied by)
+the rotation prescribed on the scanner interface.
 It is a convention to place the frequency-encoding waveform on the logical 'x' gradient axis,
 but that's not a requirement and you may place any waveform on any axis.
 
