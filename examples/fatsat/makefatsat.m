@@ -30,7 +30,7 @@ rf = toppe.utils.rf.makeslr(flip, 1e5, tbw, dur, 1e-8, sys, ...
 % Design spoiler gradient
 nCycleSpoil = 4;  % number of spoiling cycles across slThick
 slThick = 0.5;    % cm
-gsp = toppe.utils.makecrusher(nCycleSpoil, slThick, 0, sys.maxSlew, sys.maxGrad);
+gsp = toppe.utils.makecrusher(nCycleSpoil, slThick, sys, 0, sys.maxSlew, sys.maxGrad);
 
 % Put together and write to 'fatsat.mod'
 g = [0*rf; gsp];

@@ -15,11 +15,12 @@ function [gx_tmp, gy_tmp, gz_tmp, paramsint16, paramsfloat] = ...
 
 % Options:
 %   crushers    [ncrush 3] Gradient crushers to add to end of readout
-%   spfrac      [1 1]      Spiral fraction - ratio of spiral in to spiral 
+%   spfrac      [1 1]      Spiral fraction - ratio of spiral in to spiral
 %                           out for spiral in - out sequence
 %   nFIDstart   [1 1]      # of times to sample k=0 at beginning of readout
 %   nFIDend     [1 1]      # of times to sample k=0 at end of readout
-%   gmax        [1 1]      peak gradient (G/cm). Default: 5 G/cm
+%   gmax        [1 1]      peak gradient (G/cm). Default: system limit
+%   bal         [1 1]      boolean to balance or not
 
 % inital version by Amos Cao
 % updated June 2020 by Melissa Haskell, mhask@umich.edu
@@ -29,12 +30,13 @@ function [gx_tmp, gy_tmp, gz_tmp, paramsint16, paramsfloat] = ...
 
 % set  defaults
 arg.spfrac    = 0.2;
-arg.nFIDstart = 0; 
-arg.nFIDend   = 0;  
+arg.nFIDstart = 0;
+arg.nFIDend   = 0;
 arg.crushers  = [];
+arg.bal = true;
 
 % system defaults
-arg.gmax = 5;	 % G/cm
+arg.gmax = system.maxGrad;	 % G/cm
 
 % parse inputs
 arg = vararg_pair(arg, varargin);
@@ -75,40 +77,14 @@ end
 
 
 %% Balance spirals
-fprintf('Creating balancers...');
-
-% Balance the spiral out, calling toppe.utils.gbalance multiple times if
-% needed. 
-iter = 1;
-gx_tmp = gx_out; gy_tmp = gy_out;
-while max(abs([trapz(gx_tmp) trapz(gy_tmp)])) > 1e-6 && iter < maxiter_bal_out
+if arg.bal
+    fprintf('Creating balancers...');
     
-    gxb = toppe.utils.gbalance(gx_tmp,maxs_xy,0); fprintf('.');
-    gyb = toppe.utils.gbalance(gy_tmp,maxs_xy,0); fprintf('.');
-    lengthdiff = length(gxb)-length(gyb);
-    
-    % Rebalance the shorter waveform with the extra time we have
-    if lengthdiff > 0
-        gyb = toppe.utils.gbalance(gy_tmp,maxs_xy,length(gxb));
-    elseif lengthdiff < 0
-        gxb = toppe.utils.gbalance(gx_tmp,maxs_xy,length(gyb));
-    end
-    
-    gxbal = [gx_tmp; gxb];
-    gybal = [gy_tmp; gyb];
-    
-    gx_tmp = gxbal;
-    gy_tmp = gybal;
-    
-    iter = iter + 1;
-end
-gx_out_bal = gx_tmp; gy_out_bal = gy_tmp;
-nBalance_out = numel(gx_out_bal) - numel(gx_out(:));
-
-% balance spiral in if we have a spiral in-out sequence
-if spiraldir == 3
-    gx_tmp = gx_in; gy_tmp = gy_in; iter = 1;
-    while max(abs([trapz(gx_tmp) trapz(gy_tmp)])) > 1e-6 && iter < maxiter_bal_in
+    % Balance the spiral out, calling toppe.utils.gbalance multiple times if
+    % needed.
+    iter = 1;
+    gx_tmp = gx_out; gy_tmp = gy_out;
+    while max(abs([trapz(gx_tmp) trapz(gy_tmp)])) > 1e-6 && iter < maxiter_bal_out
         
         gxb = toppe.utils.gbalance(gx_tmp,maxs_xy,0); fprintf('.');
         gyb = toppe.utils.gbalance(gy_tmp,maxs_xy,0); fprintf('.');
@@ -129,31 +105,64 @@ if spiraldir == 3
         
         iter = iter + 1;
     end
-    gx_mini_in_bal = gx_tmp; gy_mini_in_bal = gy_tmp;
-    nBalance_in = numel(gx_mini_in_bal) - numel(gx_in);
+    gx_out_bal = gx_tmp; gy_out_bal = gy_tmp;
+    nBalance_out = numel(gx_out_bal) - numel(gx_out(:));
+    
+    % balance spiral in if we have a spiral in-out sequence
+    if spiraldir == 3
+        gx_tmp = gx_in; gy_tmp = gy_in; iter = 1;
+        while max(abs([trapz(gx_tmp) trapz(gy_tmp)])) > 1e-6 && iter < maxiter_bal_in
+            
+            gxb = toppe.utils.gbalance(gx_tmp,maxs_xy,0); fprintf('.');
+            gyb = toppe.utils.gbalance(gy_tmp,maxs_xy,0); fprintf('.');
+            lengthdiff = length(gxb)-length(gyb);
+            
+            % Rebalance the shorter waveform with the extra time we have
+            if lengthdiff > 0
+                gyb = toppe.utils.gbalance(gy_tmp,maxs_xy,length(gxb));
+            elseif lengthdiff < 0
+                gxb = toppe.utils.gbalance(gx_tmp,maxs_xy,length(gyb));
+            end
+            
+            gxbal = [gx_tmp; gxb];
+            gybal = [gy_tmp; gyb];
+            
+            gx_tmp = gxbal;
+            gy_tmp = gybal;
+            
+            iter = iter + 1;
+        end
+        gx_mini_in_bal = gx_tmp; gy_mini_in_bal = gy_tmp;
+        nBalance_in = numel(gx_mini_in_bal) - numel(gx_in);
+    else
+        gx_mini_in_bal = []; gy_mini_in_bal = [];
+        nBalance_in = 0;
+    end
+    
+    
+    % Check to make sure we're actually balanced
+    if max(abs([trapz(gx_out_bal) trapz(gy_out_bal)])) > 1e-6
+        fprintf('K ending: %0.7f,%0.7f\n',trapz(gx_out_bal),trapz(gy_out_bal));
+        warn('Failed to balance sprial out, proceeding...');
+    end
+    if max(abs([trapz(gx_mini_in_bal) trapz(gy_mini_in_bal)])) > 1e-6
+        fprintf('K ending: %0.7f,%0.7f\n',trapz(gx_mini_in_bal),trapz(gy_mini_in_bal));
+        warn('Failed to balance sprial in, proceeding...');
+    end
+    
+    % Combine spiral in and out gradients
+    gx_tmp = [gx_mini_in_bal(end:-1:1); gx_out_bal];
+    gy_tmp = [gy_mini_in_bal(end:-1:1); gy_out_bal];
+    gz_tmp = zeros(size(gx_tmp));
+    
+    
+    fprintf(' done.\n');
 else
-    gx_mini_in_bal = []; gy_mini_in_bal = [];
     nBalance_in = 0;
+    nBalance_out = 0;
+    gx_tmp = gx_out; gy_tmp = gy_out;
 end
 
-
-% Check to make sure we're actually balanced
-if max(abs([trapz(gx_out_bal) trapz(gy_out_bal)])) > 1e-6
-    fprintf('K ending: %0.7f,%0.7f\n',trapz(gx_out_bal),trapz(gy_out_bal));
-    warn('Failed to balance sprial out, proceeding...');
-end
-if max(abs([trapz(gx_mini_in_bal) trapz(gy_mini_in_bal)])) > 1e-6
-    fprintf('K ending: %0.7f,%0.7f\n',trapz(gx_mini_in_bal),trapz(gy_mini_in_bal));
-    warn('Failed to balance sprial in, proceeding...');
-end
-
-fprintf(' done.\n');
-
-
-%% Combine spiral in and out gradients 
-gx_tmp = [gx_mini_in_bal(end:-1:1); gx_out_bal];
-gy_tmp = [gy_mini_in_bal(end:-1:1); gy_out_bal];
-gz_tmp = zeros(size(gx_tmp));
 
 
 %% Additional sequence modifications and checks
@@ -247,7 +256,7 @@ paramsfloat(9) = fov;
 paramsfloat(10) = F1;
 paramsfloat(11) = F2;
 
-toppe.writemod(system,'gx',gx,'gy',gy,'gz',gz_tmp,'ofname','readout.mod','hdrints',paramsint16,'hdrfloats',paramsfloat);
+toppe.writemod(system,'gx',gx,'gy',gy,'gz',gz,'ofname','readout.mod','hdrints',paramsint16,'hdrfloats',paramsfloat);
 
 end
 

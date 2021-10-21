@@ -72,7 +72,7 @@ area = sum([ramp gxro fliplr(ramp)])*dt*1e-3;                % G/cm*s
 gxprew = -trapwave2(area/2, mxg, arg.slewDerate*mxs/sqrt(3), dt);   % sqrt(3) since up to 3 gradients are playing simultaneously
 
 % put together the whole gx waveform
-gcrush = makecrusher(arg.ncycles,fov/npix,0, mxs/sqrt(3), mxg);
+gcrush = makecrusher(arg.ncycles,fov/npix,system,0, mxs/sqrt(3), mxg);
 if arg.ncycles > 0
 	areacrush = sum(gcrush)*dt*1e-3;   % G/cm*sec
 	arearo = sum([gxprew ramp gxro fliplr(ramp)])*dt*1e-3;
@@ -173,8 +173,8 @@ if arg.extrafiles
 	if arg.ncycles > 0
 		%fname = sprintf('spoiler-zres%dmm-ncycles%d-%s.mod', fov/npix,arg.ncycles,date);
 		fname = 'spoiler.mod';
-		gx = makecrusher(arg.ncycles, fov/npix, 0, mxs/sqrt(2), mxg/sqrt(2));
-		gz = makecrusher(arg.ncycles, zres, 0, mxs/sqrt(2), mxg/sqrt(2));
+		gx = makecrusher(arg.ncycles, fov/npix, system, 0, mxs/sqrt(2), mxg/sqrt(2));
+		gz = makecrusher(arg.ncycles, zres, system, 0, mxs/sqrt(2), mxg/sqrt(2));
 		writemod('gx', gx(:), 'gz', gz(:), 'ofname', fname, 'desc', 'spoiler');
 	end
 end

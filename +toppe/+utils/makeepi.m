@@ -97,7 +97,7 @@ for ii = 1:nshots
 	gxarea = sum(gxall(:,ii))*dt*1e-3;                       % G/cm*s
 	area = arg.ncycles/(1e3*gamma*fov/N) - gxarea;           % G/cm*s
 	gtmp{ii} = trapwave2(area, mxg/sqrt(2), mxs/sqrt(2), dt)';
-	%gcrush = makecrusher(arg.ncycles,fov/N,0, mxs/sqrt(2), mxg/sqrt(2));
+	%gcrush = makecrusher(arg.ncycles,fov/N,arg.system,0, mxs/sqrt(2), mxg/sqrt(2));
 	if length(gtmp{ii}) > l
 		l = length(gtmp{ii});
 	end
