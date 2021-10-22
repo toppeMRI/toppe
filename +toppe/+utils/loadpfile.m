@@ -121,7 +121,12 @@ fprintf(1,'ndat = %d, nslices = %d, nechoes = %d, nviews = %d, ncoils = %d\n', n
 end
 
 %% Read data from file
-datr = int16(zeros(ndat,ncoils,sliceend-slicestart+1,numel(ECHOES),nviews));
+switch ptsize
+    case 2,
+        datr = int16(zeros(ndat,ncoils,sliceend-slicestart+1,numel(ECHOES),nviews));
+    case 4,
+        datr = int32(zeros(ndat,ncoils,sliceend-slicestart+1,numel(ECHOES),nviews));
+end
 dati = datr;
 if ~arg.quiet; textprogressbar('Loading data: '); end
 for icoil = 1:ncoils
@@ -133,7 +138,12 @@ for icoil = 1:ncoils
                 offsetres = (icoil-1)*coilres + (islice-1)*sliceres + (echo-1)*echores + iview*ndat;
                 offsetbytes = 2*ptsize*offsetres;
                 fseek(fid, rdb_hdr.off_data+offsetbytes, 'bof');
-                dtmp = fread(fid, 2*ndat, 'int16=>int16');
+                switch ptsize
+                    case 2,
+                        dtmp = fread(fid, 2*ndat, 'int16=>int16');
+                    case 4,
+                        dtmp = fread(fid, 2*ndat, 'int32=>int32');
+                end
                 sliceind = islice-slicestart+1;
                 datr(:,icoil,sliceind,iecho,iview) = dtmp(1:2:end); %Real data
                 dati(:,icoil,sliceind,iecho,iview) = dtmp(2:2:end); %Imag
