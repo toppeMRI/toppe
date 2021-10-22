@@ -50,8 +50,10 @@ try
     switch arg.target
         case 'inside'
             server_str = 'romero';
+            homedir_str = '/export/home/fmrilab';
         case 'outside'
-            server_str = 'toro';            
+            server_str = 'toro';      
+            homedir_str = '/home/fmrilab';
         otherwise
             fprintf('Invalid target, valid targets are ''inside'' or ''outside''.\n');
     end
@@ -59,7 +61,7 @@ try
     %% create linux commands with correct server target and run
     
     cmd1 = ['scp toppe-scanfiles.tgz fmrilab@',server_str,':~/toppe_utils/'];
-    cmd2 = ['ssh -q fmrilab@',server_str,' /export/home/fmrilab/toppe_utils/', script2call];
+    cmd2 = ['ssh -q fmrilab@',server_str,' ',homedir_str,'/toppe_utils/', script2call];
     
     % 1. Send toppe files to server
     fprintf(['Copying to ',server_str,'...']);

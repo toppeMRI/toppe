@@ -1,9 +1,10 @@
-function gcrush = makecrusher(ncycles,opslthick,gzarea,mxs,mxg)
+function gcrush = makecrusher(ncycles,opslthick,system,gzarea,mxs,mxg)
 % function gcrush = makecrusher(ncycles,opslthick,gzarea,mxs,mxg)
 % 
 % INPUTS:
 %   ncycles     -- number of cycles of phase across slice/slab of thickness 'opslthick'
 %   opslthick   -- cm
+%   system      -- struct specifying hardware system info
 %   gzarea      -- half-area of slice-select gradient [G/cm*sec]. Default: 0.
 %   mxs         -- max slew rate [G/cm/msec]. Default: 10.
 %   mxg         -- max gradient [G/cm]. Default: 4.
@@ -31,6 +32,11 @@ area = ncycles/(gamma*opslthick);           % G/cm*sec
 dt = 4e-3;   % ms
 gcrush = trapwave2(area-gzarea, mxg, mxs, dt);
 gcrush = makeGElength(gcrush(:));
+
+%% Check waveform against system hardware limits
+if ~checkwaveforms(system, 'gx', gcrush, 'gy', gcrush, 'gz', gcrush)
+	error('Waveforms failed system hardware checks -- exiting');
+end
 
 return;
 

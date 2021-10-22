@@ -114,7 +114,7 @@ end
 
 % add spoiler gradient along slice-select
 if ncycles > 0 & ~strcmp(arg.type, 'se')
-	gspoil = toppe.utils.makecrusher(ncycles, slthick, 0, 0.99*mxs, mxg); 
+	gspoil = toppe.utils.makecrusher(ncycles, slthick, system, 0, 0.99*mxs, mxg); 
 	areaSpoil = sum(gspoil)*system.raster;  % G/cm*sec
 	areass = sum(gex)*system.raster;        % area of slice-select gradient [G/cm*sec]
 	if areass > areaSpoil
@@ -163,7 +163,7 @@ freq = system.gamma*gplateau*sliceOffset; % Hz
 if isBalanced | arg.isPresto
 	gcrush = [];
 else
-	gcrush = makecrusher(ncycles,slthick,0,arg.spoilDerate*0.99*mxs,mxg);
+	gcrush = makecrusher(ncycles,slthick,system,0,arg.spoilDerate*0.99*mxs,mxg);
 end
 gcrush = [gcrush(:); zeros(4,1)];
 
@@ -181,8 +181,8 @@ switch arg.type
 end
 
 if arg.isPresto
-	gpresto1 = makecrusher(ncycles,slthick,0, 0.99*mxs, mxg);     % played before readout
-	gpresto2 = makecrusher(2*ncycles,slthick,0, 0.99*mxs, mxg);   % played at end of TR
+	gpresto1 = makecrusher(ncycles,slthick,system,0, 0.99*mxs, mxg);     % played before readout
+	gpresto2 = makecrusher(2*ncycles,slthick,system,0, 0.99*mxs, mxg);   % played at end of TR
 	gex = [gpresto2(:); gex(:); -gpresto1(:)];
 	rfex = [0*gpresto2(:); rfex(:); 0*gpresto1(:)];
 end
