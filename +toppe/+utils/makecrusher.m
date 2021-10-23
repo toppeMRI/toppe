@@ -1,5 +1,5 @@
 function gcrush = makecrusher(ncycles,opslthick,system,gzarea,mxs,mxg)
-% function gcrush = makecrusher(ncycles,opslthick,gzarea,mxs,mxg)
+% function gcrush = makecrusher(ncycles,opslthick,system,gzarea,mxs,mxg)
 % 
 % INPUTS:
 %   ncycles     -- number of cycles of phase across slice/slab of thickness 'opslthick'
@@ -34,7 +34,7 @@ gcrush = trapwave2(area-gzarea, mxg, mxs, dt);
 gcrush = makeGElength(gcrush(:));
 
 %% Check waveform against system hardware limits
-if ~checkwaveforms(system, 'gx', gcrush, 'gy', gcrush, 'gz', gcrush)
+if ~checkwaveforms(system, 'gz', gcrush)
 	error('Waveforms failed system hardware checks -- exiting');
 end
 
