@@ -1,5 +1,5 @@
 function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
-% function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
+% function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
 %
 % Make gradients for 3D spin-warp (cartesian gradient-echo) readout
 %
@@ -72,8 +72,8 @@ area = sum([ramp gxro fliplr(ramp)])*dt*1e-3;                % G/cm*s
 gxprew = -trapwave2(area/2, mxg, arg.slewDerate*mxs/sqrt(3), dt);   % sqrt(3) since up to 3 gradients are playing simultaneously
 
 % put together the whole gx waveform
-gcrush = makecrusher(arg.ncycles,fov/npix,system,0, mxs/sqrt(3), mxg);
 if arg.ncycles > 0
+    gcrush = makecrusher(arg.ncycles,fov/npix,system,0, mxs/sqrt(3), mxg);
 	areacrush = sum(gcrush)*dt*1e-3;   % G/cm*sec
 	arearo = sum([gxprew ramp gxro fliplr(ramp)])*dt*1e-3;
 	if areacrush > arearo
