@@ -1,5 +1,5 @@
 function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
-% function [gx,gy,gz,fname] = makegre(fov, npix, zres, varargin)
+% function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
 %
 % Make gradients for 3D spin-warp (cartesian gradient-echo) readout
 %
