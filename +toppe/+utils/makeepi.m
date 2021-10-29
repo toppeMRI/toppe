@@ -21,15 +21,19 @@ function [gx, gy] = makeepi(fov, N, nshots, sys, varargin)
 %  ncycles      (float) Number of cycles of phase across voxel width. Default: 2
 %  decimation   (int) Design EPI readout as if ADC dwell time is 4us*decimation.
 %               (The actual ADC dwell time is fixed to 4us in TOPPE)
-%  writemod     (true/false) Default: true
+%  writefiles   (true/false) Default: false
 %
 % Outputs:
 %  gx        struct contain various elements of the waveform
 %            gx.et = echo train portion
 %            gx.pre = prephaser (written to prephaser.mod)
-%  gy        similar to gx
-%            gy.pre = prephaser (written to prephaser.mod)
 %            etc
+%  gy        similar to gx
+%
+% Example:
+%  >> sys = toppe.systemspecs();   % use default system values
+%  >> [gx,gy] = toppe.utils.makeepi([24 20], [240 200], 40, sys, 'flyback', true);
+%  >> plot([gx.et gy.et])
 
 nx = N(1); ny = N(2);
 
@@ -39,7 +43,7 @@ arg.flyback = false;
 arg.rampsamp = false;
 arg.ncycles = 2;
 arg.decimation = 1;
-arg.writemod = true;
+arg.writefiles = false;
 arg.ofname = 'readout.mod';
 
 %% Substitute varargin values as appropriate and check inputs
@@ -95,8 +99,8 @@ gy.blip = toppe.utils.trapwave2(dky/(gamma), mxg, mxs/sqrt(2), dt);
 
 % x readout gradient for one echo
 if ~arg.rampsamp
-    gamma = 4.2575;              % kHz/Gauss
-    g = (1/dt)/(gamma*fov(1))/arg.decimation;  % amplitdue. Gauss/cm
+    % no sampling on ramps
+    g = (1/dt)/(gamma*1e-3*fov(1))/arg.decimation;  % amplitude. Gauss/cm
     gx.plateau = g*ones(1,nx*arg.decimation);  % plateau 
     s = mxs*dt/sqrt(2);   % max change in gradient per sample
     gx.ramp = 0:s:g;
@@ -109,15 +113,26 @@ if ~arg.rampsamp
     % readout trapezoid
     gx.echo = [gx.ramp gx.plateau fliplr(gx.ramp)];  % one echo in the EPI train
 else
-    % ramp sampling
-    % TODO
+    % sample on ramps
+    res = fov(1)/nx;     % spatial resolution (cm)
+    kmax = 1/(2*res);    % cycles/cm
+    gx.area = 2*kmax/gamma;   % G/cm * sec (area of each readout trapezoid)
+    mxg = min(1/(fov(1)*gamma*dt*1e-3), sys.maxGrad)    % Gauss/cm
+    gx.echo = toppe.utils.trapwave2(area, mxg, sys.maxSlew/sqrt(2), dt);
+
+    % extend plateau to make room for ky blips on turns
+    
 end
 
 % prewinders
 gx.area = sum(gx.echo)*dt*1e-3;  % G/cm*s
 gx.pre = -toppe.utils.trapwave2(gx.area/2, mxg, mxs/sqrt(3), dt);
 
-gy.area = sum(gx.plateau)*dt*1e-3;  % G/cm*s
+if ~arg.rampsamp
+    gy.area = sum(gx.plateau)*dt*1e-3;  % G/cm*s
+else
+    gy.area = sum(gx.echo)*dt*1e-3;  % G/cm*s
+end
 gy.pre = -toppe.utils.trapwave2(gy.area/2, mxg, mxs/sqrt(3), dt);
 
 % flyback rewinder
@@ -170,11 +185,11 @@ iStop = length(gy.et) - length(gx.ramp);
 gy.et = [gy.et(1:iStop); gy.etrephase'];
 gx.et = [gx.et; zeros(length(gy.et)-length(gx.et),1)];
 
-if ~arg.writemod
+if ~arg.writefiles
     return;
 end
 
-%% write to .mod file
+%% write to .mod files
 % Store a few values in header that are useful for recon
 gx.et = toppe.makeGElength(gx.et);
 gy.et = toppe.makeGElength(gy.et);
