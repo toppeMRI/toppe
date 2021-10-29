@@ -1,5 +1,5 @@
-function [gx, gy] = makeepi(fov, N, nshots, varargin)
-% function [gx, gy] = makeepi(fov, N, nshots, varargin)
+function [gx, gy] = makeepi(fov, N, nshots, sys, varargin)
+% function [gx, gy] = makeepi(fov, N, nshots, sys, varargin)
 %
 % Make single/multi-shot 2D EPI readout and (optionally) 
 % write waveforms to .mod file.
@@ -12,6 +12,7 @@ function [gx, gy] = makeepi(fov, N, nshots, varargin)
 %  fov        [1 2] Field of view (cm)
 %  N          [1 2] Matrix size
 %  nshots     number of RF shots needed to fully sample
+%  sys        struct specifying system info, see systemspecs.m
 %
 % Options:
 %  Ry           (int) EPI undersampling factor. Default: 1
@@ -20,7 +21,6 @@ function [gx, gy] = makeepi(fov, N, nshots, varargin)
 %  ncycles      (float) Number of cycles of phase across voxel width. Default: 2
 %  decimation   (int) Design EPI readout as if ADC dwell time is 4us*decimation.
 %               (The actual ADC dwell time is fixed to 4us in TOPPE)
-%  system       struct specifying system info, see systemspecs.m
 %  writemod     (true/false) Default: true
 %
 % Outputs:
@@ -31,9 +31,6 @@ function [gx, gy] = makeepi(fov, N, nshots, varargin)
 %            gy.pre = prephaser (written to prephaser.mod)
 %            etc
 
-import toppe.*
-import toppe.utils.*
-
 nx = N(1); ny = N(2);
 
 %% Defaults
@@ -42,7 +39,6 @@ arg.flyback = false;
 arg.rampsamp = false;
 arg.ncycles = 2;
 arg.decimation = 1;
-arg.system = systemspecs();
 arg.writemod = true;
 arg.ofname = 'readout.mod';
 
@@ -63,12 +59,12 @@ if rem(arg.decimation, 1) | arg.decimation < 1
 end
 
 %% Gradient limits
-mxg = 0.995*arg.system.maxGrad;          
-if strcmp(arg.system.gradUnit, 'mT/m')
+mxg = 0.995*sys.maxGrad;          
+if strcmp(sys.gradUnit, 'mT/m')
 	mxg = mxg/10;     % Gauss/cm
 end
-mxs = 0.995*arg.system.maxSlew;
-if strcmp(arg.system.slewUnit, 'T/m/s')
+mxs = 0.995*sys.maxSlew;
+if strcmp(sys.slewUnit, 'T/m/s')
 	mxs = mxs/10;     % Gauss/cm/ms
 end
 
@@ -94,12 +90,8 @@ end
 %% readout gradients
 
 % y phase-encode blip
-% force length to be even since dividing by 2 below
 dky = arg.Ry*nshots/fov(2);    % ky spacing (cycles/cm)
 gy.blip = toppe.utils.trapwave2(dky/(gamma), mxg, mxs/sqrt(2), dt);
-if mod(length(gy.blip),2)
-    gy.blip = [gy.blip 0];
-end
 
 % x readout gradient for one echo
 if ~arg.rampsamp
@@ -111,7 +103,7 @@ if ~arg.rampsamp
 
     % If needed, extend readout plateau to make room for y blips
     if length(gy.blip) > 2*length(gx.ramp)
-        gx.ramp = linspace(0, g, ceil(length(gy.bglip/2)));
+        gx.ramp = linspace(0, g, ceil(length(gy.blip/2)));
     end
 
     % readout trapezoid
@@ -123,14 +115,14 @@ end
 
 % prewinders
 gx.area = sum(gx.echo)*dt*1e-3;  % G/cm*s
-gx.pre = -trapwave2(gx.area/2, mxg, mxs/sqrt(3), dt);
+gx.pre = -toppe.utils.trapwave2(gx.area/2, mxg, mxs/sqrt(3), dt);
 
 gy.area = sum(gx.plateau)*dt*1e-3;  % G/cm*s
-gy.pre = -trapwave2(gx.area/2, mxg, mxs/sqrt(3), dt);
+gy.pre = -toppe.utils.trapwave2(gy.area/2, mxg, mxs/sqrt(3), dt);
 
 % flyback rewinder
 if arg.flyback
-    gx.flyback = -trapwave2(gx.area, mxg, mxs/sqrt(2), dt);
+    gx.flyback = -toppe.utils.trapwave2(gx.area, mxg, mxs/sqrt(2), dt);
     if gx.flyback(end) == 0
         gx.flyback = gx.flyback(1:(end-1));
     end
@@ -167,24 +159,41 @@ for ii = 1:(etl-1)
     gy.et(iStart:iStop) = gy.blip;
 end
 
-% add y rephaser (of etl portion only)
+% Add y rephaser (of etl portion only)
+% so the etl portion is balanced.
+% This way the prephaser module has independent control over
+% the net gradient area.
+% Not the most efficient implementation though.
 gy.area = sum(gy.et)*dt*1e-3;  % G/cm*s
-gy.etrephase = -trapwave2(gy.area, mxg, mxs/sqrt(3), dt);
+gy.etrephase = -toppe.utils.trapwave2(gy.area, mxg, mxs/sqrt(3), dt);
+iStop = length(gy.et) - length(gx.ramp);
+gy.et = [gy.et(1:iStop); gy.etrephase'];
+gx.et = [gx.et; zeros(length(gy.et)-length(gx.et),1)];
 
 if ~arg.writemod
     return;
 end
 
 %% write to .mod file
-gx = makeGElength(gxall);
-gy = makeGElength(gyall);
-hdrints = [N nshots length(gro) npre]; 
-hdrfloats = [fov];
-writemod(arg.system, ...
-    'gx', gx, 'gy', gy, ...
+% Store a few values in header that are useful for recon
+gx.et = toppe.makeGElength(gx.et);
+gy.et = toppe.makeGElength(gy.et);
+
+hdrints = [nx ny nshots arg.Ry length(gx.ramp) length(gx.echo)]; 
+if arg.flyback
+    hdrints = [hdrints length(gx.flyback)];
+end
+hdrfloats = [fov(1) fov(2)];
+toppe.writemod(sys, ...
+    'gx', gx.et, 'gy', gy.et, ...
     'desc', 'EPI readout', ...
-    'ofname', arg.ofname, ...
+    'ofname', 'et.mod', ...
+    'hdrfloats', hdrfloats, ...
 	'hdrints', hdrints);
+
+toppe.writemod(sys, ...
+    'gx', gx.pre', 'gy', gy.pre', ...
+    'ofname', 'prephaser.mod');
 
 return;
 
