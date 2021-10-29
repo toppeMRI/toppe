@@ -1,7 +1,12 @@
-function [gx,gy] = makeepi(fov, N, nshots, varargin)
-% function [gx,gy] = makeepi(fov, N, nshots, varargin)
+function [gx, gy] = makeepi(fov, N, nshots, varargin)
+% function [gx, gy] = makeepi(fov, N, nshots, varargin)
 %
-% Make single/multi-shot 2D EPI readout and (optionally) write waveforms to a .mod file.
+% Make single/multi-shot 2D EPI readout and (optionally) 
+% write waveforms to .mod file.
+%
+% Two .mod files are produced:
+%   et.mod          contains the echo train. Balanced gradients.
+%   prephaser.mod   gx/gy prephasing gradients (move to corner of kspace)
 %
 % Required inputs:
 %  fov        [1 2] Field of view (cm)
@@ -12,12 +17,19 @@ function [gx,gy] = makeepi(fov, N, nshots, varargin)
 %  Ry           (int) EPI undersampling factor. Default: 1
 %  flyback      (true/false) Default: false
 %  rampsamp     (true/false) Ramp sampling? Default: false
-%  ncycles      (float) Number of cycles of phase across voxel width, added at end of x and z gradient. Default: 2
+%  ncycles      (float) Number of cycles of phase across voxel width. Default: 2
 %  decimation   (int) Design EPI readout as if ADC dwell time is 4us*decimation.
-%               (The actual ADC dwell time is still fixed to 4us in TOPPE. May change in future.)
+%               (The actual ADC dwell time is fixed to 4us in TOPPE)
 %  system       struct specifying system info, see systemspecs.m
-%  writemod     (true/false) Default: false
-%  ofname       Output file name. Default: 'readout.mod' 
+%  writemod     (true/false) Default: true
+%
+% Outputs:
+%  gx        struct contain various elements of the waveform
+%            gx.et = echo train portion
+%            gx.pre = prephaser (written to prephaser.mod)
+%  gy        similar to gx
+%            gy.pre = prephaser (written to prephaser.mod)
+%            etc
 
 import toppe.*
 import toppe.utils.*
@@ -31,7 +43,7 @@ arg.rampsamp = false;
 arg.ncycles = 2;
 arg.decimation = 1;
 arg.system = systemspecs();
-arg.writemod = false;
+arg.writemod = true;
 arg.ofname = 'readout.mod';
 
 %% Substitute varargin values as appropriate and check inputs
@@ -82,8 +94,12 @@ end
 %% readout gradients
 
 % y phase-encode blip
-dky = arg.Ry/fov(2);    % ky spacing (cycles/cm)
-gy.blip = toppe.utils.trapwave2(dky/(gamma*1e3), mxg, mxs/sqrt(2), dt);
+% force length to be even since dividing by 2 below
+dky = arg.Ry*nshots/fov(2);    % ky spacing (cycles/cm)
+gy.blip = toppe.utils.trapwave2(dky/(gamma), mxg, mxs/sqrt(2), dt);
+if mod(length(gy.blip),2)
+    gy.blip = [gy.blip 0];
+end
 
 % x readout gradient for one echo
 if ~arg.rampsamp
@@ -102,71 +118,62 @@ if ~arg.rampsamp
     gx.echo = [gx.ramp gx.plateau fliplr(gx.ramp)];  % one echo in the EPI train
 else
     % ramp sampling
+    % TODO
 end
 
-% x prewinder
+% prewinders
 gx.area = sum(gx.echo)*dt*1e-3;  % G/cm*s
 gx.pre = -trapwave2(gx.area/2, mxg, mxs/sqrt(3), dt);
 
-keyboard
+gy.area = sum(gx.plateau)*dt*1e-3;  % G/cm*s
+gy.pre = -trapwave2(gx.area/2, mxg, mxs/sqrt(3), dt);
 
-%% x/y prewinders
-area = sum(gro)*dt*1e-3;                % G/cm*s
-gxpre = -trapwave2(area/2, mxg/sqrt(2), mxs/sqrt(2), dt); 
-area = sum(plat)*dt*1e-3;                % G/cm*s
-gypre = -trapwave2(area/2, mxg/sqrt(2), mxs/sqrt(2), dt); 
-
-%% EPI train
-gx = [gro];                                                % first readout (echo)
-gy = [0*gro];
-ybliparea = area/N*nshots;
-gyblip = trapwave2(ybliparea, mxg/sqrt(2), mxs/sqrt(2), dt);   % sqrt(2) since x and y gradients playing simultaneously
-gyblip = [gyblip zeros(1,mod(length(gyblip),2))];               % make length even so we can divide by 2 next
-nblip = length(gyblip);
-etl = N/nshots;
-for ii = 2:etl
-	gx = [gx gro*(-1)^(ii-1)];
-	gy = [gy(1:(end-nblip/2)) gyblip zeros(1,length(gro)-nblip/2)];
+% flyback rewinder
+if arg.flyback
+    gx.flyback = -trapwave2(gx.area, mxg, mxs/sqrt(2), dt);
+    if gx.flyback(end) == 0
+        gx.flyback = gx.flyback(1:(end-1));
+    end
 end
 
-%% add pre-phaser gradient, and negate gx for every other shot
-for ii = 1:nshots
-	gxall(:,ii) = (-1)^(ii-1)*[gxpre(:); gx(:)];
-	yscale = 1 - (2/N)*(ii-1);
-	gyall(:,ii) = [zeros(length(gxpre)-length(gypre),1); gypre(:)*yscale; gy(:)];
+% assemble echo train
+gx.et = [];
+gy.et = [];
+for iecho = 1:etl
+    if arg.flyback
+        gx.et = [gx.et gx.echo gx.flyback];
+    else
+        gx.et = [gx.et gx.echo*(-1)^(iecho+1)];
+    end
 end
-npre = npre + length(gxpre);
-	
-%% add crusher to x 
-l = 0;
-for ii = 1:nshots
-	gxarea = sum(gxall(:,ii))*dt*1e-3;                       % G/cm*s
-	area = arg.ncycles/(1e3*gamma*fov/N) - gxarea;           % G/cm*s
-	gtmp{ii} = trapwave2(area, mxg/sqrt(2), mxs/sqrt(2), dt)';
-	%gcrush = makecrusher(arg.ncycles,fov/N,arg.system,0, mxs/sqrt(2), mxg/sqrt(2));
-	if length(gtmp{ii}) > l
-		l = length(gtmp{ii});
-	end
-end
-for ii = 1:nshots
-	gcrush(:,ii) = [gtmp{ii}; zeros(l-length(gtmp{ii}),1)];
-end
-gxall = [gxall; gcrush]; %repmat(gcrush(:),1,size(gxall,2))];
+gx.et = [gx.et 0];  % waveform must end with 0
 
-%% add balancing gradient to y
-%gyall = [gyall; repmat(0*gcrush(:),1,size(gyall,2))];   % make some space
-l = 0;
-for ii = 1:nshots
-	area = sum(gyall(:,ii))*dt*1e-3;         % G/cm*s
-	gtmp{ii} = -trapwave2(area, mxg/sqrt(2), mxs/sqrt(2), dt)';
-	if length(gtmp{ii}) > l
-		l = length(gtmp{ii});
-	end
+% conver to column vector and pad length to multiple of 4 samples
+gx.et = toppe.makeGElength(gx.et');
+
+% add y blips
+gy.et = 0*gx.et;
+nb = length(gy.blip);
+for ii = 1:(etl-1)
+    if arg.flyback
+        n = length(gx.echo) + length(gx.flyback);
+        n2 = length(gx.echo) + floor(length(gx.flyback)/2);
+        iStart = (ii-1)*n + n2 - nb/2;
+    else
+        n = length(gx.echo);
+        iStart = ii*n - nb/2;
+    end
+    iStop = iStart + nb - 1;
+    gy.et(iStart:iStop) = gy.blip;
 end
-for ii = 1:nshots
-	grew(:,ii) = [gtmp{ii}; zeros(l-length(gtmp{ii}),1)];
+
+% add y rephaser (of etl portion only)
+gy.area = sum(gy.et)*dt*1e-3;  % G/cm*s
+gy.etrephase = -trapwave2(gy.area, mxg, mxs/sqrt(3), dt);
+
+if ~arg.writemod
+    return;
 end
-gyall = [gyall; grew];
 
 %% write to .mod file
 gx = makeGElength(gxall);
