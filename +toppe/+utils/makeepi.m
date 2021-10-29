@@ -1,38 +1,53 @@
 function [gx,gy] = makeepi(fov, N, nshots, varargin)
 % function [gx,gy] = makeepi(fov, N, nshots, varargin)
 %
-% Make single/multi-shot EPI readout and write waveforms to a .mod file.
+% Make single/multi-shot 2D EPI readout and (optionally) write waveforms to a .mod file.
 %
-% INPUTS:
-%  fov        cm (in-plane)
-%  N          number of pixels (in-plane)
-%  nshots     number of RF shots needed to fully sample (in-plane)
+% Required inputs:
+%  fov        [1 2] Field of view (cm)
+%  N          [1 2] Matrix size
+%  nshots     number of RF shots needed to fully sample
+%
 % Options:
-%  ofname     default: 'readout.mod'
-%  ncycles    number of cycles of phase across slthick, added at end of x and z gradient. Default: 0 (balanced readout).
-%  system     struct specifying system info, see systemspecs.m
+%  Ry           (int) EPI undersampling factor. Default: 1
+%  flyback      (true/false) Default: false
+%  rampsamp     (true/false) Ramp sampling? Default: false
+%  ncycles      (float) Number of cycles of phase across voxel width, added at end of x and z gradient. Default: 2
+%  decimation   (int) Design EPI readout as if ADC dwell time is 4us*decimation.
+%               (The actual ADC dwell time is still fixed to 4us in TOPPE. May change in future.)
+%  system       struct specifying system info, see systemspecs.m
+%  writemod     (true/false) Default: false
+%  ofname       Output file name. Default: 'readout.mod' 
 
 import toppe.*
 import toppe.utils.*
 
-%% Defaults
-arg.ofname = 'readout.mod';
-arg.oprbw  = 125;  % kHz
-arg.ncycles = 2;
-arg.system = systemspecs();
-arg.zres = [];
+nx = N(1); ny = N(2);
 
-%% Substitute varargin values as appropriate
+%% Defaults
+arg.Ry = 1;
+arg.flyback = false;
+arg.rampsamp = false;
+arg.ncycles = 2;
+arg.decimation = 1;
+arg.system = systemspecs();
+arg.writemod = false;
+arg.ofname = 'readout.mod';
+
+%% Substitute varargin values as appropriate and check inputs
 arg = vararg_pair(arg, varargin);      % requires MIRT
 
-if mod(N,2)
-	error('N must be an even integer');
+if mod(nx,2)
+	error('nx must be an even integer');
 end
-if arg.oprbw > 125
-	error('oprbw can''t be larger than (+/-) 125 kHz');
+if mod(ny,2)
+	error('ny must be an even integer');
 end
-if rem(N, nshots)
-	error('N/nshots must be an integer');
+if rem(ny, nshots)
+	error('ny/nshots must be an integer');
+end
+if rem(arg.decimation, 1) | arg.decimation < 1
+	error('decimation must be positive integer');
 end
 
 %% Gradient limits
@@ -45,28 +60,59 @@ if strcmp(arg.system.slewUnit, 'T/m/s')
 	mxs = mxs/10;     % Gauss/cm/ms
 end
 
-%% gradient/daq sample duration (msec)
+%% gradient/ADC sample duration (msec)
 dt = 4e-3;             
 
-%% readout amplitude and number of datapoints to acquire
-gamma = 4.2575;                     % kHz/Gauss
-decimation = 125/arg.oprbw;
-g = (1/dt)/(gamma*fov)/decimation;          % Gauss/cm
-if g > mxg
-	error(sprintf('Requested readout plateau gradient strength exceeds gradient amplitude limit (%.1f%%)', g/mxg*100));
-end
-npixro = N*decimation;    % number of 4us samples to acquire (per phase-encode)
+%% kspace steps
+gamma = 4257.6;        % Hz/G
 
-%% readout gradient
-plat = g*ones(1,npixro);        % plateau 
-s = mxs*dt/sqrt(2);             % max change in gradient per sample. sqrt(2) since x and y gradients playing simultaneously
-ramp = 0:s:g;
-gro = [ramp plat fliplr(ramp)];
-npre = length(ramp);            % number of samples before start of acquiring first echo (will be updated below)
+res = fov(1)/nx;       % spatial resolution (cm)
+kmax = 1/(2*res);      % cycles/cm
+area = 2*kmax/gamma;   % G/cm * sec (area of each readout trapezoid)
+dkx = 1/fov(1);
+
+%dkz = 1/fov(3);        % kz spacing (cycles/cm) corresponding to Delta=1
+
+etl = ny/arg.Ry/nshots;
+
+if mod(etl, 1)
+    error('echo train length (= ny/Ry/nshots) must be an integer')
+end
+
+%% readout gradients
+
+% y phase-encode blip
+dky = arg.Ry/fov(2);    % ky spacing (cycles/cm)
+gy.blip = toppe.utils.trapwave2(dky/(gamma*1e3), mxg, mxs/sqrt(2), dt);
+
+% x readout gradient for one echo
+if ~arg.rampsamp
+    gamma = 4.2575;              % kHz/Gauss
+    g = (1/dt)/(gamma*fov(1))/arg.decimation;  % amplitdue. Gauss/cm
+    gx.plateau = g*ones(1,nx*arg.decimation);  % plateau 
+    s = mxs*dt/sqrt(2);   % max change in gradient per sample
+    gx.ramp = 0:s:g;
+
+    % If needed, extend readout plateau to make room for y blips
+    if length(gy.blip) > 2*length(gx.ramp)
+        gx.ramp = linspace(0, g, ceil(length(gy.bglip/2)));
+    end
+
+    % readout trapezoid
+    gx.echo = [gx.ramp gx.plateau fliplr(gx.ramp)];  % one echo in the EPI train
+else
+    % ramp sampling
+end
+
+% x prewinder
+gx.area = sum(gx.echo)*dt*1e-3;  % G/cm*s
+gx.pre = -trapwave2(gx.area/2, mxg, mxs/sqrt(3), dt);
+
+keyboard
 
 %% x/y prewinders
 area = sum(gro)*dt*1e-3;                % G/cm*s
-gxpre = -trapwave2(area/2, mxg/sqrt(2), mxs/sqrt(2), dt);   % sqrt(n) since up to n gradients are playing simultaneously
+gxpre = -trapwave2(area/2, mxg/sqrt(2), mxs/sqrt(2), dt); 
 area = sum(plat)*dt*1e-3;                % G/cm*s
 gypre = -trapwave2(area/2, mxg/sqrt(2), mxs/sqrt(2), dt); 
 
@@ -127,7 +173,10 @@ gx = makeGElength(gxall);
 gy = makeGElength(gyall);
 hdrints = [N nshots length(gro) npre]; 
 hdrfloats = [fov];
-writemod('ofname', arg.ofname, 'gx', gx, 'gy', gy, 'desc', 'EPI readout', ...
+writemod(arg.system, ...
+    'gx', gx, 'gy', gy, ...
+    'desc', 'EPI readout', ...
+    'ofname', arg.ofname, ...
 	'hdrints', hdrints);
 
 return;
