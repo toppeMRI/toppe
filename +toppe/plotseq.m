@@ -180,7 +180,8 @@ else
     rf1 = rho1.*exp(1i*th1);     % waveforms in last module, without the delay after it (if any)
 end
 
-if length(rho) ~= length(gx)
+if length(rf) ~= length(gx)
+keyboard
     msg = ['RF and gradient waveform durations are not equal length. ' ... 
         'This is likely due to system.rfdel or system.daqdel not being ' ...
         'on a 4us boundary.'];
