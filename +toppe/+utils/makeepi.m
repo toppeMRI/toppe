@@ -18,7 +18,7 @@ function [gx, gy] = makeepi(fov, N, nshots, sys, varargin)
 %  Ry           (int) EPI undersampling factor. Default: 1
 %  flyback      (true/false) Default: false
 %  rampsamp     (true/false) Ramp sampling? Default: false
-%  ncycles      (float) Number of cycles of phase across voxel width. Default: 2
+%  isbalanced   (true/false) Default: false
 %  decimation   (int) Design EPI readout as if ADC dwell time is 4us*decimation.
 %               (The actual ADC dwell time is fixed to 4us in TOPPE)
 %  writefiles   (true/false) Default: false
@@ -41,10 +41,9 @@ nx = N(1); ny = N(2);
 arg.Ry = 1;
 arg.flyback = false;
 arg.rampsamp = false;
-arg.ncycles = 2;
+arg.isbalanced = false;
 arg.decimation = 1;
 arg.writefiles = false;
-arg.ofname = 'readout.mod';
 
 %% Substitute varargin values as appropriate and check inputs
 arg = vararg_pair(arg, varargin);      % requires MIRT
@@ -52,14 +51,23 @@ arg = vararg_pair(arg, varargin);      % requires MIRT
 if mod(nx,2)
 	error('nx must be an even integer');
 end
+
 if mod(ny,2)
 	error('ny must be an even integer');
 end
+
 if rem(ny, nshots)
 	error('ny/nshots must be an integer');
 end
+
 if rem(arg.decimation, 1) | arg.decimation < 1
 	error('decimation must be positive integer');
+end
+
+etl = ny/arg.Ry/nshots;
+
+if mod(etl, 1)
+    error('echo train length (= ny/Ry/nshots) must be an integer')
 end
 
 %% Gradient limits
@@ -72,24 +80,10 @@ if strcmp(sys.slewUnit, 'T/m/s')
 	mxs = mxs/10;     % Gauss/cm/ms
 end
 
-%% gradient/ADC sample duration (msec)
-dt = 4e-3;             
+%% Some constants
 
-%% kspace steps
-gamma = 4257.6;        % Hz/G
-
-res = fov(1)/nx;       % spatial resolution (cm)
-kmax = 1/(2*res);      % cycles/cm
-area = 2*kmax/gamma;   % G/cm * sec (area of each readout trapezoid)
-dkx = 1/fov(1);
-
-%dkz = 1/fov(3);        % kz spacing (cycles/cm) corresponding to Delta=1
-
-etl = ny/arg.Ry/nshots;
-
-if mod(etl, 1)
-    error('echo train length (= ny/Ry/nshots) must be an integer')
-end
+dt = 4e-3;            % gradient/ADC sample duration (msec)
+gamma = 4257.6;       % Hz/G
 
 %% readout gradients
 
@@ -115,13 +109,10 @@ if ~arg.rampsamp
 else
     % sample on ramps
     res = fov(1)/nx;     % spatial resolution (cm)
-    kmax = 1/(2*res);    % cycles/cm
-    gx.area = 2*kmax/gamma;   % G/cm * sec (area of each readout trapezoid)
-    mxg = min(1/(fov(1)*gamma*dt*1e-3), sys.maxGrad)    % Gauss/cm
-    gx.echo = toppe.utils.trapwave2(area, mxg, sys.maxSlew/sqrt(2), dt);
-
-    % extend plateau to make room for ky blips on turns
-    
+    kmax = 1/(2*res);
+    gx.area = 2*kmax/gamma + (~arg.flyback)*dky/gamma;   % (G/cm*s) make room for ky blips on turns
+    mxg = min(1/(fov(1)*gamma*dt*1e-3), sys.maxGrad);    % Gauss/cm
+    gx.echo = toppe.utils.trapwave2(gx.area, mxg, sys.maxSlew/sqrt(2), dt);
 end
 
 % prewinders
@@ -174,16 +165,29 @@ for ii = 1:(etl-1)
     gy.et(iStart:iStop) = gy.blip;
 end
 
-% Add y rephaser (of etl portion only)
-% so the etl portion is balanced.
-% This way the prephaser module has independent control over
-% the net gradient area.
-% Not the most efficient implementation though.
-gy.area = sum(gy.et)*dt*1e-3;  % G/cm*s
-gy.etrephase = -toppe.utils.trapwave2(gy.area, mxg, mxs/sqrt(3), dt);
-iStop = length(gy.et) - length(gx.ramp);
-gy.et = [gy.et(1:iStop); gy.etrephase'];
-gx.et = [gx.et; zeros(length(gy.et)-length(gx.et),1)];
+% make echo train balanced (zero gradient area)
+if arg.isbalanced
+    % Add y rephaser (of etl portion only)
+    % so the etl portion is balanced.
+    % This way the prephaser module has independent control over
+    % the net gradient area.
+    % Not the most efficient implementation though.
+    gy.area = sum(gy.et)*dt*1e-3;  % G/cm*s
+    gy.etrephase = -toppe.utils.trapwave2(gy.area, mxg, mxs/sqrt(3), dt);
+
+    if arg.flyback
+        iStop = length(gy.et) - length(gx.flyback); 
+    else
+        if ~arg.rampsamp
+            iStop = length(gy.et) - length(gx.ramp);
+        else
+            iStop = length(gy.et) - floor(length(gy.blip)/2);
+        end
+    end
+
+    gy.et = [gy.et(1:iStop); gy.etrephase'];
+    gy.et = [gy.et; zeros(length(gx.et)-length(gy.et),1)];
+end
 
 if ~arg.writefiles
     return;
@@ -194,9 +198,12 @@ end
 gx.et = toppe.makeGElength(gx.et);
 gy.et = toppe.makeGElength(gy.et);
 
-hdrints = [nx ny nshots arg.Ry length(gx.ramp) length(gx.echo)]; 
+hdrints = [nx ny nshots arg.Ry length(gx.echo)]; 
 if arg.flyback
     hdrints = [hdrints length(gx.flyback)];
+end
+if ~arg.rampsamp
+    hdrints = [hdrints length(gx.ramp)];
 end
 hdrfloats = [fov(1) fov(2)];
 toppe.writemod(sys, ...
