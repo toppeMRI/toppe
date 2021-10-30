@@ -1,17 +1,19 @@
-function [gx, gy] = makeepi(fov, N, nshots, sys, varargin)
-% function [gx, gy] = makeepi(fov, N, nshots, sys, varargin)
+function [gx, gy, gz] = makeepi(fov, N, nshots, sys, varargin)
+% function [gx, gy (,gz)] = makeepi(fov, N, nshots, sys, varargin)
 %
-% Make single/multi-shot 2D EPI readout and (optionally) 
-% write waveforms to .mod file.
+% Make single/multi-shot 2D EPI or 3D stack-of-EPI readout waveforms.
+% Can be flyback or not; use ramp sampling or not.
 %
-% Two .mod files are produced:
+% If writefiles = true, two .mod files are produced:
 %   et.mod          contains the echo train. Balanced gradients.
-%   prephaser.mod   gx/gy prephasing gradients (move to corner of kspace)
+%   prephaser.mod   gx/gy(/gz) prephasing gradients (move to corner of kspace)
+% An example of how these are used in a TOPPE sequence, 
+% see TODO
 %
 % Required inputs:
-%  fov        [1 2] Field of view (cm)
-%  N          [1 2] Matrix size
-%  nshots     number of RF shots needed to fully sample
+%  fov        [1 2] or [1 3]   Field of view (cm)
+%  N          [1 2] or [1 3]   Matrix size
+%  nshots     number of RF shots needed to fully sample kx-ky plane
 %  sys        struct specifying system info, see systemspecs.m
 %
 % Options:
@@ -34,8 +36,22 @@ function [gx, gy] = makeepi(fov, N, nshots, sys, varargin)
 %  >> sys = toppe.systemspecs();   % use default system values
 %  >> [gx,gy] = toppe.utils.makeepi([24 20], [240 200], 40, sys, 'flyback', true);
 %  >> plot([gx.et gy.et])
+%
+% Limitations/comments:
+% This script does NOT check that echo spacings obey the scanner
+% limits (to avoid mechanical resonances).
 
 nx = N(1); ny = N(2);
+
+if length(fov) == 3 & length(N) == 3
+    is3d = true;
+    nd = 3;
+    nz = N(3);
+    fovz = fov(3);
+else
+    is3d = false;
+    nd = 2;
+end
 
 %% Defaults
 arg.Ry = 1;
@@ -89,49 +105,58 @@ gamma = 4257.6;       % Hz/G
 
 % y phase-encode blip
 dky = arg.Ry*nshots/fov(2);    % ky spacing (cycles/cm)
-gy.blip = toppe.utils.trapwave2(dky/(gamma), mxg, mxs/sqrt(2), dt);
+gy.blip = toppe.utils.trapwave2(dky/(gamma), sys.maxGrad, sys.maxSlew/sqrt(2), dt);
 
 % x readout gradient for one echo
 if ~arg.rampsamp
     % no sampling on ramps
-    g = (1/dt)/(gamma*1e-3*fov(1))/arg.decimation;  % amplitude. Gauss/cm
-    gx.plateau = g*ones(1,nx*arg.decimation);  % plateau 
+    gamp = 1/(fov(1)*gamma*dt*1e-3);    % Amplitude. Gauss/cm
+    gx.plateau = gamp*ones(1,nx*arg.decimation);  % plateau 
     s = mxs*dt/sqrt(2);   % max change in gradient per sample
-    gx.ramp = 0:s:g;
+    gx.ramp = 0:s:gamp;
 
     % If needed, extend readout plateau to make room for y blips
     if length(gy.blip) > 2*length(gx.ramp)
-        gx.ramp = linspace(0, g, ceil(length(gy.blip/2)));
+        gx.ramp = linspace(0, gamp, ceil(length(gy.blip/2)));
     end
 
-    % readout trapezoid
-    gx.echo = [gx.ramp gx.plateau fliplr(gx.ramp)];  % one echo in the EPI train
+    % readout trapezoid (one echo in the EPI train)
+    gx.echo = [gx.ramp gx.plateau fliplr(gx.ramp)];
 else
     % sample on ramps
+    % If non-flyback, make room for ky blips on turns
     res = fov(1)/nx;     % spatial resolution (cm)
     kmax = 1/(2*res);
-    gx.area = 2*kmax/gamma + (~arg.flyback)*dky/gamma;   % (G/cm*s) make room for ky blips on turns
-    mxg = min(1/(fov(1)*gamma*dt*1e-3), sys.maxGrad);    % Gauss/cm
-    gx.echo = toppe.utils.trapwave2(gx.area, mxg, sys.maxSlew/sqrt(2), dt);
+    area = 2*kmax/gamma + (~arg.flyback)*dky/gamma;   % G/cm*s
+    mxg = min(1/(fov(1)*gamma*dt*1e-3), sys.maxGrad);    % Must support Nyquist
+    gx.echo = toppe.utils.trapwave2(area, mxg, sys.maxSlew/sqrt(2), dt);
 end
 
-% prewinders
-gx.area = sum(gx.echo)*dt*1e-3;  % G/cm*s
-gx.pre = -toppe.utils.trapwave2(gx.area/2, mxg, mxs/sqrt(3), dt);
-
-if ~arg.rampsamp
-    gy.area = sum(gx.plateau)*dt*1e-3;  % G/cm*s
-else
-    gy.area = sum(gx.echo)*dt*1e-3;  % G/cm*s
-end
-gy.pre = -toppe.utils.trapwave2(gy.area/2, mxg, mxs/sqrt(3), dt);
-
-% flyback rewinder
+% flyback gradient
 if arg.flyback
-    gx.flyback = -toppe.utils.trapwave2(gx.area, mxg, mxs/sqrt(2), dt);
+    area = sum(gx.echo)*dt*1e-3;  % G/cm*s
+    gx.flyback = -toppe.utils.trapwave2(area, sys.maxGrad, sys.maxSlew/sqrt(2), dt);
     if gx.flyback(end) == 0
         gx.flyback = gx.flyback(1:(end-1));
     end
+end
+
+% prewinders
+area = sum(gx.echo)*dt*1e-3;  % G/cm*s
+gx.pre = -toppe.utils.trapwave2(area/2, sys.maxGrad, sys.maxSlew/sqrt(nd), dt);
+
+res = fov(2)/ny;     % cm
+kmax = 1/(2*res);
+area = 2*kmax/gamma;   % G/cm*s
+gy.pre = -toppe.utils.trapwave2(area/2, sys.maxGrad, sys.maxSlew/sqrt(nd), dt);
+
+if is3d
+    res = fov(3)/nz;     % cm
+    kmax = 1/(2*res);
+    area = 2*kmax/gamma;   % G/cm*s
+    gz.pre = -toppe.utils.trapwave2(area/2, sys.maxGrad, sys.maxSlew/sqrt(nd), dt);
+else
+    gz.pre = 0*gy.pre;
 end
 
 % assemble echo train
@@ -146,7 +171,7 @@ for iecho = 1:etl
 end
 gx.et = [gx.et 0];  % waveform must end with 0
 
-% conver to column vector and pad length to multiple of 4 samples
+% convert to column vector and pad length to multiple of 4 samples
 gx.et = toppe.makeGElength(gx.et');
 
 % add y blips
@@ -165,15 +190,15 @@ for ii = 1:(etl-1)
     gy.et(iStart:iStop) = gy.blip;
 end
 
-% make echo train balanced (zero gradient area)
 if arg.isbalanced
-    % Add y rephaser (of etl portion only)
-    % so the etl portion is balanced.
+    % Make echo train balanced (zero gradient area).
     % This way the prephaser module has independent control over
     % the net gradient area.
     % Not the most efficient implementation though.
-    gy.area = sum(gy.et)*dt*1e-3;  % G/cm*s
-    gy.etrephase = -toppe.utils.trapwave2(gy.area, mxg, mxs/sqrt(3), dt);
+
+    % reduce slew a bit to reduce PNS
+    area = sum(gy.et)*dt*1e-3;  % G/cm*s
+    etrephase = -toppe.utils.trapwave2(area, sys.maxGrad, 0.7*sys.maxSlew/sqrt(2), dt);
 
     if arg.flyback
         iStop = length(gy.et) - length(gx.flyback); 
@@ -185,19 +210,25 @@ if arg.isbalanced
         end
     end
 
-    gy.et = [gy.et(1:iStop); gy.etrephase'];
+    gy.et = [gy.et(1:iStop); etrephase'];
     gy.et = [gy.et; zeros(length(gx.et)-length(gy.et),1)];
 end
+
+%% Assemble full waveform (mainly for viewing in Matlab)
+gx.full = [gx.pre'; gx.et; -gx.pre'];
+gy.full = [gy.pre'; gy.et; -gy.pre'];
 
 if ~arg.writefiles
     return;
 end
 
+
 %% write to .mod files
-% Store a few values in header that are useful for recon
+
 gx.et = toppe.makeGElength(gx.et);
 gy.et = toppe.makeGElength(gy.et);
 
+% Store a few values in header for later use 
 hdrints = [nx ny nshots arg.Ry length(gx.echo)]; 
 if arg.flyback
     hdrints = [hdrints length(gx.flyback)];
@@ -206,6 +237,7 @@ if ~arg.rampsamp
     hdrints = [hdrints length(gx.ramp)];
 end
 hdrfloats = [fov(1) fov(2)];
+
 toppe.writemod(sys, ...
     'gx', gx.et, 'gy', gy.et, ...
     'desc', 'EPI readout', ...
@@ -214,7 +246,8 @@ toppe.writemod(sys, ...
 	'hdrints', hdrints);
 
 toppe.writemod(sys, ...
-    'gx', gx.pre', 'gy', gy.pre', ...
+    'gx', gx.pre', 'gy', gy.pre', 'gz', gz.pre', ...
+    'desc', 'EPI prephasing gradients (move to corner of kspace)', ...
     'ofname', 'prephaser.mod');
 
 return;
