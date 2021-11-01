@@ -72,10 +72,6 @@ if mod(ny,2)
 	error('ny must be an even integer');
 end
 
-if rem(ny, nshots)
-	error('ny/nshots must be an integer');
-end
-
 if rem(arg.decimation, 1) | arg.decimation < 1
 	error('decimation must be positive integer');
 end
