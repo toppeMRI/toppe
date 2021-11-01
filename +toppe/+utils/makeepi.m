@@ -5,7 +5,7 @@ function [gx, gy, gz] = makeepi(fov, N, nshots, sys, varargin)
 % Can be flyback or not; use ramp sampling or not.
 %
 % If writefiles = true, two .mod files are produced:
-%   readout.mod     contains the echo train. Balanced gradients.
+%   readout.mod     contains the echo train
 %   prephaser.mod   gx/gy(/gz) prephasing gradients (move to corner of kspace)
 % An example of how these are used in a TOPPE sequence, 
 % see TODO
@@ -22,6 +22,7 @@ function [gx, gy, gz] = makeepi(fov, N, nshots, sys, varargin)
 %  rampsamp     (true/false) Ramp sampling? Default: false
 %  isbalanced   (true/false) Default: false
 %  decimation   (int) Design EPI readout as if ADC dwell time is 4us*decimation.
+%               Applies only to readouts w/o ramp sampling.
 %               (The actual ADC dwell time is fixed to 4us in TOPPE)
 %  writefiles   (true/false) Default: false
 %
