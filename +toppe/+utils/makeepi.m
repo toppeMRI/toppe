@@ -35,7 +35,7 @@ function [gx, gy, gz] = makeepi(fov, N, nshots, sys, varargin)
 % Example:
 %  >> sys = toppe.systemspecs();   % use default system values
 %  >> [gx,gy] = toppe.utils.makeepi([24 20], [240 200], 40, sys, 'flyback', true);
-%  >> plot([gx.et gy.et])
+%  >> plot(gx.full); hold on; plot(gy.full, 'r'); hold off
 %
 % Limitations/comments:
 % This script does NOT check that echo spacings obey the scanner
