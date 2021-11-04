@@ -330,7 +330,7 @@ end
 switch type
 	case {'ex', 'st', 'sat'}
 		%area = sum(gss( ((length(ramp)+1):(length(ramp)+midpoint)):end)) * dt * 1e-3             % G/cm*s
-		areaprep = sum([gss_trap(1:iref)]) * dt * 1e-3;            % G/cm*s
+		areaprep = sum([gss_trap gzrep]) * dt * 1e-3;            % G/cm*s
 		gzprep = -trapwave2(areaprep, mxg, spoilDerate*mxs, dt);
 	case 'se'
 		gzprep = [];
