@@ -83,15 +83,6 @@ if mod(etl, 1)
     error('echo train length (= ny/Ry/nshots) must be an integer')
 end
 
-%% Gradient limits
-mxg = 0.995*sys.maxGrad;          
-if strcmp(sys.gradUnit, 'mT/m')
-	mxg = mxg/10;     % Gauss/cm
-end
-mxs = 0.995*sys.maxSlew;
-if strcmp(sys.slewUnit, 'T/m/s')
-	mxs = mxs/10;     % Gauss/cm/ms
-end
 
 %% Some constants
 
@@ -109,11 +100,11 @@ if ~arg.rampsamp
     % no sampling on ramps
     gamp = 1/(fov(1)*gamma*dt*1e-3);    % Amplitude. Gauss/cm
     gx.plateau = gamp*ones(1,nx*arg.decimation);  % plateau 
-    s = mxs*dt/sqrt(2);   % max change in gradient per sample
+    s = sys.maxSlew*dt/sqrt(2);   % max change in gradient per sample
     gx.ramp = 0:s:gamp;
 
     % If needed, extend readout plateau to make room for y blips
-    if length(gy.blip) > 2*length(gx.ramp)
+    if length(gy.blip) > 2*length(gx.ramp) & ~arg.flyback
         gx.ramp = linspace(0, gamp, ceil(length(gy.blip/2)));
     end
 
