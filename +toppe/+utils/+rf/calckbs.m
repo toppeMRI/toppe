@@ -1,9 +1,10 @@
-function [kbs th] = calckbs(rf, freq)
+function [kbs th] = calckbs(rf, freq, dt)
 % Calculate 'K_BS' for Bloch-Siegert mapping. See Sacolick et al MRM 2010 and example below.
 %
 % Inputs:
 %   rf            rf waveform, Gauss
 %   freq          off-resonance transmit frequency (Hz)
+%   dt            rf sample/raster time (sec)
 %
 % Example:
 %  rf = makebs(0.05);
@@ -13,14 +14,8 @@ function [kbs th] = calckbs(rf, freq)
 %  b1 = sqrt(pc/2/kbs);   % Measured b1 in Gauss. Note factor of 2!
 %
 
-import toppe.*
-
-sys = systemspecs();
-
 % expected Bloch-Siegert shift from this pulse, for a given freq
-freq = 4000;   % Hz
-dt = sys.raster;            % (sec) duration of each rf waveform sample
-gamma = sys.gamma;       % Hz/Gauss
+gamma = 4.2576e3;         % Hz/Gauss
 th = 2*pi*sum( (gamma*abs(rf)).^2/(2*freq) ) * dt; % / pi*180
 
 % K_BS
