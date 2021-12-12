@@ -65,17 +65,14 @@ gz = toppe.makeGElength(gz);  % make waveform length multiple of 4
 toppe.writemod(seq.sys, 'rf', rf, 'gz', gz, ...
     'ofname', mods.ex);
 
-% plot (optional)
-toppe.plotmod(mods.ex);
-
 
 %% Create EPI modules (prephaser.mod and readout.mod)
 
-% Design gradients using the makeepi helper function,
+% Design waveforms using the makeepi helper function,
 % that returns structs containing the various gradient segments.
 [gx, gy, gz] = toppe.utils.makeepi(seq.fov, seq.matrix, seq.nshots, seq.sys, ...
-    'flyback', true, ...
-    'rampsamp', false);
+    'flyback', seq.flyback, ...
+    'rampsamp', seq.rampsamp);
 
 % Create prephaser.mod
 gx.pre = toppe.makeGElength(gx.pre(:));
@@ -85,32 +82,29 @@ toppe.writemod(seq.sys, 'gx', gx.pre, 'gy', gy.pre, 'gz', gz.pre, ...
     'ofname', 'prephaser.mod', ...
     'desc', 'EPI prephasing gradients (move to corner of kspace)');
 
-return;
-
+% Create readout.mod (EPI echo train).
+% Also store a few values in header for later use (optional).
+% Note that data is acquired during the entire waveform, with 4us sample/dwell time.
 gx.et = toppe.makeGElength(gx.et);
 gy.et = toppe.makeGElength(gy.et);
-
-% Store a few values in header for later use 
-hdrints = [nx ny nshots arg.Ry length(gx.echo)];
-if arg.flyback
+hdrints = [seq.matrix(1) seq.matrix(2) seq.nshots seq.Ry length(gx.echo)];
+if seq.flyback
     hdrints = [hdrints length(gx.flyback)];
 end
-if ~arg.rampsamp
+if ~seq.rampsamp
     hdrints = [hdrints length(gx.ramp)];
 end
-hdrfloats = [fov(1) fov(2)];
+hdrfloats = [seq.fov(1) seq.fov(2)];
 
-toppe.writemod(sys, ...
-    'gx', gx.et, 'gy', gy.et, ...
-    'desc', 'EPI readout', ...
+toppe.writemod(seq.sys, 'gx', gx.et, 'gy', gy.et, ...
     'ofname', 'readout.mod', ...
+    'desc', 'EPI readout train', ...
     'hdrfloats', hdrfloats, ...
     'hdrints', hdrints);
 
 
-return;
-
-% echo spacing (ms)
+%% Get echo spacing (ms)
+% Needed for echo-time shift calculation
 tsamp = seq.sys.raster*1e3;   % gradient sample time (ms)
 if seq.flyback
     seq.es = tsamp * (numel(gx.echo) + numel(gx.flyback));
@@ -122,9 +116,7 @@ if seq.nshots == seq.matrix(2)
 end
 
 
-
-
-%% Calculate minimum TR
+%% Calculate minimum TR (optional -- included here for instructional purposes)
 toppe.write2loop('setup', seq.sys);
 toppe.write2loop(mods.ex, seq.sys);
 toppe.write2loop(mods.prephaser, seq.sys);
