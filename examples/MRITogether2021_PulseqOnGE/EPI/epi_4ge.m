@@ -68,13 +68,15 @@ toppe.writemod(seq.sys, 'rf', rf, 'gz', gz, ...
 
 %% Create EPI modules (prephaser.mod and readout.mod)
 
-% Design waveforms using the makeepi helper function,
+% Design waveforms using the 'makeepi.m' helper function,
 % that returns structs containing the various gradient segments.
 [gx, gy, gz] = toppe.utils.makeepi(seq.fov, seq.matrix, seq.nshots, seq.sys, ...
     'flyback', seq.flyback, ...
     'rampsamp', seq.rampsamp);
 
 % Create prephaser.mod
+% The prephaser is scaled dynamically (see below), so it needs its own
+% .mod file separate from the echo train.
 gx.pre = toppe.makeGElength(gx.pre(:));
 gy.pre = toppe.makeGElength(gy.pre(:));
 gz.pre = toppe.makeGElength(gz.pre(:));
@@ -116,18 +118,9 @@ if seq.nshots == seq.matrix(2)
 end
 
 
-%% Calculate minimum TR (optional -- included here for instructional purposes)
-toppe.write2loop('setup', seq.sys);
-toppe.write2loop(mods.ex, seq.sys);
-toppe.write2loop(mods.prephaser, seq.sys);
-toppe.write2loop(mods.readout, seq.sys);
-toppe.write2loop(mods.prephaser, seq.sys);
-toppe.write2loop('finish', seq.sys);
 
-trmin = (seq.nshots-1)/seq.nshots*seq.es + toppe.getTRtime(1, 4, seq.sys) * 1e3;   % ms
-
-
-%% Write scanloop.txt
+%% Write scanloop.txt 
+% (This will overwrite the temporary file we just created)
 ny = seq.matrix(2);
 nz = seq.matrix(3);
 
@@ -145,7 +138,7 @@ for iim = 1:nscans
     end
     fprintf('Writing scan %d of %d (flip angle = %d)', iim, nscans, seq.flip(iim));
 
-    a_ex = seq.flip(iim)/max(seq.flip);  % excitation pulse scaling
+    a_ex = seq.flip(iim)/max(seq.flip);  % scale excitation pulse
 
     for iz = -3:nz   % iz < 1 are discarded acquisitions to reach steady state
         for iy = 1:seq.nshots
@@ -191,17 +184,40 @@ return
 % NB! The file toppeN.entry must exist in the folder from where this script is called.
 toppe.preflightcheck('toppeN.entry', 'seqstamp.txt', seq.sys);
 
-%% create tar file
+%% create tar file (optional)
 system('tar czf ~/tmp/scan,exchange,bssfp.tgz seqstamp.txt modules.txt scanloop.txt *.mod getparams.m bssfp.m');
 
 return;
 
-%% simulate slice profile
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Optional steps/tasks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% simulate slice profile (optional)
 [rf,~,~,gz] = toppe.readmod('ex.mod');
-X = linspace(-seq.rf.slThick, seq.rf.slThick, 100);         % cm
+Z = linspace(-seq.rf.slThick, seq.rf.slThick, 100);    % spatial positions (cm)
 dt = 4e-3;            % ms
 Gamp = max(gz);       % Gauss
 T1 = 500;
 T2 = 50;
-toppe.utils.rf.slicesim(rf,dt,T1,T2,Gamp,X);
+m0 = [0 0 1]; % initial magnetization
+m = toppe.utils.rf.slicesim(m0, rf, gz, dt, Z, T1, T2);
+
+%% Calculate minimum TR (optional -- included here for instructional purposes)
+% First create a short scanloop.txt file that only contains the first TR
+toppe.write2loop('setup', seq.sys);
+toppe.write2loop(mods.ex, seq.sys);
+toppe.write2loop(mods.prephaser, seq.sys);
+toppe.write2loop(mods.readout, seq.sys);
+toppe.write2loop(mods.prephaser, seq.sys);
+toppe.write2loop('finish', seq.sys);
+
+% Use the 'getTRtime' helper function to get the minimum TR,
+% accounting for the time needed for echo-shifting
+trmin = (seq.nshots-1)/seq.nshots*seq.es + toppe.getTRtime(1, 4, seq.sys) * 1e3;   % ms
 
