@@ -198,11 +198,11 @@ return;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Optional steps/tasks
+%%                 Optional steps/tasks                                        %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% simulate slice profile (optional)
-[rf,~,~,gz] = toppe.readmod('ex.mod');
+%% simulate and plot slice profile
+[rf,~,~,gz] = toppe.readmod(mods.ex);
 Z = linspace(-seq.rf.slThick, seq.rf.slThick, 100);    % spatial positions (cm)
 dt = 4e-3;            % ms
 Gamp = max(gz);       % Gauss
@@ -211,9 +211,10 @@ T2 = 50;
 m0 = [0 0 1]; % initial magnetization
 m = toppe.utils.rf.slicesim(m0, rf, gz, dt, Z, T1, T2);
 
-%% Calculate minimum TR (optional -- included here for instructional purposes)
+
+%% Calculate minimum TR 
 % First create a short scanloop.txt file that only contains the first TR
-toppe.write2loop('setup', seq.sys);
+toppe.write2loop('setup', seq.sys, 'version', 4);
 toppe.write2loop(mods.ex, seq.sys);
 toppe.write2loop(mods.prephaser, seq.sys);
 toppe.write2loop(mods.readout, seq.sys);
@@ -222,5 +223,5 @@ toppe.write2loop('finish', seq.sys);
 
 % Use the 'getTRtime' helper function to get the minimum TR,
 % accounting for the time needed for echo-shifting
-trmin = (seq.nshots-1)/seq.nshots*seq.es + toppe.getTRtime(1, 4, seq.sys) * 1e3;   % ms
+trmin = (seq.nshots-1)/seq.nshots*seq.es + toppe.getTRtime(1, 4, seq.sys) * 1e3   % ms
 
