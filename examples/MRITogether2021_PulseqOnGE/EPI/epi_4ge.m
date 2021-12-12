@@ -1,5 +1,8 @@
 % Create 3D EPI variable flip angle SPGR sequence for T1 mapping.
 % Acquires multiple 3D EPI image volume, each with a different flip angle.
+%
+% Repository: github/toppeMRI/toppe/examples/MRITogether2021_PulseqOnGE/EPI/
+
 
 %% Write modules.txt
 % We do this first since it is used later for timing calculations.
@@ -176,16 +179,16 @@ end
 fprintf('\n');
 toppe.write2loop('finish', seq.sys);
 
-return
 
-
-%% Create 'sequence stamp' file for TOPPE.
+%% Create 'sequence stamp' file for TOPPE, that the interpreter uses
+%% for patient and hardware safety calculations.
 % This file is listed in the 5th row in toppeN.entry
 % NB! The file toppeN.entry must exist in the folder from where this script is called.
 toppe.preflightcheck('toppeN.entry', 'seqstamp.txt', seq.sys);
 
+
 %% create tar file (optional)
-system('tar czf ~/tmp/scan,exchange,bssfp.tgz seqstamp.txt modules.txt scanloop.txt *.mod getparams.m bssfp.m');
+system('tar czf scan,t1epi.tgz seqstamp.txt modules.txt scanloop.txt *.mod epi_4ge.m README.md');
 
 return;
 
