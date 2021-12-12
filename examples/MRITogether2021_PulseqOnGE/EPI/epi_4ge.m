@@ -32,8 +32,8 @@ seq.sys = toppe.systemspecs('maxRF', 0.25, 'rfUnit', 'Gauss', ...
 
 %% Readout parameters
 seq.fov = [24 24 6];         % cm
-seq.matrix = 10*seq.fov;     % isotropic resolution
-seq.nshots = 40;             % number of EPI segments
+seq.matrix = 6*seq.fov;      % isotropic resolution
+seq.nshots = 24;             % number of EPI segments
 if rem(seq.matrix(2), seq.nshots) ~= 0
     error('Echo-train length must be an integer');
 end
@@ -53,7 +53,7 @@ seq.rf.slThick = 0.80*seq.fov(3);     % cm
 seq.rf.tbw = 6;              % time-bandwidth product of SLR pulse 
 seq.rf.dur = 1.5;            % pulse duration (ms)
 seq.rf.ftype = 'min';        %  minimum-phase SLR design
-nCyclesSpoil = 2;  % cycles of gradient spoiling along z (slice-select direction)
+nCyclesSpoil = 2*seq.matrix(3);  % cycles of gradient spoiling across slab
 [rf, gz] = toppe.utils.rf.makeslr(max(seq.flip), seq.rf.slThick, ...
     seq.rf.tbw, seq.rf.dur, nCyclesSpoil, seq.sys, ...
     'ftype', seq.rf.ftype, ...
@@ -128,32 +128,30 @@ trmin = (seq.nshots-1)/seq.nshots*seq.es + toppe.getTRtime(1, 4, seq.sys) * 1e3;
 
 
 %% Write scanloop.txt
-
 ny = seq.matrix(2);
 nz = seq.matrix(3);
 
-toppe.write2loop('setup', seq.sys);
+nscans = length(seq.flip);
+
+% RF spoiling parameters
+rfphs = 0;    % radians
+rf_spoil_seed_cnt = 0;
+rf_spoil_seed = 117;    % degrees
+
+toppe.write2loop('setup', seq.sys, 'version', 4);  % Initialize the file 
 for iim = 1:nscans
-    for ib = 1:30
+    for ib = 1:50
         fprintf('\b');
     end
-    fprintf('Writing scan %d of %d', iim, nscans);
+    fprintf('Writing scan %d of %d (flip angle = %d)', iim, nscans, seq.flip(iim));
 
-    a_ex = seq.bssfp.alpha(iim)/seq.bssfp.flip;
-
-    rfphs = 0;    % radians
-
-    % set textra to achieve desired TR
-    textra = max(0, seq.bssfp.tr(iim) - trmin);  % ms
+    a_ex = seq.flip(iim)/max(seq.flip);  % excitation pulse scaling
 
     for iz = -3:nz   % iz < 1 are discarded acquisitions to reach steady state
         for iy = 1:seq.nshots
             % y/z phase-encode amplitudes, scaled to (-1,1)
             a_gy = -(iz>0)*((iy-1+0.5)-ny/2)/(ny/2);
             a_gz = -(iz>0)*((iz-1+0.5)-nz/2)/(nz/2);   
-
-            % rf phase cycling
-            rfphs = rfphs + seq.bssfp.phi(iim)/180*pi;  % rad
 
             % rf excitation, and echo time shift
             toppe.write2loop(mods.ex, seq.sys, ...
@@ -168,18 +166,24 @@ for iim = 1:nscans
             % readout. Data is stored in 'slice', 'echo', and 'view' indeces.
             toppe.write2loop(mods.readout, seq.sys, ...
                 'DAQphase', rfphs, ...
-                'slice', iim, 'echo', max(iz,1), 'view', iy, ...
+                'slice', max(iz, 1), 'echo', iim, 'view', iy, ...
                 'dabmode', 'on');
 
-            % rephase, and add delay to achieve desired (and constant) TR
+            % rephase, and add delay to achieve constant TR
             toppe.write2loop(mods.prephaser, seq.sys, ...
                 'Gamplitude', [-1 -a_gy -a_gz]', ...
-                'textra',   seq.es - iy/seq.nshots*seq.es + textra);
-      end
+                'textra', seq.es - iy/seq.nshots*seq.es);
+
+            % update rf/receive phase
+            rfphs = rfphs + (rf_spoil_seed/180*pi)*rf_spoil_seed_cnt ;  % radians
+            rf_spoil_seed_cnt = rf_spoil_seed_cnt + 1;
+        end
     end
 end
 fprintf('\n');
 toppe.write2loop('finish', seq.sys);
+
+return
 
 
 %% Create 'sequence stamp' file for TOPPE.
