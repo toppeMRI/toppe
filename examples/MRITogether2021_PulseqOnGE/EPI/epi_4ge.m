@@ -51,16 +51,23 @@ seq.flip = [5:5:40];         % degrees
 % In TOPPE, all waveforms have 4us raster time (both RF and gradients)
 
 % Design waveforms.
-% We will use a wrapper for John Pauly's SLR toolbox for this.
-seq.rf.slThick = 0.80*seq.fov(3);     % cm
-seq.rf.tbw = 6;              % time-bandwidth product of SLR pulse 
-seq.rf.dur = 1.5;            % pulse duration (ms)
-seq.rf.ftype = 'min';        %  minimum-phase SLR design
-nCyclesSpoil = 2*seq.matrix(3);  % cycles of gradient spoiling across slab
-[rf, gz] = toppe.utils.rf.makeslr(max(seq.flip), seq.rf.slThick, ...
-    seq.rf.tbw, seq.rf.dur, nCyclesSpoil, seq.sys, ...
-    'ftype', seq.rf.ftype, ...
-    'writeModFile', false);
+if false
+% Use a wrapper for John Pauly's SLR toolbox for this.
+    seq.rf.slThick = 0.80*seq.fov(3);     % cm
+    seq.rf.tbw = 6;              % time-bandwidth product of SLR pulse 
+    seq.rf.dur = 1.5;            % pulse duration (ms)
+    seq.rf.ftype = 'min';        %  minimum-phase SLR design
+    nCyclesSpoil = 2*seq.matrix(3);  % cycles of gradient spoiling across slab
+    [rf, gz] = toppe.utils.rf.makeslr(max(seq.flip), seq.rf.slThick, ...
+        seq.rf.tbw, seq.rf.dur, nCyclesSpoil, seq.sys, ...
+        'ftype', seq.rf.ftype, ...
+        'writeModFile', false);
+
+save pulse rf gz
+else
+    load pulse
+end
+
 rf = toppe.makeGElength(rf);  % make waveform length multiple of 4
 gz = toppe.makeGElength(gz);  % make waveform length multiple of 4
 
