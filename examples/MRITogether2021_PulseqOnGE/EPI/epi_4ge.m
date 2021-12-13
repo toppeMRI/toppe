@@ -34,9 +34,9 @@ seq.sys = toppe.systemspecs('maxRF', 0.25, 'rfUnit', 'Gauss', ...
 
 
 %% Readout parameters
-seq.fov = [24 24 6];         % cm
-seq.matrix = 6*seq.fov;      % isotropic resolution
-seq.nshots = 24;             % number of EPI segments
+seq.fov = [20 20 2];         % cm
+seq.matrix = [64 64 10]; 
+seq.nshots = 8;             % number of EPI segments
 if rem(seq.matrix(2), seq.nshots) ~= 0
     error('Echo-train length must be an integer');
 end
@@ -44,7 +44,7 @@ seq.Ry = 1;                  % ky undersampling factor
 seq.flyback = true; 
 seq.rampsamp = false;
 seq.res = seq.fov./seq.matrix;   % voxel size (cm)
-seq.flip = [5 10 20 30];         % degrees
+seq.flip = [5:5:40];         % degrees
 
 
 %% Create slab excitation module (ex.mod)
@@ -188,7 +188,7 @@ toppe.preflightcheck('toppeN.entry', 'seqstamp.txt', seq.sys);
 
 
 %% create tar file (optional)
-system('tar czf scan,t1epi.tgz seqstamp.txt modules.txt scanloop.txt *.mod epi_4ge.m README.md');
+system('tar czf scan,epi.tgz seqstamp.txt modules.txt scanloop.txt *.mod epi_4ge.m toppeN.entry README.md');
 
 return;
 
