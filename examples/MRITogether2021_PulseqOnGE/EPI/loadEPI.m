@@ -76,8 +76,8 @@ xlabel('flip angle (degrees)');
 ylabel('SPGR signal (a.u.)');
 hold on;
 
-% Add the theoretical SPGR-vs-flip angle curve assuming T1=520 (FBIRN phantom)
-TR = 26.5;  % ms
+% Add the theoretical SPGR-vs-flip angle curve 
+TR = 26.5; % ms
 T1 = 1000;  % FBIRN phantom (guess)
 E1 = exp(-TR./T1);
 flip2 = 1:40;
@@ -86,7 +86,7 @@ hold on;
 plot(flip2, s_theory*max(s)/max(s_theory), 'r-');
 legend('observed', sprintf('SPGR/FLASH signal equation (T1 = %d ms)', T1));
 
-%ernst = acos(E1)/pi*180;
+ernst = acos(E1)/pi*180;
 
 return
 
