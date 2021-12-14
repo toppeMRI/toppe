@@ -1,5 +1,8 @@
 % Create 3D EPI variable flip angle SPGR sequence for T1 mapping.
 % Acquires multiple 3D EPI image volume, each with a different flip angle.
+% 
+% First create TOPPE files for execution on GE scanners.
+% Then convert directly to a Pulseq file for execution on Siemens scanners.
 %
 % Repository: github/toppeMRI/toppe/examples/MRITogether2021_PulseqOnGE/EPI/
 
@@ -195,7 +198,30 @@ toppe.preflightcheck('toppeN.entry', 'seqstamp.txt', seq.sys);
 
 
 %% create tar file (optional)
-system('tar czf scan,epi.tgz seqstamp.txt modules.txt scanloop.txt *.mod epi_4ge.m toppeN.entry README.md');
+system('tar cf scan,epi.tar seqstamp.txt modules.txt scanloop.txt *.mod epi.m toppeN.entry README.md');
+
+
+%% Create Pulseq file
+addpath ~/github/toppeMRI/PulseGEq/  % +pulsegeq package
+addpath ~/github/pulseq/matlab/      % +mr package
+
+siemensLims = mr.opts('MaxGrad', seq.sys.maxGrad*10, 'GradUnit', 'mT/m', ...
+    'MaxSlew', seq.sys.maxSlew*10, 'SlewUnit', 'T/m/s', ...
+    'rfRingdownTime', 30e-6, 'rfDeadTime', 100e-6, 'adcDeadTime', 20e-6);  
+
+% Here we pass an empty tar file argument 
+% since the TOPPE scan files already exist in the local path.
+pulsegeq.ge2seq([], 'seqFile', 'epi.seq', ...
+    'system', siemensLims, ...
+    'systemGE', seq.sys);
+
+%% Plot both sequences
+iStart = 4*40+1; iStop = iStart + 8;  % row indeces in scanloop.txt
+toppe.plotseq(iStart, iStop, seq.sys);
+
+pulseqObj = mr.Sequence(siemensLims);
+pulseqObj.read('epi.seq');
+pulseqObj.plot('timeRange', [3.995 3.995+57e-3]);
 
 return;
 
