@@ -1,6 +1,4 @@
 function [d, ims] = loadEPI(pfile, readout, din)
-% Run this from the location of the Pfile, e.g.,
-% /mnt/storage/jfnielse/exchange/...
 
 if nargin < 3
 % load full data matrix
