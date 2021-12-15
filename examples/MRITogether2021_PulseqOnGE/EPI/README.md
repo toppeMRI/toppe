@@ -5,6 +5,11 @@ Create the sequence files:
 >> epi;
 ```
 
+Display sequence in loop/movie mode:
+```
+>> toppe.playseq(4, seq.sys, 'tpause', 0.05);
+```
+
 Load P-file and display images:
 ```
 >> loadEPI('P,epi.7', 'readout.mod');
