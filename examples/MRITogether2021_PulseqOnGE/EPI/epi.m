@@ -66,7 +66,7 @@ if false
         'ftype', seq.rf.ftype, ...
         'writeModFile', false);
 
-save pulse rf gz
+    save pulse rf gz
 else
     load pulse
 end
