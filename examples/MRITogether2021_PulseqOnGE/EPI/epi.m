@@ -55,7 +55,7 @@ seq.flip = [5:5:40];         % degrees
 
 % Design waveforms.
 if false
-% Use a wrapper for John Pauly's SLR toolbox for this.
+    % Use a wrapper for John Pauly's SLR toolbox for this.
     seq.rf.slThick = 0.80*seq.fov(3);     % cm
     seq.rf.tbw = 6;              % time-bandwidth product of SLR pulse 
     seq.rf.dur = 1.5;            % pulse duration (ms)
