@@ -8,9 +8,9 @@ function [ims imsos d]= recon3dft(pfile,varargin)
 %
 % Input options:
 %  type             '2d' or '3d'
-%  echo             echo to recon
+%  echo             echo to recon. Default: 1
 %  readoutFile      default: 'readout.mod'
-%  dokzft           default: false
+%  dokzft           default: true
 %  zpad             default: [1 1]
 %  dodisplay        default: false
 %
