@@ -8,9 +8,9 @@ function [ims imsos d]= recon3dft(pfile,varargin)
 %
 % Input options:
 %  type             '2d' or '3d'
-%  echo             echo to recon
+%  echo             echo to recon. Default: 1
 %  readoutFile      default: 'readout.mod'
-%  dokzft           default: false
+%  dokzft           default: true
 %  zpad             default: [1 1]
 %  dodisplay        default: false
 %
@@ -46,9 +46,9 @@ d = flipdim(d,1);        % data is stored in reverse order for some reason
 %end
 
 % get flat portion of readout
-[rf,gx,gy,gz,desc,paramsint16,paramsfloat] = readmod(readoutFile);
+[rf,gx,gy,gz,desc,paramsint16,paramsfloat,hdr] = readmod(readoutFile);
 nramp = 0; %15;  % see writemod.m
-nbeg = paramsint16(1) + nramp;  
+nbeg = paramsint16(1) - hdr.npre + nramp;
 nx = paramsint16(2);  % number of acquired data samples per TR
 decimation = round(125/paramsfloat(20));
 d = d(nbeg:(nbeg+nx-1),:,:,:,:);     % [nx*125/oprbw ny nz ncoils nechoes]

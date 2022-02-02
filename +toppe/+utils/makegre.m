@@ -1,7 +1,9 @@
 function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
 % function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
 %
-% Make gradients for 3D spin-warp (cartesian gradient-echo) readout
+% Make gradients for 3D spin-warp (cartesian gradient-echo) readout.
+%
+% To recon the resulting data, you may be able to use toppe.utils.recon3dft()
 %
 % INPUTS:
 %  fov        [1 1]    in-plane fov (cm)

@@ -55,6 +55,7 @@ arg.writeModFile    = true;
 arg.isPresto        = false;
 arg.spoilDerate     = 1.0;
 arg.doDisplay       = false;
+arg.maxSlewScale    = 1;  % scales the max slew (useful for PNS control)
 if arg.spoilDerate < 0.1 | arg.spoilDerate > 1.0
 	error('spoilDerate must be in the range [0.1 1.0]');
 end
@@ -76,6 +77,7 @@ if strcmp(system.gradUnit, 'mT/m')
 	mxg = mxg/10;     % Gauss/cm
 end
 mxs = system.maxSlew;
+mxs = arg.maxSlewScale * mxs;
 if strcmp(system.slewUnit, 'T/m/s')
 	mxs = mxs/10;     % Gauss/cm/ms
 end
