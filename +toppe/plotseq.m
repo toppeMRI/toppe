@@ -92,7 +92,7 @@ for it = nstart:nstop
     elseif cores{ic}.hasDAQ
         start_core = max(system.start_core_daq - dt*cores{ic}.npre, 0);
     else
-        start_core = max(system.start_core_grad - dt*cores{ic}.npre, 0);
+        start_core = system.start_core_grad;
     end
 
     % number of discarded samples at end of RF/ADC window
