@@ -118,8 +118,7 @@ if ~isempty(arg.hdrfloats)
 	end
 	paramsfloat(20:(19+length(arg.hdrfloats))) = arg.hdrfloats;  % populate header with custom floats 
 end
-%paramsint16 = [0 size(rf,1) arg.nChop]; % the first three ints are used by interpreter
-paramsint16 = [arg.nChop(1) size(rf,1)-sum(arg.nChop)]; % the first three ints are used by interpreter
+paramsint16 = [arg.nChop(1) size(rf,1)-sum(arg.nChop)]; % these reserved ints are used by interpreter
 if ~isempty(arg.hdrints)
 	if length(arg.hdrints) > maxHdrInts
 		error(sprintf('max number of custom ints in .mod file header is %d', maxHdrInts));
