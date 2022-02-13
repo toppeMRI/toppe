@@ -1,7 +1,10 @@
 function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, system, varargin)
-% Display pulse sequence, as specified in modules.txt, scanloop.txt, and timing.txt
-%
 % function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, system, varargin)
+%
+% Display pulse sequence, as specified in modules.txt, scanloop.txt, and timing.txt.
+% Sequence timing is exact (at least that's the intent), i.e., it
+% tries to match the timing on the scanner exactly.
+% See resources/timing.svg for a detailed sequence timing diagram
 %
 % Inputs:
 %   nstart,nstop       first and last startseq calls (as specified in scanloop.txt)
@@ -98,7 +101,7 @@ for it = nstart:nstop
     % number of discarded samples at end of RF/ADC window
     nChopEnd = cores{ic}.res - cores{ic}.rfres - cores{ic}.npre;
 
-    % gradient delay
+    % delay past gradient due to RF/DAQ window
     if cores{ic}.hasRF
         coredel = max(system.myrfdel - dt*nChopEnd, 0);
     elseif cores{ic}.hasDAQ
