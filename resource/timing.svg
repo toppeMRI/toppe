@@ -29,8 +29,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.4555556"
-     inkscape:cx="207.48868"
-     inkscape:cy="290.76923"
+     inkscape:cx="124.41176"
+     inkscape:cy="421.08597"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -8723,7 +8723,12 @@
          id="tspan4594"
          x="385.1976"
          y="438.57166"
-         style="font-size:6.04625px;line-height:1.25">max(0, myrfdel - nChop(2))</tspan></text>
+         style="font-size:6.04625px;line-height:1.25">max(0, myrfdel - nChop(2))</tspan><tspan
+         sodipodi:role="line"
+         x="385.1976"
+         y="446.12946"
+         style="font-size:6.04625px;line-height:1.25"
+         id="tspan3550">( = 'coredel' in plotseq() )</tspan></text>
     <path
        sodipodi:nodetypes="cc"
        inkscape:connector-curvature="0"
