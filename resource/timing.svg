@@ -28,9 +28,9 @@
      objecttolerance="10000"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.2277778"
-     inkscape:cx="194.25339"
-     inkscape:cy="276.92307"
+     inkscape:zoom="2.4555556"
+     inkscape:cx="186.71945"
+     inkscape:cy="485.02262"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -8601,7 +8601,7 @@
          x="197.62134"
          id="tspan6179"
          sodipodi:role="line"
-         style="font-size:6.04625px;line-height:1.25">max(0, start_core_rf - nChop(1))</tspan></text>
+         style="font-size:6.04625px;line-height:1.25">max(0, start_core_rf - 4*nChop(1))</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Arrow1Mstart-2);marker-end:url(#Arrow1Mend-9)"
        d="m 427.03656,246.89721 h 16.17103"
@@ -8712,7 +8712,7 @@
          id="tspan4594"
          x="385.1976"
          y="438.57166"
-         style="font-size:6.04625px;line-height:1.25">max(0, myrfdel - nChop(2))</tspan><tspan
+         style="font-size:6.04625px;line-height:1.25">max(0, myrfdel - 4*nChop(2))</tspan><tspan
          sodipodi:role="line"
          x="385.1976"
          y="446.12946"
@@ -8880,7 +8880,7 @@
          x="197.62134"
          id="tspan2985"
          sodipodi:role="line"
-         style="font-size:6.04625px;line-height:1.25">max(0, start_core_daq - nChop(1))</tspan></text>
+         style="font-size:6.04625px;line-height:1.25">max(0, start_core_daq - 4*nChop(1))</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.484357;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="M 222.26,520.49801 V 631.95608"
@@ -8939,7 +8939,7 @@
          id="tspan3007"
          x="385.1976"
          y="638.57166"
-         style="font-size:6.04625px;line-height:1.25">max(0, daqdel - nChop(2))</tspan></text>
+         style="font-size:6.04625px;line-height:1.25">max(0, daqdel - 4*nChop(2))</tspan></text>
     <path
        sodipodi:nodetypes="cc"
        inkscape:connector-curvature="0"
