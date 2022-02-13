@@ -28,9 +28,9 @@
      objecttolerance="10000"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.4555556"
-     inkscape:cx="124.41176"
-     inkscape:cy="421.08597"
+     inkscape:zoom="1.2277778"
+     inkscape:cx="194.25339"
+     inkscape:cy="276.92307"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -8604,21 +8604,10 @@
          style="font-size:6.04625px;line-height:1.25">max(0, start_core_rf - nChop(1))</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Arrow1Mstart-2);marker-end:url(#Arrow1Mend-9)"
-       d="m 427.03656,253.6593 h 16.17103"
+       d="m 427.03656,246.89721 h 16.17103"
        id="path6203"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
-    <text
-       id="text6205"
-       y="260.20273"
-       x="435.74371"
-       style="font-style:normal;font-weight:normal;line-height:0%;font-family:'Bitstream Vera Sans';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
-       xml:space="preserve"><tspan
-         y="260.20273"
-         x="435.74371"
-         sodipodi:role="line"
-         id="tspan6211"
-         style="font-size:6.04625px;line-height:125%;text-align:center;writing-mode:lr-tb;text-anchor:middle">timetrwait</tspan></text>
     <path
        sodipodi:nodetypes="cc"
        inkscape:connector-curvature="0"
@@ -8735,17 +8724,6 @@
        id="path4596"
        d="m 441.04019,400.70481 h 16.17103"
        style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Arrow1Mstart-2);marker-end:url(#Arrow1Mend-9)" />
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;line-height:0%;font-family:'Bitstream Vera Sans';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
-       x="452.07797"
-       y="407.24823"
-       id="text4598"><tspan
-         style="font-size:6.04625px;line-height:125%;text-align:center;writing-mode:lr-tb;text-anchor:middle"
-         id="tspan4600"
-         sodipodi:role="line"
-         x="452.07797"
-         y="407.24823">timetrwait</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.6, 0.6;stroke-dashoffset:0;stroke-opacity:1"
        d="M 457.65144,320.49801 V 431.95608"
@@ -8971,14 +8949,19 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;line-height:0%;font-family:'Bitstream Vera Sans';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
-       x="452.07797"
+       x="448.07797"
        y="607.24823"
        id="text3015"><tspan
          style="font-size:6.04625px;line-height:125%;text-align:center;writing-mode:lr-tb;text-anchor:middle"
          id="tspan3013"
          sodipodi:role="line"
-         x="452.07797"
-         y="607.24823">timetrwait</tspan></text>
+         x="448.07797"
+         y="607.24823">timetrwait</tspan><tspan
+         style="font-size:6.04625px;line-height:125%;text-align:center;writing-mode:lr-tb;text-anchor:middle"
+         sodipodi:role="line"
+         x="448.07797"
+         y="614.80603"
+         id="tspan3708">+ tminwait</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.6, 0.6;stroke-dashoffset:0;stroke-opacity:1"
        d="M 457.65144,520.49801 V 631.95608"
@@ -9052,5 +9035,37 @@
          id="tspan3121"
          sodipodi:role="line"
          style="font-size:8.04362px;line-height:1.25">RF</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;line-height:0%;font-family:'Bitstream Vera Sans';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       x="448.07797"
+       y="409.24823"
+       id="text3874"><tspan
+         style="font-size:6.04625px;line-height:125%;text-align:center;writing-mode:lr-tb;text-anchor:middle"
+         id="tspan3870"
+         sodipodi:role="line"
+         x="448.07797"
+         y="409.24823">timetrwait</tspan><tspan
+         style="font-size:6.04625px;line-height:125%;text-align:center;writing-mode:lr-tb;text-anchor:middle"
+         sodipodi:role="line"
+         x="448.07797"
+         y="416.80603"
+         id="tspan3872">+ tminwait</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;line-height:0%;font-family:'Bitstream Vera Sans';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       x="435.96255"
+       y="255.92232"
+       id="text3960"><tspan
+         style="font-size:6.04625px;line-height:125%;text-align:center;writing-mode:lr-tb;text-anchor:middle"
+         id="tspan3956"
+         sodipodi:role="line"
+         x="435.96255"
+         y="255.92232">timetrwait</tspan><tspan
+         style="font-size:6.04625px;line-height:125%;text-align:center;writing-mode:lr-tb;text-anchor:middle"
+         sodipodi:role="line"
+         x="435.96255"
+         y="263.4801"
+         id="tspan3958">+ tminwait</tspan></text>
   </g>
 </svg>
