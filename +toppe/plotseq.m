@@ -112,7 +112,7 @@ for it = nstart:nstop
 
     % Mimimum core duration (us).
     % Should be identical to the CV 'mindur' in the EPIC code.
-    mindur = start_core + cores{ic}.wavdur + system.timetrwait + coredel + system.tminwait + system.timessi;
+    mindur = start_core + cores{ic}.wavdur + coredel + system.timetrwait + system.tminwait + system.timessi;
 
     % silence at end of core
     tdelay = max(cores{ic}.dur - mindur, 0); 
