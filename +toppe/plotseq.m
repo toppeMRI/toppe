@@ -34,6 +34,8 @@ function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, s
 %                    Determined by duration in modules.txt AND by textra (column 14) in scanloop.txt
 %                    Used in ge2seq.m to set delay block, and in playseq.m.
 
+% Times in us
+
 %% parse inputs
 arg.loopArr         = [];
 arg.loopFile        = 'scanloop.txt';
@@ -89,32 +91,33 @@ for it = nstart:nstop
     ia_gy = loopArr(it,5);
     ia_gz = loopArr(it,6);
     
-    % start of core
+    % Delay (start of waveforms) (us)
     if cores{ic}.hasRF
-        start_core = max(system.start_core_rf - dt*cores{ic}.npre, 0);
+        delay = max(system.start_core_rf - dt*cores{ic}.npre, 0);
     elseif cores{ic}.hasDAQ
-        start_core = max(system.start_core_daq - dt*cores{ic}.npre, 0);
+        delay = max(system.start_core_daq - dt*cores{ic}.npre, 0);
     else
-        start_core = system.start_core_grad;
+        delay = system.start_core_grad;
     end
 
-    % number of discarded samples at end of RF/ADC window
-    nChopEnd = cores{ic}.res - cores{ic}.rfres - cores{ic}.npre;
-
-    % delay past gradient due to RF/DAQ window
+    % delay past gradient due to RF/DAQ window (us)
+    % nChop = number of discarded samples at beginning + end of RF/ADC window
+    nChop(1) = cores{ic}.npre;
+    nChop(2) = cores{ic}.res - cores{ic}.rfres - cores{ic}.npre;
     if cores{ic}.hasRF
-        coredel = max(system.myrfdel - dt*nChopEnd, 0);
+        coredel = max(system.myrfdel - dt*nChop(2), 0);
     elseif cores{ic}.hasDAQ
-        coredel = max(system.daqdel - dt*nChopEnd, 0);
+        coredel = max(system.daqdel - dt*nChop(2), 0);
     else
         coredel = 0;
     end
 
     % Mimimum core duration (us).
     % Should be identical to the CV 'mindur' in the EPIC code.
-    mindur = start_core + cores{ic}.wavdur + coredel + system.timetrwait + system.tminwait + system.timessi;
+    mindur = delay + cores{ic}.wavdur + coredel + system.timetrwait + system.tminwait + system.timessi;
 
-    % silence at end of core
+    % silence at end of core, as specified in 
+    % in both modules.txt and scanloop.txt
     tdelay = max(cores{ic}.dur - mindur, 0); 
     if size(loopArr,2)>13
         tdelay = tdelay + loopArr(it,14);  % add textra
@@ -123,7 +126,8 @@ for it = nstart:nstop
     waveform = loopArr(it,16); % waveform index
     
     if arg.doTimeOnly % Calculate the length of one waveform and add it to our sample counter
-        gxlength = round((start_core)/dt) + core_size(ic) + round((system.timetrwait+system.timessi+coredel)/dt);
+        gxlength = round((delay)/dt) + core_size(ic) ...
+            + round((coredel + system.timetrwait + system.tminwait + system.timessi)/dt);
         nsamples = nsamples + gxlength + round(tdelay/dt);
     else % Calculate RF and gradients as normal
         % get gradients
@@ -141,22 +145,30 @@ for it = nstart:nstop
         gzit = G(3,:)';
         
         % build waveforms for this startseq call
-        rho1 = [zeros(round((start_core+coredel)/dt),1); ...
-                ia_rf/max_pg_iamp*  abs(cores{ic}.rf(:,waveform)); ...
-                zeros(round((system.tminwait+system.timetrwait+system.timessi)/dt),1)];
-        th1  = [zeros(round((start_core+coredel)/dt),1); ...
-                ia_th/max_pg_iamp*angle(cores{ic}.rf(:,waveform)); ...
-                zeros(round((system.tminwait+system.timetrwait+system.timessi)/dt),1)];
-        gx1  = [zeros(round((start_core)/dt),1); ...
+        rho1 = [zeros(round((delay + system.myrfdel + dt*nChop(1))/dt),1); ...
+                ia_rf/max_pg_iamp*  abs(cores{ic}.rf((nChop(1)+1):(end-nChop(2)),waveform)); ...
+                zeros(round((system.timetrwait + system.tminwait + system.timessi)/dt),1)];
+        th1  = [zeros(round((delay + system.myrfdel + dt*nChop(1))/dt),1); ...
+                ia_th/max_pg_iamp*angle(cores{ic}.rf((nChop(1)+1):(end-nChop(2)),waveform)); ...
+                zeros(round((system.timetrwait + system.tminwait + system.timessi)/dt),1)];
+        gx1  = [zeros(round((delay)/dt),1); ...
                 gxit(:); ...
-                zeros(round((system.tminwait+system.timetrwait+system.timessi+coredel)/dt),1)];
-        gy1  = [zeros(round((start_core)/dt),1); ...
+                zeros(round((coredel + system.timetrwait + system.tminwait + system.timessi)/dt),1)];
+        gy1  = [zeros(round((delay)/dt),1); ...
                 gyit(:); ...
-                zeros(round((system.tminwait+system.timetrwait+system.timessi+coredel)/dt),1)];
-        gz1  = [zeros(round((start_core)/dt),1); ...
+                zeros(round((coredel + system.timetrwait + system.tminwait + system.timessi)/dt),1)];
+        gz1  = [zeros(round((delay)/dt),1); ...
                 gzit(:); ...
-                zeros(round((system.tminwait+system.timetrwait+system.timessi+coredel)/dt),1)];
-        
+                zeros(round((coredel + system.timetrwait + system.tminwait + system.timessi)/dt),1)];
+
+        % waveform length can differ by a couple of samples -- bandaid for now
+        l = max(numel(rho1), numel(gx1));
+        rho1 = [rho1; zeros(l - numel(rho1), 1)];
+        th1 = [th1; zeros(l - numel(th1), 1)];
+        gx1 = [gx1; zeros(l - numel(gx1), 1)];
+        gy1 = [gy1; zeros(l - numel(gy1), 1)];
+        gz1 = [gz1; zeros(l - numel(gz1), 1)];
+
         % apply RF phase offset
         if cores{ic}.hasRF
             th1 = th1 + loopArr(it,12)/max_pg_iamp*pi;
@@ -184,9 +196,8 @@ else
 end
 
 if length(rf) ~= length(gx)
-keyboard
     msg = ['RF and gradient waveform durations are not equal length. ' ... 
-        'This is likely due to system.rfdel or system.daqdel not being ' ...
+        'This is likely due to system.myrfdel or system.daqdel not being ' ...
         'on a 4us boundary.'];
     error(msg);
 end
