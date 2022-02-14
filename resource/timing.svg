@@ -29,8 +29,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.4555556"
-     inkscape:cx="186.71945"
-     inkscape:cy="485.02262"
+     inkscape:cx="103.64253"
+     inkscape:cy="195.88235"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -8676,14 +8676,14 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;line-height:0%;font-family:'Bitstream Vera Sans';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
-       x="218.51276"
-       y="130.43417"
+       x="213.76741"
+       y="132.46288"
        id="text4570"><tspan
          sodipodi:role="line"
          id="tspan4572"
-         x="218.51276"
-         y="130.43417"
-         style="font-size:6.04625px;line-height:1.25">start_core_grad</tspan></text>
+         x="213.76741"
+         y="132.46288"
+         style="font-size:6.04625px;line-height:1.25">delay = start_core_grad</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.6, 0.6;stroke-dashoffset:0;stroke-opacity:1"
        d="M 269.70587,320.49801 V 431.95608"
@@ -9067,5 +9067,26 @@
          x="435.96255"
          y="263.4801"
          id="tspan3958">+ tminwait</tspan></text>
+    <text
+       id="text11083"
+       y="351.52716"
+       x="223.45967"
+       style="font-style:normal;font-weight:normal;line-height:0%;font-family:'Bitstream Vera Sans';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       xml:space="preserve"><tspan
+         y="351.52716"
+         x="223.45967"
+         id="tspan11081"
+         sodipodi:role="line"
+         style="font-size:6.04625px;line-height:1.25">&quot;delay&quot;</tspan><tspan
+         y="359.08496"
+         x="223.45967"
+         sodipodi:role="line"
+         style="font-size:6.04625px;line-height:1.25"
+         id="tspan15848">or</tspan><tspan
+         y="366.64279"
+         x="223.45967"
+         sodipodi:role="line"
+         style="font-size:6.04625px;line-height:1.25"
+         id="tspan15850">&quot;start_core&quot;</tspan></text>
   </g>
 </svg>
