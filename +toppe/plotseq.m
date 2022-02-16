@@ -90,20 +90,22 @@ for it = nstart:nstop
     ia_gx = loopArr(it,4);
     ia_gy = loopArr(it,5);
     ia_gz = loopArr(it,6);
+
+    % get number of discarded samples at beginning+end of RF/ADC modules
+    nChop(1) = cores{ic}.npre;
+    nChop(2) = cores{ic}.res - cores{ic}.rfres - cores{ic}.npre;
     
-    % Delay (start of waveforms) (us)
+    % Delay/start_core (start of waveforms) (us)
     if cores{ic}.hasRF
-        delay = max(system.start_core_rf - dt*cores{ic}.npre, 0);
+        delay = max(system.start_core_rf - dt*nChop(1), 0);
     elseif cores{ic}.hasDAQ
-        delay = max(system.start_core_daq - dt*cores{ic}.npre, 0);
+        delay = max(system.start_core_daq - dt*nChop(1), 0);
     else
         delay = system.start_core_grad;
     end
 
     % delay past gradient due to RF/DAQ window (us)
     % nChop = number of discarded samples at beginning + end of RF/ADC window
-    nChop(1) = cores{ic}.npre;
-    nChop(2) = cores{ic}.res - cores{ic}.rfres - cores{ic}.npre;
     if cores{ic}.hasRF
         coredel = max(system.myrfdel - dt*nChop(2), 0);
     elseif cores{ic}.hasDAQ
