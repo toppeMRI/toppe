@@ -18,6 +18,7 @@ function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
 %  slewDerate  Reduce slew rate by this factor during prewinders/crushers
 %  nChop       [1 2] (int) trim (chop) the start and end of the RF waveform 
 %              (or ADC window) by this many samples. Even int.
+%              Default: [48 48]
 %              Using non-zero nChop can reduce module duration on scanner.
 
 zres = zres*10;   % mm
