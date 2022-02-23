@@ -28,6 +28,8 @@ function writemod(system, varargin)
 %   nChop         [1 2] (int, multiple of 4) trim (chop) the start and end of
 %                 the RF wavevorm (or ADC window) by this many 4us samples.
 %                 Using non-zero nChop can reduce module duration on scanner.
+%                 If converting to Pulseq using pulsegeq.ge2seq, nChop(2) must
+%                 be non zero to allow time for RF ringdown.
 %                 Default: [0 0] 
 
 import toppe.*
