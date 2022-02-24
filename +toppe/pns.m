@@ -35,7 +35,8 @@ function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
 % HDx      TRM ZOOM        354d-6    29.1     0.309  40    150
 % UHP      HRMB            359d-6    26.5     0.370  100   200
 %
-% values on scanner from /w/config/Scandbdt.cfg + GRSubsystemHWO.xml
+% values on scanner from /w/config/Scandbdt.cfg or GRSubsystemHWO.xml
+% (e.g., /export/home/mx/host/config/current/GRSubsystemHWO.xml)
 % (alpha = EffectivedBdTlength<X,Y,Z>/100)
 %
 % Literature: "Introduction to dB/dt" presentation by Toni Linz; 6/8/06
