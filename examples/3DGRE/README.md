@@ -3,12 +3,13 @@
 Complete example, including:
 
 + Create .mod files using the TOPPE Matlab library
-+ Create scanloop.txt
++ Create scanloop.txt, and modules.txt
 + Display the sequence in movie (loop) mode
++ Create seqstamp.txt, needed to execute the sequence on scanner
 
 Usage:
 ```
->> main;
+>> gre;
 ```
 
 Issue:
