@@ -34,6 +34,7 @@ function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
 % HDx      TRM WHOLE       370d-6    23.7     0.344  23    77
 % HDx      TRM ZOOM        354d-6    29.1     0.309  40    150
 % UHP      HRMB            359d-6    26.5     0.370  100   200
+% Premier  HRMW            642.4d-6  17.9     0.310  70    200
 %
 % values on scanner from /w/config/Scandbdt.cfg or GRSubsystemHWO.xml
 % (e.g., /export/home/mx/host/config/current/GRSubsystemHWO.xml)
