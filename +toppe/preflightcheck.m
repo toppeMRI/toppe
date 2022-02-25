@@ -55,7 +55,13 @@ moduleListFile    = fgetl(fid);    % e.g., 'modules.txt'
 loopFile          = fgetl(fid);    % e.g., 'scanloop.txt'
 b1CheckFile       = fgetl(fid);    % .mod file used for b1 scaling and SAR checks, e.g., 'tipdown.mod'
 readoutFilterFile = fgetl(fid);    % .mod file used to set receive filter, e.g., 'readout.mod'
+seqstampFileFromEntryFile = fgetl(fid);
 fclose(fid);
+
+% check file name consistency
+if ~strcmp(seqstampFile, seqstampFileFromEntryFile)
+    warning(sprintf('seqstamp filename different from that listed in %s', entryFile));
+end
 
 % Get modules.
 % This step also checks the formatting of the module list file.
