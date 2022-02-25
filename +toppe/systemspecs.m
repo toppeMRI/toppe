@@ -27,6 +27,7 @@ function sys = systemspecs(varargin)
 %                   'whole' (HDx) 
 %                   'zoom' (HDx) 
 %                   'hrmb' (UHP)
+%                   'hrmw' (Premier)
 %   start_core_rf   Minimum start time (us) for rf modules. Default: 0. 
 %   start_core_daq  Minimum start time (us) for data acquisition modules. Default: 126
 %   start_core_grad Minimum start time (us) for gradient-only modules. Default: 0.
@@ -123,6 +124,7 @@ switch sys.gradient
     case 'whole',
     case 'zoom',
     case 'hrmb',
+    case 'hrmw',
     otherwise, error('Gradient coil (%s) unkown', sys.gradient);
 end
 
