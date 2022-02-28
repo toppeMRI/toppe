@@ -86,10 +86,10 @@ if ~exist('rheobase','var'), error('Provide rheobase'); end
 if ~exist('alpha','var'), error('Provide alpha'); end
 if ~exist('gdt','var'), gdt = []; end
 if isempty(gdt), gdt = 4d-6; end
-if (chronaxie>600d-6) || (chronaxie<200d-6),
+if (chronaxie>700d-6) || (chronaxie<200d-6),
     warning('pns:chronaxie','chronaxie=%g; typical values in help',chronaxie);
 end
-if (rheobase>30) || (rheobase<20),
+if (rheobase>30) || (rheobase<17),
     warning('pns:rheobase','rheobase=%g; typical values in help',rheobase);
 end
 if (alpha>0.4) || (alpha<0.3),
