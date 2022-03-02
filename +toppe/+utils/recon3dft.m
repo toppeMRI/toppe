@@ -13,6 +13,7 @@ function [ims imsos d]= recon3dft(pfile,varargin)
 %  dokzft           default: true
 %  zpad             default: [1 1]
 %  dodisplay        default: false
+%  flipFid          default: true. Flip image along readout (fid) dimension to match scanner display
 %
 % Output:
 %  ims           [nx ny nz ncoils]    
@@ -28,7 +29,10 @@ arg.readoutFile = 'readout.mod';
 arg.dokzft = 'true';
 arg.zpad = [1 1];
 arg.dodisplay = false;
+arg.flipFid = true;
+
 arg = toppe.utils.vararg_pair(arg, varargin);
+
 echo = arg.echo;
 readoutFile = arg.readoutFile;
 zpad = arg.zpad;
@@ -79,11 +83,13 @@ end
 
 fprintf('\n');
 
-% flip along L/R to match the scanner host display (
+% Flip along L/R to match the scanner host display.
 % In Axial view on console: 'R' is on left; 'A' is top
 % In Sagittal view: 'A' is on left; 'S' is on top
 % In Coronal view: 'R' is on left; 'S' is on top
-ims = flipdim(ims,1);
+if arg.flipFid
+    ims = flipdim(ims,1);
+end
 
 % display root sum-of-squares image
 imsos = sqrt(sum(abs(ims).^2,4)); 

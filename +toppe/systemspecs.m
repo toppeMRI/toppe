@@ -27,6 +27,7 @@ function sys = systemspecs(varargin)
 %                   'whole' (HDx) 
 %                   'zoom' (HDx) 
 %                   'hrmb' (UHP)
+%                   'hrmw' (Premier)
 %   start_core_rf   Minimum start time (us) for rf modules. Default: 0. 
 %   start_core_daq  Minimum start time (us) for data acquisition modules. Default: 126
 %   start_core_grad Minimum start time (us) for gradient-only modules. Default: 0.
@@ -87,6 +88,7 @@ sys.tminwait   = 12;         % minimum duration of wait pulse in EPIC code
 % MR750    XRM             334d-6    23.4     0.333  50    200
 % HDx      TRM WHOLE       370d-6    23.7     0.344  23    77
 % HDx      TRM ZOOM        354d-6    29.1     0.309  40    150
+% UHP      HRMB            359d-6    26.5     0.370  100   200
 %
 % values on scanner from /w/config/Scandbdt.cfg + GRSubsystemHWO.xml
 sys.gradient = 'xrm';
@@ -98,9 +100,7 @@ sys.nMaxWaveforms = 200;     % Not known at the moment.
 %% Substitute specified system values
 sys = toppe.utils.vararg_pair(sys, varargin);
 
-if sys.maxRF ~= maxRFDefault
-    warning('Using non-default max RF setting -- b1 scaling may be incorrect!');
-end
+sys.gradient = lower(sys.gradient);
 
 % If requested, set GE/EPIC-related time gaps to zero
 if ~sys.addDelays
@@ -112,6 +112,22 @@ if ~sys.addDelays
 	timetrwait = 0;
 	timessi    = 0;
 end
+
+%% Input checks
+if sys.maxRF ~= maxRFDefault
+    warning('Using non-default max RF setting -- b1 scaling may be incorrect!');
+end
+
+switch sys.gradient
+    case 'xrmw', 
+    case 'xrm',  
+    case 'whole',
+    case 'zoom',
+    case 'hrmb',
+    case 'hrmw',
+    otherwise, error('Gradient coil (%s) unkown', sys.gradient);
+end
+
 
 return
 

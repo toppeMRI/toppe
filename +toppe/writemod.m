@@ -28,6 +28,8 @@ function writemod(system, varargin)
 %   nChop         [1 2] (int, multiple of 4) trim (chop) the start and end of
 %                 the RF wavevorm (or ADC window) by this many 4us samples.
 %                 Using non-zero nChop can reduce module duration on scanner.
+%                 If converting to Pulseq using pulsegeq.ge2seq, nChop(2) must
+%                 be non zero to allow time for RF ringdown.
 %                 Default: [0 0] 
 
 import toppe.*
@@ -118,8 +120,7 @@ if ~isempty(arg.hdrfloats)
 	end
 	paramsfloat(20:(19+length(arg.hdrfloats))) = arg.hdrfloats;  % populate header with custom floats 
 end
-%paramsint16 = [0 size(rf,1) arg.nChop]; % the first three ints are used by interpreter
-paramsint16 = [arg.nChop(1) size(rf,1)-sum(arg.nChop)]; % the first three ints are used by interpreter
+paramsint16 = [arg.nChop(1) size(rf,1)-sum(arg.nChop)]; % these reserved ints are used by interpreter
 if ~isempty(arg.hdrints)
 	if length(arg.hdrints) > maxHdrInts
 		error(sprintf('max number of custom ints in .mod file header is %d', maxHdrInts));

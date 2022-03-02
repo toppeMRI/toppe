@@ -1,1 +1,2 @@
-inkscape --export-png=workflow.png -w 912 -h 326 workflow.svg
+# inkscape --export-png=workflow.png -w 912 -h 326 workflow.svg
+# inkscape -o timing.pdf timing.svg

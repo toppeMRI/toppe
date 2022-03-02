@@ -34,8 +34,10 @@ function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
 % HDx      TRM WHOLE       370d-6    23.7     0.344  23    77
 % HDx      TRM ZOOM        354d-6    29.1     0.309  40    150
 % UHP      HRMB            359d-6    26.5     0.370  100   200
+% Premier  HRMW            642.4d-6  17.9     0.310  70    200
 %
-% values on scanner from /w/config/Scandbdt.cfg + GRSubsystemHWO.xml
+% values on scanner from /w/config/Scandbdt.cfg or GRSubsystemHWO.xml
+% (e.g., /export/home/mx/host/config/current/GRSubsystemHWO.xml)
 % (alpha = EffectivedBdTlength<X,Y,Z>/100)
 %
 % Literature: "Introduction to dB/dt" presentation by Toni Linz; 6/8/06
@@ -76,6 +78,7 @@ switch lower(coil)
     case 'whole', chronaxie=370d-6; rheobase=23.7; alpha=0.344;
     case 'zoom',  chronaxie=354d-6; rheobase=29.1; alpha=0.309;
     case 'hrmb',  chronaxie=359d-6; rheobase=26.5; alpha=0.370;
+    case 'hrmw',  chronaxie=642.4d-6; rheobase=17.9; alpha=0.310;
     otherwise, error('gradient coil (%s) unkown',chronaxie);
 end
 
@@ -83,10 +86,10 @@ if ~exist('rheobase','var'), error('Provide rheobase'); end
 if ~exist('alpha','var'), error('Provide alpha'); end
 if ~exist('gdt','var'), gdt = []; end
 if isempty(gdt), gdt = 4d-6; end
-if (chronaxie>600d-6) || (chronaxie<200d-6),
+if (chronaxie>700d-6) || (chronaxie<200d-6),
     warning('pns:chronaxie','chronaxie=%g; typical values in help',chronaxie);
 end
-if (rheobase>30) || (rheobase<20),
+if (rheobase>30) || (rheobase<17),
     warning('pns:rheobase','rheobase=%g; typical values in help',rheobase);
 end
 if (alpha>0.4) || (alpha<0.3),
