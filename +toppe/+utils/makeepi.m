@@ -130,8 +130,10 @@ if arg.flyback
 end
 
 % prewinders
+% center kx samples around kx=0
 area = sum(gx.echo)*dt*1e-3;  % G/cm*s
-gx.pre = -toppe.utils.trapwave2(area/2, sys.maxGrad, sys.maxSlew/sqrt(nd), dt);
+dkx = 1/fov(1);  % cycles/cm
+gx.pre = -toppe.utils.trapwave2(area/2 + dkx/gamma/2, sys.maxGrad, sys.maxSlew/sqrt(nd), dt);
 
 res = fov(2)/ny;     % cm
 kmax = 1/(2*res);
