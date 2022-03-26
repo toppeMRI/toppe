@@ -3,6 +3,14 @@ function writeentryfile(entryFile, varargin)
 %
 % Convenience function for writing a toppe<CV1>.entry file.
 % Ensures correct file format.
+%
+% Optional keyword-argument inputs with defaults:
+%  filePath       = '/usr/g/research/pulseq/myscan/';
+%  moduleListFile = 'modules.txt';
+%  loopFile       = 'scanloop.txt';
+%  b1ScalingFile  = 'tipdown.mod';
+%  readoutFile    = 'readout.mod';
+%  seqStampFile   = 'seqstamp.txt';
 
 % defaults
 arg.filePath       = '/usr/g/research/pulseq/myscan/';
