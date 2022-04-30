@@ -52,6 +52,7 @@ if length(fov) == 3 & length(N) == 3
 else
     is3d = false;
     nd = 2;
+    fovz = 0;
 end
 
 %% Defaults
@@ -222,11 +223,15 @@ gy.et = toppe.makeGElength(gy.et);
 hdrints = [nx ny nshots arg.Ry length(gx.echo)]; 
 if arg.flyback
     hdrints = [hdrints length(gx.flyback)];
+else
+    hdrints = [hdrints 0];
 end
+hdrints = [hdrints arg.decimation];
+
 if ~arg.rampsamp
     hdrints = [hdrints length(gx.ramp)];
 end
-hdrfloats = [fov(1) fov(2)];
+hdrfloats = [fov(1) fov(2) ];
 
 toppe.writemod(sys, ...
     'gx', gx.et, 'gy', gy.et, ...
