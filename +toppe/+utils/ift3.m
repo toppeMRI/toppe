@@ -21,12 +21,12 @@ import toppe.*
 import toppe.utils.*
 
 % parse inputs and dimensions
-nd = ndims(D);
-
 arg.decimation = 1; 
 arg.dozfft = true; 
 arg.type   = '3d';
 arg = vararg_pair(arg, varargin);      % fill in values from varargin
+
+nd = ndims(D);
 
 if strcmp(arg.type, '3d') & nd < 3
 	error('ndims(D) must be >= 3 for 3d recon');
