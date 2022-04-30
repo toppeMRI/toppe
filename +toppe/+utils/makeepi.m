@@ -99,7 +99,7 @@ gy.blip = toppe.utils.trapwave2(dky/(gamma), sys.maxGrad, sys.maxSlew/sqrt(2), d
 % x readout gradient for one echo
 if ~arg.rampsamp
     % no sampling on ramps
-    gamp = 1/(fov(1)*gamma*dt*1e-3);    % Amplitude. Gauss/cm
+    gamp = 1/(fov(1)*gamma*dt*1e-3)/decimation;    % Amplitude. Gauss/cm
     gx.plateau = gamp*ones(1,nx*arg.decimation);  % plateau 
     s = sys.maxSlew*dt/sqrt(2);   % max change in gradient per sample
     gx.ramp = 0:s:gamp;
