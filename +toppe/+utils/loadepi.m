@@ -1,4 +1,4 @@
-function d = loadepi(pfile, echo, readoutFile)
+function d = loadepi(pfile, echo, readoutFile, varargin)
 % function d = loadbssfp4ge(pfile, echo, readoutFile)
 %
 % Load raw data Pfile acquired with scan created by makeepi.m
@@ -8,12 +8,24 @@ function d = loadepi(pfile, echo, readoutFile)
 %   echo          int
 %   readoutFile   string
 %
+% Keyword-argument input options:
+%   flipFirstDim  true/false   Flip data along the FID dimension? Default: true.
+%
 % Output:
 %   d    [nx*decimation ny nz nCoils]
+%        In TOPPE, samples are acquired every 4us.
+%        The 'effective'/design dwell time is decimation*4us, i.e.,
+%        the image needs to be cropped (in x) if decimation > 1.
+
+arg.flipFID = true;
+
+arg = vararg_pair(arg, varargin);      % requires MIRT
 
 % load data
 din = toppe.utils.loadpfile(pfile, echo);  % [ndat nCoils nslices 1 nviews]
-din = flipdim(din, 1); % !! Data seems to always be flipped along readout (do check though)
+if arg.flipFID
+    din = flipdim(din, 1); 
+end
 din = squeeze(din); % [nFID nCoils nz nShots]
 
 [nFID nCoils nz nShots] = size(din);
