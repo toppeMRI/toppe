@@ -6,11 +6,15 @@ function [rf, gz] = makefatsat(flip, tbw, dur, freq, sys, varargin)
 %  dur     [1 1]     RF pulse duration (ms)
 %  freq    [1 1]     frequency offset (Hz)
 %  sys     struct    hardware info, see toppe.systemspecs()
-%
+
+if strcmp(flip, 'test')
+    sub_test();
+    return;
+end
 
 % parameters for designing spoiler gradient
 arg.nSpoilCycles = 2;  % cycles of spoiling across arg.slThick
-arg.slThick = 0.1;     % 'slice' thickness (cm), for deter
+arg.slThick = 0.1;     % slice thickness (cm)
 
 arg = vararg_pair(arg, varargin);
 
@@ -37,4 +41,11 @@ toppe.writemod(sys, 'rf', rf, ...
     'gx', gSpoil, 'gy', gSpoil, 'gz', gSpoil, ...
     'ofname', 'fatsat.mod', 'desc', 'fat sat pulse and gradient crusher');
 
+return
 
+
+% create pulse, simulate, and display
+function sub_test
+
+
+return
