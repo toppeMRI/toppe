@@ -14,7 +14,7 @@ end
 
 % parameters for designing spoiler gradient
 arg.nSpoilCycles = 2;  % cycles of spoiling across arg.slThick
-arg.slThick = 0.1;     % slice thickness (cm)
+arg.slThick = 0.2;     % slice thickness (cm)
 
 arg = vararg_pair(arg, varargin);
 
@@ -30,8 +30,9 @@ rf = toppe.utils.rf.makeslr(flip, tmpslthick, tbw, dur, 1e-6, sys, ...
 gSpoil = toppe.utils.makecrusher(arg.nSpoilCycles, arg.slThick, sys, 0, sys.maxSlew);
 
 % combine
-rf = [rf(:); 0*gSpoil];
-gSpoil = [rf(:); 0*gSpoil];
+rftmp = rf(:);
+rf = [rftmp(:); 0*gSpoil(:)];
+gSpoil = [0*rftmp; gSpoil(:)];
 
 % write mod file
 % put crusher on all axes -- can turn off as desired in scanloop.txt
