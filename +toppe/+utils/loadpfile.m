@@ -1,5 +1,5 @@
 function [dat, rdb_hdr] = loadpfile(pfile,echo,slicestart,sliceend,varargin)
-% function [dat, rdb_hdr] = loadpfile(pfile,[echo,slicestart])
+% function [dat, rdb_hdr] = loadpfile(pfile,[echo,slicestart,sliceend])
 %
 % Load data for one echo (or all) from Pfile, EXCEPT dabslice=0 slot (which can contain corrupt data).
 %

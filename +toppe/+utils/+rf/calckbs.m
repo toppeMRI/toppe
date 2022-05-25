@@ -1,4 +1,6 @@
 function [kbs th] = calckbs(rf, freq, dt)
+% function [kbs th] = calckbs(rf, freq, dt)
+%
 % Calculate 'K_BS' for Bloch-Siegert mapping. See Sacolick et al MRM 2010 and example below.
 %
 % Inputs:
@@ -8,7 +10,8 @@ function [kbs th] = calckbs(rf, freq, dt)
 %
 % Example:
 %  rf = makebs(0.05);
-%  kbs = calckbs(rf, 4000);
+%  dt = 4e-6;  % sec
+%  kbs = calckbs(rf, 4000, dt);
 %  % acquire data at off-resonance frequencies +4000 Hz and -4000 Hz
 %  pc = phasecontrast3d(imPlus4000, imMinus4000);
 %  b1 = sqrt(pc/2/kbs);   % Measured b1 in Gauss. Note factor of 2!

@@ -68,6 +68,8 @@ sys.maxSlice = 2048;           % max dabslice. UI won't allow more than this to 
 sys.maxView  = 600;            % also not sure here
 sys.maxEcho  = 16;             % about right
 sys.addDelays = true ;         % False: set time gaps to zero.
+sys.forbiddenEspRange = [0.41 0.51]; % (ms) Forbidden echo spacings (mechanical resonance). See /usr/g/bin/epiesp.dat
+
 
 % TOPPE version
 sys.version = 'v4';

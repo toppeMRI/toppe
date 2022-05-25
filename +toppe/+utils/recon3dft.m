@@ -89,6 +89,7 @@ fprintf('\n');
 % In Coronal view: 'R' is on left; 'S' is on top
 if arg.flipFid
     ims = flipdim(ims,1);
+    warning('First image dimension flipped to match host display.');
 end
 
 % display root sum-of-squares image

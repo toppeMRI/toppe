@@ -1,7 +1,6 @@
-function [gx, gy, gz, gpre, esp, gx1, kz] = getepireadout(fov, imSize, Ry, Rz, Delta, gMax, slewRead, slewPre, raster, fbesp)
+function [gx, gy, gz, gpre, esp, gx1, kz] = getcaipiepireadout(fov, imSize, Ry, Rz, Delta, gMax, slewRead, slewPre, raster, fbesp)
 %
 % Created 3D EPI CAIPI readout waveform.
-% Assumes isotropic resolution.
 % To generated single-echo GRE readout, use Ry = imSize(2)
 %
 % Inputs:

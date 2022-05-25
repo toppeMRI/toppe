@@ -52,6 +52,7 @@ if length(fov) == 3 & length(N) == 3
 else
     is3d = false;
     nd = 2;
+    fovz = 0;
 end
 
 %% Defaults
@@ -98,7 +99,7 @@ gy.blip = toppe.utils.trapwave2(dky/(gamma), sys.maxGrad, sys.maxSlew/sqrt(2), d
 % x readout gradient for one echo
 if ~arg.rampsamp
     % no sampling on ramps
-    gamp = 1/(fov(1)*gamma*dt*1e-3);    % Amplitude. Gauss/cm
+    gamp = 1/(fov(1)*gamma*dt*1e-3)/decimation;    % Amplitude. Gauss/cm
     gx.plateau = gamp*ones(1,nx*arg.decimation);  % plateau 
     s = sys.maxSlew*dt/sqrt(2);   % max change in gradient per sample
     gx.ramp = 0:s:gamp;
@@ -130,8 +131,10 @@ if arg.flyback
 end
 
 % prewinders
+% center kx samples around kx=0
 area = sum(gx.echo)*dt*1e-3;  % G/cm*s
-gx.pre = -toppe.utils.trapwave2(area/2, sys.maxGrad, sys.maxSlew/sqrt(nd), dt);
+dkx = 1/fov(1);  % cycles/cm
+gx.pre = -toppe.utils.trapwave2(area/2 + dkx/gamma/2, sys.maxGrad, sys.maxSlew/sqrt(nd), dt);
 
 res = fov(2)/ny;     % cm
 kmax = 1/(2*res);
@@ -220,11 +223,15 @@ gy.et = toppe.makeGElength(gy.et);
 hdrints = [nx ny nshots arg.Ry length(gx.echo)]; 
 if arg.flyback
     hdrints = [hdrints length(gx.flyback)];
+else
+    hdrints = [hdrints 0];
 end
+hdrints = [hdrints arg.decimation];
+
 if ~arg.rampsamp
     hdrints = [hdrints length(gx.ramp)];
 end
-hdrfloats = [fov(1) fov(2)];
+hdrfloats = [fov(1) fov(2) ];
 
 toppe.writemod(sys, ...
     'gx', gx.et, 'gy', gy.et, ...

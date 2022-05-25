@@ -110,7 +110,10 @@ if numel(imsize) == 2
     
 else
     %%%%% 7/13/20 note - 3d hasn't been tested yet
-    nz = imasize(3);
+    nz = imsize(3);
+    nufft_args = {[nx,ny,nz],[6,6,6],[2*nx,2*ny,2*nz],[nx/2,ny/2,nz/2],'minmax:kb'};
+    mask = true(nx,ny,nz); % Mask for support
+    L = 6;
     mirt_image_geom = image_geom('nx', nx, 'ny', ny, 'nz', nz, ...
         'fov', fov);
     if ~isempty(arg.zmap)
@@ -119,7 +122,8 @@ else
             "'L', L, 'nufft', nufft_args)"));
     else
         mirt_output = evalc(strcat("A0 = Gmri(kspace_cat, mirt_image_geom.mask,",...
-            "'fov', mirt_image_geom.fov, 'ti', t)"));
+            "'fov', fov, ", ...
+            "'L', L, 'nufft', nufft_args)"));
     end
     A = Asense(A0, arg.sensemaps);
 end
