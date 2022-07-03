@@ -308,8 +308,7 @@ figure(imfig); subplot(131); im(xtrue(:,:,end/2)); title('ground truth')
 % Synthesize k-space data 
 f.traj = 'cartesian';
 [kspacefull, ~, ~] = mri_trajectory(f.traj, {}, N, FOV);  % [prod(N) 3]
-smaps = ir_mri_sensemap_sim('nx', N(1), 'ny', N(2), 'nz', N(3), 'ncoil', ncoil);  % [(N) ncoils]
-keyboard
+smaps = ir_mri_sensemap_sim('nx', N(1), 'ny', N(2), 'nz', N(3), 'ncoil', ncoil);  % [[N] ncoils]
 A0 = Gmri(kspacefull, true(N), 'fov', FOV');
 A = Asense(A0, smaps);
 dattestfull = A*xtrue(:);
