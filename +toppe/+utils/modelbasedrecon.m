@@ -27,7 +27,11 @@ function [ims] = modelbasedrecon(kspace, data, imsize, fov, varargin)
 % Melissa Haskell
 % July 2020
 
-if nargin == 1 && streq(kspace, 'test'), modelbasedrecon_test, return, end
+if nargin == 1 && streq(kspace, 'test') 
+    modelbasedrecon_test;    % 2d 
+    modelbasedrecon_test3d;  % 3d
+    return
+end
 
 
 %% Hardcoded TOPPE variables
@@ -107,7 +111,6 @@ if numel(imsize) == 2
             "mirt_image_geom.mask,'fov', mirt_image_geom.fov, 'ti', t)"));
     end
     A = Asense(A0, arg.sensemaps);
-    
 else
     %%%%% 7/13/20 note - 3d hasn't been tested yet
     nz = imsize(3);
@@ -195,7 +198,7 @@ imfig = 10;
 
 % image parameters
 n = 128;        % image size 
-FOV = 200;      % field of view (mm)
+fov = 200;      % field of view (mm)
 pe_dir = 1;     % phase encode direction
 pad = 10;
 ncoil = 4;
@@ -203,57 +206,153 @@ ncoil = 4;
 %% 2d test
 
 % create image geometry & im, display
-ig = image_geom('nx', n, 'fov', FOV); 
+ig = image_geom('nx', n, 'fov', fov); 
 xtrue = padarray(phantom('Modified Shepp-Logan',n-2*pad),[pad pad], 0);
 figure(imfig); subplot(131); imagesc(abs(xtrue)); title('ground truth')
 axis image; colormap gray; colorbar
 
-% Create k-space data 
+% Synthesize k-space data 
 f.traj = 'cartesian';
-[kspace, ~, ~] = mri_trajectory(f.traj, {}, [n n], ig.fov);
+[kspacefull, ~, ~] = mri_trajectory(f.traj, {}, [n n], ig.fov);
 smaps = ir_mri_sensemap_sim('nx',n,'ny',n,'ncoil',ncoil);
-A0 = Gmri(kspace, ig.mask,'fov', ig.fov);
+A0 = Gmri(kspacefull, ig.mask,'fov', ig.fov);
 A = Asense(A0, smaps);
-ktest = A*xtrue(:);
+dattestfull = A*xtrue(:);
 
-
-% Inputs:
-%   kspace      [ndat nshot 2|3]   input kspace
-%   data        [ndat nshot ncoil nim]   k-space data
-%   imsize      [2 1] or [3 1]     size of output image
-%   fov         [2 1] or [3 1]     fov of output image
-
-% Outputs:
-%   ims         [nx ny | nz]
+% Undersample
+kmask = true(n,n);
+for iy = 1:n
+    kmask(round((mod(iy,2)+1):2:end),iy) = false; % R=2 CAIPI
+end
+%r = ((-n/8):(n/8)) + n/2;
+%kmask(r,r) = true; % densely sampled center
+dattestfull = reshape(dattestfull, [n n ncoil]);
+kspacefull = reshape(kspacefull, [n n, 2]);
+for ic = 1:ncoil
+    dtmp = dattestfull(:,:,ic);
+    dattest(:, ic) = dtmp(kmask);
+end
+for id = 1:2
+    ktmp = kspacefull(:, :, id);
+    kspace(:, id) = ktmp(kmask);
+end
 
 % recon and display
 kspace = reshape(kspace,[size(kspace,1),1,2]);
-smaps = reshape(smaps,[n n 1 ncoil]);
-ktest = reshape(ktest,[size(ktest,1)/ncoil,1,ncoil]);
-[ims] = modelbasedrecon(kspace, ktest, [n n], [FOV FOV], 'sensemaps', smaps);
+dattest = reshape(dattest,[size(dattest,1),1,ncoil]);
+[ims] = modelbasedrecon(kspace, dattest, [n n], [fov fov], ...
+    'sensemaps', smaps, ...
+    'niter', 20);
 figure(imfig); subplot(132); imagesc(abs(ims)); title('MBIR')
 axis image; colormap gray; colorbar
 disp('2d single slice test complete.')
 
+%subplot(133); im(kmask);
+%colormap default
+
 %% stack of 2d test
 nim=5;
-ktest = repmat(ktest,[1 1 1 nim]);
-[ims] = modelbasedrecon(kspace, ktest, [n n], [FOV FOV], 'sensemaps', smaps);
+dattest = repmat(dattest,[1 1 1 nim]);
+[ims] = modelbasedrecon(kspace, dattest, [n n], [fov fov], ...
+    'sensemaps', smaps, ...
+    'niter', 20);
 figure(imfig); subplot(132); imagesc(abs(ims(:,:,1))); title('MBIR 1st im')
 axis image; colormap gray; colorbar
 subplot(133); imagesc(abs(ims(:,:,end))); title('MBIR last im')
 axis image; colormap gray; colorbar
-disp('2d multisclie test complete.')
+disp('2d multislice test complete.')
 
 %% stack of 2d test parallel
+try
 nim=5;
-ktest = repmat(ktest,[1 1 1 nim]);
-[ims] = modelbasedrecon(kspace, ktest, [n n], [FOV FOV], 'sensemaps', ...
+dattest = repmat(dattest,[1 1 1 nim]);
+[ims] = modelbasedrecon(kspace, dattest, [n n], [fov fov], 'sensemaps', ...
     smaps, 'useParallel', true);
-figure(imfig); subplot(132); imagesc(abs(ims(:,:,1))); title('MBIR 1st im')
+%figure(imfig); subplot(132); imagesc(abs(ims(:,:,1))); title('MBIR 1st im')
 axis image; colormap gray; colorbar
 subplot(133); imagesc(abs(ims(:,:,end))); title('MBIR last im')
 axis image; colormap gray; colorbar
-disp('2d multisclie parallel compute test complete.')
+disp('2d multislice parallel compute test complete.')
+catch ME
+    warning('Parallel test failed');
+end
 
 end
+
+
+
+
+function [] = modelbasedrecon_test3d
+% basic 3D test 
+
+fprintf('3d test...');
+
+import toppe.*
+import toppe.utils.*
+
+imfig = 11;
+
+nd = 3;   % 3 dimensions
+
+% image parameters
+N = [64 64 16];        % image size 
+[nx ny nz] = deal(N(1), N(2), N(3));
+dx = 200/nx;   % voxel size (mm)
+FOV = dx*N;      % field of view (mm)
+pad = 10;
+ncoil = 4;
+
+% object
+%xtmp = padarray(phantom('Modified Shepp-Logan',nx-2*pad),[pad pad], 0);
+xtmp = phantom('Modified Shepp-Logan',nx);
+xtrue = zeros(N);
+xtrue(:,:,3) = xtmp;
+for iz = 4:(nz-2)
+    xtrue(:,:,iz) = xtrue(:,:,iz-1)';
+end
+figure(imfig); subplot(131); im(abs(xtrue(:,:,end/2))); title('ground truth (middle slice)')
+
+% Synthesize k-space data 
+f.traj = 'cartesian';
+[kspacefull, ~, ~] = mri_trajectory(f.traj, {}, N, FOV);  % [prod(N) 3]
+smaps = ir_mri_sensemap_sim('nx', nx, 'ny', ny, 'nz', nz, 'ncoil', ncoil);  % [[N] ncoil]
+nufft_args = {N, [6,6,6], [2*nx, 2*ny, 2*nz], [nx/2, ny/2, nz/2], 'minmax:kb'};
+A0 = Gmri(kspacefull, true(N), 'fov', FOV, ...
+    'nufft', nufft_args);
+A = Asense(A0, smaps);
+dattestfull = A*xtrue(:);
+
+% Undersample
+kmask = false(N);
+for iy = 1:ny
+    kmask(round((mod(iy,2)+1):2:end),iy,:) = true; % R=2 CAIPI
+end
+%rx = ((-nx/8):(nx/8)) + nx/2;
+%rz = ((-nz/8):(nz/8)) + nz/2;
+%kmask(rx,rx,nz) = true; % densely sampled center
+%R = sum(kmask(:))/prod(N)  % undersampling factor
+dattestfull = reshape(dattestfull, [nx ny nz ncoil]);
+kspacefull = reshape(kspacefull, [nx ny nz nd]);
+for ic = 1:ncoil
+    dtmp = dattestfull(:,:,:,ic);
+    dattest(:, ic) = dtmp(kmask);
+end
+for id = 1:nd
+    ktmp = kspacefull(:, :, :, id);
+    kspace(:, id) = ktmp(kmask);
+end
+
+% recon and display
+kspace = reshape(kspace,[size(kspace,1), 1, nd]);
+dattest = reshape(dattest,[size(dattest,1),1,ncoil]);
+[ims] = modelbasedrecon(kspace, dattest, N, FOV, ...
+    'sensemaps', smaps, ...
+    'niter', 10);
+figure(imfig); subplot(132); im(abs(ims(:,:,end/2))); title('MBIR (middle slice)')
+figure(imfig); subplot(133); im(abs(ims)); title('MBIR')
+axis image; colormap default; colorbar
+
+fprintf('  complete\n');
+
+end
+
