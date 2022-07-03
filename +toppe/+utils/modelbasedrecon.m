@@ -208,52 +208,67 @@ xtrue = padarray(phantom('Modified Shepp-Logan',n-2*pad),[pad pad], 0);
 figure(imfig); subplot(131); imagesc(abs(xtrue)); title('ground truth')
 axis image; colormap gray; colorbar
 
-% Create k-space data 
+% Synthesize k-space data 
 f.traj = 'cartesian';
-[kspace, ~, ~] = mri_trajectory(f.traj, {}, [n n], ig.fov);
+[kspacefull, ~, ~] = mri_trajectory(f.traj, {}, [n n], ig.fov);
 smaps = ir_mri_sensemap_sim('nx',n,'ny',n,'ncoil',ncoil);
-A0 = Gmri(kspace, ig.mask,'fov', ig.fov);
+A0 = Gmri(kspacefull, ig.mask,'fov', ig.fov);
 A = Asense(A0, smaps);
-ktest = A*xtrue(:);
+dattestfull = A*xtrue(:);
 
-
-% Inputs:
-%   kspace      [ndat nshot 2|3]   input kspace
-%   data        [ndat nshot ncoil nim]   k-space data
-%   imsize      [2 1] or [3 1]     size of output image
-%   fov         [2 1] or [3 1]     fov of output image
-
-% Outputs:
-%   ims         [nx ny | nz]
+% Undersample
+kmask = true(n,n);
+for iy = 1:n
+    kmask(round((mod(iy,2)+1):2:end),iy) = false; % R=2 CAIPI
+end
+%r = ((-n/8):(n/8)) + n/2;
+%kmask(r,r) = true; % densely sampled center
+dattestfull = reshape(dattestfull, [n n ncoil]);
+kspacefull = reshape(kspacefull, [n n, 2]);
+for ic = 1:ncoil
+    dtmp = dattestfull(:,:,ic);
+    dattest(:, ic) = dtmp(kmask);
+end
+for id = 1:2
+    ktmp = kspacefull(:, :, id);
+    kspace(:, id) = ktmp(kmask);
+end
 
 % recon and display
 kspace = reshape(kspace,[size(kspace,1),1,2]);
 smaps = reshape(smaps,[n n 1 ncoil]);
-ktest = reshape(ktest,[size(ktest,1)/ncoil,1,ncoil]);
-[ims] = modelbasedrecon(kspace, ktest, [n n], [FOV FOV], 'sensemaps', smaps);
+dattest = reshape(dattest,[size(dattest,1),1,ncoil]);
+[ims] = modelbasedrecon(kspace, dattest, [n n], [FOV FOV], ...
+    'sensemaps', smaps, ...
+    'niter', 20);
 figure(imfig); subplot(132); imagesc(abs(ims)); title('MBIR')
 axis image; colormap gray; colorbar
 disp('2d single slice test complete.')
 
+%subplot(133); im(kmask);
+%colormap default
+
 %% stack of 2d test
 nim=5;
-ktest = repmat(ktest,[1 1 1 nim]);
-[ims] = modelbasedrecon(kspace, ktest, [n n], [FOV FOV], 'sensemaps', smaps);
+dattest = repmat(dattest,[1 1 1 nim]);
+[ims] = modelbasedrecon(kspace, dattest, [n n], [FOV FOV], ...
+    'sensemaps', smaps, ...
+    'niter', 20);
 figure(imfig); subplot(132); imagesc(abs(ims(:,:,1))); title('MBIR 1st im')
 axis image; colormap gray; colorbar
 subplot(133); imagesc(abs(ims(:,:,end))); title('MBIR last im')
 axis image; colormap gray; colorbar
-disp('2d multisclie test complete.')
+disp('2d multislice test complete.')
 
 %% stack of 2d test parallel
 nim=5;
-ktest = repmat(ktest,[1 1 1 nim]);
-[ims] = modelbasedrecon(kspace, ktest, [n n], [FOV FOV], 'sensemaps', ...
+dattest = repmat(dattest,[1 1 1 nim]);
+[ims] = modelbasedrecon(kspace, dattest, [n n], [FOV FOV], 'sensemaps', ...
     smaps, 'useParallel', true);
 figure(imfig); subplot(132); imagesc(abs(ims(:,:,1))); title('MBIR 1st im')
 axis image; colormap gray; colorbar
 subplot(133); imagesc(abs(ims(:,:,end))); title('MBIR last im')
 axis image; colormap gray; colorbar
-disp('2d multisclie parallel compute test complete.')
+disp('2d multislice parallel compute test complete.')
 
 end
