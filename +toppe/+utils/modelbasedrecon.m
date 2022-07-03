@@ -292,7 +292,7 @@ imfig = 11;
 % image parameters
 N = [64 64 32];        % image size 
 dx = 200/N(1);   % voxel size (mm)
-FOV = dx*N      % field of view (mm)
+FOV = dx*N;      % field of view (mm)
 pad = 10;
 ncoil = 4;
 
