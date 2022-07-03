@@ -352,7 +352,7 @@ figure(imfig); subplot(132); im(abs(ims(:,:,end/2))); title('MBIR (middle slice)
 figure(imfig); subplot(133); im(abs(ims)); title('MBIR')
 axis image; colormap default; colorbar
 
-fprintf('\t3d test copmlete\n');
+fprintf('  complete\n');
 
 end
 
