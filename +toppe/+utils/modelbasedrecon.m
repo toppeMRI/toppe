@@ -28,7 +28,7 @@ function [ims] = modelbasedrecon(kspace, data, imsize, fov, varargin)
 % July 2020
 
 if nargin == 1 && streq(kspace, 'test') 
-    modelbasedrecon_test;    % 2d 
+%    modelbasedrecon_test;    % 2d 
     modelbasedrecon_test3d;  % 3d
     return
 end
@@ -112,7 +112,6 @@ if numel(imsize) == 2
     end
     A = Asense(A0, arg.sensemaps);
 else
-    %%%%% 7/13/20 note - 3d hasn't been tested yet
     nz = imsize(3);
     nufft_args = {[nx,ny,nz],[6,6,6],[2*nx,2*ny,2*nz],[nx/2,ny/2,nz/2],'minmax:kb'};
     mask = true(nx,ny,nz); % Mask for support
@@ -167,7 +166,7 @@ else
     % loop over images and reconstruct
     for ii = 1:nim
         mirt_output = evalc(strcat("[ims_vec_all(:,ii), ~] = ",...
-            "qpwls_pcg1(arg.x0(:,ii), A, W, data(:,ii), C, ",...
+            "qpwls_pcg1(x0(:,ii), A, W, data(:,ii), C, ",...
             "'niter', niter, 'stop_diff_tol', stop_diff_tol,",...
             "'isave', 'last');"));
         
@@ -312,12 +311,24 @@ for iz = 4:(nz-2)
 end
 figure(imfig); subplot(131); im(abs(xtrue(:,:,end/2))); title('ground truth (middle slice)')
 
+% field map
+[x y z] = ndgrid(-nx/2:(nx/2-1), -ny/2:(ny/2-1), -nz/2:(nz/2-1));
+r = sqrt(x.^2 + y.^2 + z.^2);
+fmap = -20 + x/nx*50 + 40*(r/max(r(:))).^2;
+fmap = fmap/5;
+save fmap fmap
+
 % Synthesize k-space data 
 f.traj = 'cartesian';
 [kspacefull, ~, ~] = mri_trajectory(f.traj, {}, N, FOV);  % [prod(N) 3]
 smaps = ir_mri_sensemap_sim('nx', nx, 'ny', ny, 'nz', nz, 'ncoil', ncoil);  % [[N] ncoil]
 nufft_args = {N, [6,6,6], [2*nx, 2*ny, 2*nz], [nx/2, ny/2, nz/2], 'minmax:kb'};
+dt = 4e-6;  % us
+ti = dt*(1:size(kspacefull,1));
 A0 = Gmri(kspacefull, true(N), 'fov', FOV, ...
+    'zmap', 1i*2*pi*fmap, ...
+    'L', 6, ...
+    'ti', ti, ...
     'nufft', nufft_args);
 A = Asense(A0, smaps);
 dattestfull = A*xtrue(:);
@@ -342,17 +353,41 @@ for id = 1:nd
     kspace(:, id) = ktmp(kmask);
 end
 
-% recon and display
+if true
+% recon here for comparison
+ti = 2*dt*(1:size(kspace,1));  % factor 2 to match ground truth timing
+A0 = Gmri(kspace, true(N), 'fov', FOV, ...
+    'zmap', 1i*2*pi*fmap, ...
+    'L', 6, ...
+    'ti', ti, ...
+    'nufft', nufft_args);
+A = Asense(A0, smaps);
+W             = 1;  % default data weights
+C             = 0;  % default quadratic penalty (i.e. dafult is no reg)
+x0            = zeros(prod(N),1); % initial image estimate
+stop_diff_tol = 1e-3; % default stopping tolerance
+x = qpwls_pcg1(x0, A, W, dattest(:), C, 'niter', 10, 'isave', 'last');
+x = reshape(x, N);
+%[~, rss] = toppe.utils.ift3(dattestfull);
+%figure(imfig+1); im(cat(1,rss,x)); title('ift;\t mbir'); colormap default
+
+else
 kspace = reshape(kspace,[size(kspace,1), 1, nd]);
 dattest = reshape(dattest,[size(dattest,1),1,ncoil]);
-[ims] = modelbasedrecon(kspace, dattest, N, FOV, ...
+[x] = modelbasedrecon(kspace, dattest, N, FOV, ...
     'sensemaps', smaps, ...
     'niter', 10);
-figure(imfig); subplot(132); im(abs(ims(:,:,end/2))); title('MBIR (middle slice)')
-figure(imfig); subplot(133); im(abs(ims)); title('MBIR')
+    %'zmap', 0*fmap, ...
+end
+
+figure(imfig); subplot(132); im(abs(x(:,:,end/2))); title('MBIR (middle slice)')
+figure(imfig); subplot(133); im(abs(x)); title('MBIR')
 axis image; colormap default; colorbar
 
 fprintf('  complete\n');
+
+[~, rss] = toppe.utils.ift3(dattestfull);
+figure(imfig+1); im(cat(1,rss,x)); title('ift;\t mbir'); colormap default
 
 end
 
