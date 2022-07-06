@@ -298,7 +298,6 @@ N = [64 64 16];        % image size
 [nx ny nz] = deal(N(1), N(2), N(3));
 dx = 200/nx;   % voxel size (mm)
 FOV = dx*N;      % field of view (mm)
-pad = 10;
 ncoil = 4;
 
 % object
@@ -309,22 +308,20 @@ xtrue(:,:,3) = xtmp;
 for iz = 4:(nz-2)
     xtrue(:,:,iz) = xtrue(:,:,iz-1)';
 end
-figure(imfig); subplot(131); im(abs(xtrue(:,:,end/2))); title('ground truth (middle slice)')
 
 % field map
 [x y z] = ndgrid(-nx/2:(nx/2-1), -ny/2:(ny/2-1), -nz/2:(nz/2-1));
 r = sqrt(x.^2 + y.^2 + z.^2);
-fmap = -20 + x/nx*50 + 40*(r/max(r(:))).^2;
-fmap = fmap/5;
-save fmap fmap
+fmap = y/(ny/2)*20;
 
 % Synthesize k-space data 
+% field map and sampling designed to produce EPI-style geometric distortion
 f.traj = 'cartesian';
 [kspacefull, ~, ~] = mri_trajectory(f.traj, {}, N, FOV);  % [prod(N) 3]
 smaps = ir_mri_sensemap_sim('nx', nx, 'ny', ny, 'nz', nz, 'ncoil', ncoil);  % [[N] ncoil]
 nufft_args = {N, [6,6,6], [2*nx, 2*ny, 2*nz], [nx/2, ny/2, nz/2], 'minmax:kb'};
-dt = 4e-6;  % us
-ti = dt*(1:size(kspacefull,1));
+ty = 100e-3;   % sec. Time to sample ky ('EPI train length')
+ti = kspacefull(:,1)/max(kspacefull(:,1))*ty/2;
 A0 = Gmri(kspacefull, true(N), 'fov', FOV, ...
     'zmap', 1i*2*pi*fmap, ...
     'L', 6, ...
@@ -332,6 +329,11 @@ A0 = Gmri(kspacefull, true(N), 'fov', FOV, ...
     'nufft', nufft_args);
 A = Asense(A0, smaps);
 dattestfull = A*xtrue(:);
+dattestfull = reshape(dattestfull, [nx ny nz ncoil]);
+
+% check image distortion
+[~, rss] = toppe.utils.ift3(dattestfull);
+%im(rss(:,:,end/2));
 
 % Undersample
 kmask = false(N);
@@ -342,7 +344,6 @@ end
 %rz = ((-nz/8):(nz/8)) + nz/2;
 %kmask(rx,rx,nz) = true; % densely sampled center
 %R = sum(kmask(:))/prod(N)  % undersampling factor
-dattestfull = reshape(dattestfull, [nx ny nz ncoil]);
 kspacefull = reshape(kspacefull, [nx ny nz nd]);
 for ic = 1:ncoil
     dtmp = dattestfull(:,:,:,ic);
@@ -354,8 +355,9 @@ for id = 1:nd
 end
 
 if true
-% recon here for comparison
-ti = 2*dt*(1:size(kspace,1));  % factor 2 to match ground truth timing
+% recon here for comparison.
+% this works...
+ti = kspace(:,1)/max(kspace(:,1))*ty/2;
 A0 = Gmri(kspace, true(N), 'fov', FOV, ...
     'zmap', 1i*2*pi*fmap, ...
     'L', 6, ...
@@ -372,6 +374,7 @@ x = reshape(x, N);
 %figure(imfig+1); im(cat(1,rss,x)); title('ift;\t mbir'); colormap default
 
 else
+% ...but this doesn't
 kspace = reshape(kspace,[size(kspace,1), 1, nd]);
 dattest = reshape(dattest,[size(dattest,1),1,ncoil]);
 [x] = modelbasedrecon(kspace, dattest, N, FOV, ...
@@ -380,6 +383,7 @@ dattest = reshape(dattest,[size(dattest,1),1,ncoil]);
     %'zmap', 0*fmap, ...
 end
 
+figure(imfig); subplot(131); im(abs(xtrue(:,:,end/2))); title('ground truth (middle slice)')
 figure(imfig); subplot(132); im(abs(x(:,:,end/2))); title('MBIR (middle slice)')
 figure(imfig); subplot(133); im(abs(x)); title('MBIR')
 axis image; colormap default; colorbar
