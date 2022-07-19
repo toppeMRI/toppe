@@ -79,7 +79,7 @@ switch lower(coil)
     case 'zoom',  chronaxie=354d-6; rheobase=29.1; alpha=0.309;
     case 'hrmb',  chronaxie=359d-6; rheobase=26.5; alpha=0.370;
     case 'hrmw',  chronaxie=642.4d-6; rheobase=17.9; alpha=0.310;
-    otherwise, error('gradient coil (%s) unkown',chronaxie);
+    otherwise, error('gradient coil (%s) unkown', coil);
 end
 
 if ~exist('rheobase','var'), error('Provide rheobase'); end
