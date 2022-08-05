@@ -1,5 +1,5 @@
-function [rf, g] = makehardrefocus(flip, dur, nCyclesSpoil, voxWidth, maxSlew, maxGrad)
-% function [rf, g] = makehardrefocus(flip, dur, nCyclesSpoil, voxWidth, maxSlew, maxGrad)
+function [rf, g] = makehardrefocus(sys, flip, dur, nCyclesSpoil, voxWidth, maxSlew, maxGrad)
+% function [rf, g] = makehardrefocus(sys, flip, dur, nCyclesSpoil, voxWidth, maxSlew, maxGrad)
 %
 % Make hard pulse surrounded by spoiler gradients
 %
@@ -17,12 +17,12 @@ function [rf, g] = makehardrefocus(flip, dur, nCyclesSpoil, voxWidth, maxSlew, m
 
 rfhard = toppe.utils.rf.makehardpulse(flip, dur);
 
-gspoil = toppe.utils.makecrusher(nCyclesSpoil, voxWidth, 0, maxSlew/sqrt(2), maxGrad/sqrt(2));
+gspoil = toppe.utils.makecrusher(nCyclesSpoil, voxWidth, sys, 0, maxSlew/sqrt(2), maxGrad/sqrt(2));
 gspoil = [0; 0; gspoil(:); 0; 0];  % to reduce change of overlap between gradients and rf
 
 rf = [0*gspoil(:);   rfhard(:); 0*gspoil(:)];
 g  = [  gspoil(:); 0*rfhard(:);   gspoil(:)];
-rf = toppe.utils.makeGElength(rf);
-g  = toppe.utils.makeGElength(g);
+rf = toppe.makeGElength(rf);
+g  = toppe.makeGElength(g);
 % toppe.writemod('rf', rf, 'gx', g, 'gy', g, 'ofname', mods.refocus);
 

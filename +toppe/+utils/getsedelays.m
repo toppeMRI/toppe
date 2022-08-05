@@ -1,4 +1,4 @@
-function [delay90 delay180] = getsedelays(tipdown, refocus, readout, te)
+function [delay90 delay180] = getsedelays(sys, tipdown, refocus, readout, te)
 % Calculate delays needed to achieve a desired TE in a spin-echo train.
 % Sequence is assumed to consist of tipdown-refocus-readout-refocus-readout-refocus...
 
@@ -16,13 +16,13 @@ function [delay90 delay180] = getsedelays(tipdown, refocus, readout, te)
 dt = 4e-3;    % ms
 
 % get minimum TE
-toppe.write2loop('setup');
-toppe.write2loop(tipdown);
-toppe.write2loop(refocus);
-toppe.write2loop(readout);
-toppe.write2loop(refocus);
-toppe.write2loop('finish');
-minsep180 = toppe.getTRtime(2,3)*1e3;     % ms. Minimum separation between 180 pulses.
+toppe.write2loop('setup', sys);
+toppe.write2loop(tipdown, sys);
+toppe.write2loop(refocus, sys);
+toppe.write2loop(readout, sys);
+toppe.write2loop(refocus, sys);
+toppe.write2loop('finish', sys);
+minsep180 = toppe.getTRtime(2, 3, sys)*1e3;     % ms. Minimum separation between 180 pulses.
 
 % return required delay of 180 pulse (to achieve desired TE)
 if minsep180 > te
@@ -32,12 +32,12 @@ else
 end
 
 % get separation of 90 pulse and first 180 pulse
-rf = toppe.plotseq(1, 1, 'doDisplay', false);
+rf = toppe.plotseq(1, 1, sys, 'doDisplay', false);
 n1 = length(rf);                                 % length of 90 module
-rf = toppe.plotseq(2, 2, 'doDisplay', false);
+rf = toppe.plotseq(2, 2, sys, 'doDisplay', false);
 n2 = length(rf);                                 % length of spin-echo module
 
-rf = toppe.plotseq(1, 2, 'doDisplay', false);
+rf = toppe.plotseq(1, 2, sys, 'doDisplay', false);
 i90 = find(abs(rf(1:n1))==max(abs(rf(1:n1))));
 i90 = i90(1);                                    % the peak can contain more than one sample
 I = find(abs(rf(n1:end))==max(abs(rf(n1:end))));
