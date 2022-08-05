@@ -67,6 +67,7 @@ sys.gamma    = 4.2576e3;       % Hz/Gauss
 sys.maxSlice = 2048;           % max dabslice. UI won't allow more than this to be entered
 sys.maxView  = 600;            % also not sure here
 sys.maxEcho  = 16;             % about right
+sys.B0       = 3.0;            % field strength (T)
 sys.addDelays = true ;         % False: set time gaps to zero.
 sys.forbiddenEspRange = [0.41 0.51]; % (ms) Forbidden echo spacings (mechanical resonance). See /usr/g/bin/epiesp.dat
 
