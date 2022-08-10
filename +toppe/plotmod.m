@@ -8,13 +8,18 @@ function plotmod(fname, varargin)
 % Options:
 %  plotPNS     [boolean]   default: true
 %  printPNS    [boolean]   print pns numbers to console. Default: false.
-%  gradcoil    [string]    gradient subsystem (see pns.m). Default: 'xrm'
+%  gradient    [string]    gradient subsystem (see pns.m). Default: 'xrm'
 
 arg.plotPNS = true;
 arg.printPNS = false;
-arg.gradcoil = 'xrm';
+arg.gradcoil = [];         % for backward compatibility
+arg.gradient = 'xrm';
 
 arg = toppe.utils.vararg_pair(arg, varargin);
+
+if ~isempty(arg.gradcoil)
+    arg.gradient = arg.gradcoil;
+end
 
 if strcmp(fname, 'all')
 	f = dir('*.mod');
@@ -46,7 +51,7 @@ if arg.plotPNS
 		grad(3,:) = gz(:,ii)'*1d-2;
 		plt = false;           % plot output
 		% [p.PThresh, p.pt, p.PTmax, p.gmax, p.smax] = toppe.pns(grad, arg.gradcoil, 'gdt', gdt, 'plt', false, 'print', arg.printPNS);
-		[p.PThresh] = toppe.pns(grad, arg.gradcoil, 'gdt', gdt, 'plt', false, 'print', arg.printPNS);
+		[p.PThresh] = toppe.pns(grad, arg.gradient, 'gdt', gdt, 'plt', false, 'print', arg.printPNS);
 		pns.val(:,ii) = p.PThresh(:);
 	end
 
