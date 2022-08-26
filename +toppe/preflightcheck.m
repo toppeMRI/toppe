@@ -128,7 +128,7 @@ nStartseq = size(d,1);   % number rows in scanloop.txt (= number of 'startseq' c
 dt = 4e-6;         % RF raster time (sec)
 nStartseqPerIter = 5000;
 nit = ceil(nStartseq/nStartseqPerIter);
-peaksar = 0;
+peakrfpower = 0;
 peakgxes = 0;
 peakgyes = 0;
 peakgzes = 0;
@@ -143,6 +143,7 @@ for ii = 1:nit
         'loopFile',       loopFile, ...
         'moduleListFile', moduleListFile, ...
         'doDisplay',      false);
+    % b1: Gauss. gx/gy/gz: Gauss/cm
     b1s = abs(b1).^2;    % RF power waveform (energy per 4us sample)
     gxes = gx.^2;        % gradient power waveform (energy per 4us sample)
     gyes = gy.^2;        % gradient power waveform (energy per 4us sample)
@@ -150,7 +151,7 @@ for ii = 1:nit
     n10s = round(10/dt);  % number of rf samples in 10s
     if length(b1s) > n10s
         b1s = movmean(b1s, n10s, 'Endpoints', 'discard');
-        peaksar = max(peaksar, max(b1s));
+        peakrfpower = max(peakrfpower, max(b1s));
         gxes = movmean(gxes, n10s, 'Endpoints', 'discard');
         gyes = movmean(gyes, n10s, 'Endpoints', 'discard');
         gzes = movmean(gzes, n10s, 'Endpoints', 'discard');
@@ -158,19 +159,27 @@ for ii = 1:nit
         peakgyes = max(peakgyes, max(gyes));
         peakgzes = max(peakgzes, max(gzes));
     else
-        peaksar = mean(b1s)/n10s*length(b1s);
+        peakrfpower = mean(b1s)/n10s*length(b1s);
         peakgxes = mean(gxes)/n10s*length(b1s);
         peakgyes = mean(gyes)/n10s*length(b1s);
         peakgzes = mean(gzes)/n10s*length(b1s);
     end
 end
 
+% equivalent TR, and gradient power
 rf = toppe.readmod(b1CheckFile);
 energy = sum(abs(rf).^2) * dt;  % energy per RF pulse
-TRequiv = 2*floor(1e6 * energy / peaksar / 2);     % microsec
+TRequiv = 2*floor(1e6 * energy / peakrfpower / 2);     % microsec
 powerx = peakgxes * TRequiv;        % (G/cm)^2 * usec. Will be converted to Ampere^2 * usec in the .e file.
 powery = peakgyes * TRequiv;        % (G/cm)^2 * usec
 powerz = peakgzes * TRequiv;        % (G/cm)^2 * usec
+
+% SAR, relative to a reference scan empirically observed to reach 10s SAR = 6.2 W/kg in 150 lbs male subject
+E_ref = 2.3514;     % RF energy per TR in reference scan. sum(rf.^2), Gauss^2, for 4us RF raster.
+TR_ref = 12.4e-3;   % TR of reference scan (s)
+P_ref = dt * E_ref / TR_ref ;   % RF power (Gauss^2) of reference scan
+P_this = peakrfpower ;    % peak 10s average RF power (Gauss^2 of current scan)
+SAR_predicted = P_this/P_ref * 6.2;    % W/kg
 
 % Print various parameters to file
 fprintf(fout, '%d\n', TRequiv);
@@ -183,4 +192,9 @@ fprintf(fout, '%.4f\n', b1limit);       % hardware b1 limit (Gauss)
 fclose(fout);
 
 fprintf(' done\n');
+
+fprintf('Predicted peak 10s SAR in 150 lbs subject: %.1f W/kg\n', SAR_predicted);
+if SAR_predicted > 6.4
+    warning('Predicted peak 10s SAR exceeds first-level limit!!');
+end
 
