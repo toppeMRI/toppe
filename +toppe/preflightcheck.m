@@ -176,7 +176,7 @@ powerz = peakgzes * TRequiv;        % (G/cm)^2 * usec
 
 % SAR, relative to a reference scan empirically observed to reach 10s SAR = 6.2 W/kg in 150 lbs male subject
 E_ref = 2.3514;     % RF energy per TR in reference scan. sum(rf.^2), Gauss^2, for 4us RF raster.
-TR_ref = 12.4e-3;   % TR of reference scan (s)
+TR_ref = 12.192e-3;   % TR of reference scan (s)
 P_ref = dt * E_ref / TR_ref ;   % RF power (Gauss^2) of reference scan
 P_this = peakrfpower ;    % peak 10s average RF power (Gauss^2 of current scan)
 SAR_predicted = P_this/P_ref * 6.2;    % W/kg
