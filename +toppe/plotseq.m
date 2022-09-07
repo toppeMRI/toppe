@@ -216,8 +216,8 @@ if arg.doDisplay
     gmax = arg.gmax; %5;  % Gauss/cm
     srho = arg.rhomax; %max(1.1*max(abs(rho(:))),0.05);
     lw = 1.5;
-    subplot(511); plot(T, rho, 'LineWidth', lw); ylabel('rho (Gauss)'); axis([T(1) Tend -srho srho]);
-    subplot(512); plot(T, th, 'LineWidth', lw);  ylabel('theta (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
+    subplot(511); plot(T, rho, 'LineWidth', lw); ylabel('|b1| (Gauss)'); axis([T(1) Tend -srho srho]);
+    subplot(512); plot(T, th, 'LineWidth', lw);  ylabel('∠b1 (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
     subplot(513); plot(T, gx, 'LineWidth', lw);  ylabel('gx (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
     %gmax = 1;  % Gauss/cm
     subplot(514); plot(T, gy, 'LineWidth', lw);  ylabel('gy (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
