@@ -14,6 +14,8 @@ function [ims imsos d]= recon3dft(pfile,varargin)
 %  zpad             default: [1 1]
 %  dodisplay        default: false
 %  flipFid          default: true. Flip image along readout (fid) dimension to match scanner display
+%  alignWithUCS     default: false. Flip images along 2nd and 3rd dimension so it appears correctly
+%                   in 'im' MIRT viewer. UCS = 'universal coordinate system'
 %
 % Output:
 %  ims           [nx ny nz ncoils]    
@@ -30,8 +32,16 @@ arg.dokzft = 'true';
 arg.zpad = [1 1];
 arg.dodisplay = false;
 arg.flipFid = true;
+arg.alignWithUCS = false;
 
 arg = toppe.utils.vararg_pair(arg, varargin);
+
+if arg.alignWithUCS
+    if ~arg.flipFid
+        warning('flipFid set to true to align with UCS');
+    end
+    arg.flipFid = true; 
+end
 
 echo = arg.echo;
 readoutFile = arg.readoutFile;
@@ -92,9 +102,14 @@ if arg.flipFid
     warning('First image dimension flipped to match host display.');
 end
 
-% display root sum-of-squares image
+if arg.alignWithUCS
+    ims = flipdim(ims,2);
+    ims = flipdim(ims,3);
+end
+
+% root sum-of-squares image
 imsos = sqrt(sum(abs(ims).^2,4)); 
-%figure; im('blue0',imsos,[0 1.3]);
+
 if exist('clim','var')
 	if dodisplay
 		%im(permute(imsos,[2 1 3]),clim);
@@ -106,7 +121,9 @@ else
 		im(imsos);
 	end
 end
+
 return;
+
 
 function im = sub_ift3(D,do3dfft)
 %
@@ -128,5 +145,6 @@ else
 		im(:,:,k) = fftshift(ifftn(fftshift(D(:,:,k))));
 	end
 end
+    
 
 return;
