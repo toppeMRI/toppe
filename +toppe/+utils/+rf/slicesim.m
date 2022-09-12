@@ -68,8 +68,9 @@ flip = 90;        % degrees
 slthick = 1.0;    % cm
 tbw = 8; 
 dur = 3;          % ms
-ncycles = 4;
-[rf, gz] = toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncycles, ...
+ncycles = 1e-10;
+sys = toppe.systemspecs();
+[rf, gz] = toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncycles, sys, ...
 	'type', 'ex', ...  % 90 degree excitation pulse (default is 'st' -- small tip)
 	'ofname', 'test.mod');
 
