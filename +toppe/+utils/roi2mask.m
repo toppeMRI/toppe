@@ -17,17 +17,14 @@ function [mask, X, Y, Z] = roi2mask(roi, N, FOV)
 % internal calculations are in mm
 FOV = FOV*10;   % mm
 
-if nargin < 4
-    showROI = true;
-end
-
 % Distance between center of edge points
 % (max voxel distance from center of FOV is FOVc/2)
 FOVc = FOV - FOV./N;
 
-[X, Y, Z] = ndgrid(linspace(1,-1,N(1))*FOVc(1)/2, ...
-                   linspace(1,-1,N(2))*FOVc(2)/2, ...
-                   linspace(1,-1,N(3))*FOVc(3)/2);
+[X, Y, Z] = toppe.utils.grid2xyz(N, FOV);
+%[X, Y, Z] = ndgrid(linspace(1,-1,N(1))*FOVc(1)/2, ...
+%                   linspace(1,-1,N(2))*FOVc(2)/2, ...
+%                   linspace(1,-1,N(3))*FOVc(3)/2);
 
 % get voxel locations inside rectangle (before rotating and translating)
 masktmp = ones(N);
