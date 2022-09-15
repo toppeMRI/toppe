@@ -64,7 +64,7 @@ arg.decimation = 1;
 arg.writefiles = false;
 
 %% Substitute varargin values as appropriate and check inputs
-arg = vararg_pair(arg, varargin);      % requires MIRT
+arg = toppe.utils.vararg_pair(arg, varargin);      % requires MIRT
 
 if mod(nx,2)
 	error('nx must be an even integer');
