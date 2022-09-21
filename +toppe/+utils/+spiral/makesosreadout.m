@@ -1,13 +1,12 @@
-function [g,seq] = makesosreadout(sys, N, FOV, nLeafs, maxSlew, varargin)
+function [g,seq] = makesosreadout(sys, N, FOV, nLeafs, varargin)
 % Make stack-of-spirals readout.mod file (fully sampled)
 %
-% function g = makesosreadout(sys, N, FOV, nLeafs, maxSlew, varargin)
+% function g = makesosreadout(sys, N, FOV, nLeafs, varargin)
 %
 % Inputs:
 %   FOV        [x y z] field-of-view (cm)
 %   N     [nx ny nz] reconstructed image matrix size
 %   nLeafs     number of spiral leafs 
-%   maxSlew    Max slew rate for design (G/cm/ms)
 % Options:
 %   system     struct specifying hardware system limits, see systemspecs.m
 %   maxGrad    Max gradient amplitude. Default: system.maxGrad
@@ -45,13 +44,12 @@ if N(1) ~= N(2)
 end
 
 %% struct to be returned
-seq.maxSlew = maxSlew;
 seq.FOV = FOV;
 seq.N = N;
 seq.nLeafs = nLeafs;
 seq.system = sys;
 
-maxSlew = 0.999*maxSlew;
+maxSlew = 0.999*sys.maxSlew;
 
 %% design spiral waveform (balanced)
 npix = N(1);
