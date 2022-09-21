@@ -1,7 +1,7 @@
-function [g,seq] = makesosreadout(sys, FOV, N, nLeafs, maxSlew, varargin)
+function [g,seq] = makesosreadout(sys, N, FOV, nLeafs, maxSlew, varargin)
 % Make stack-of-spirals readout.mod file (fully sampled)
 %
-% function makesosreadout(sys, FOV, N, nLeafs, maxSlew, varargin)
+% function g = makesosreadout(sys, N, FOV, nLeafs, maxSlew, varargin)
 %
 % Inputs:
 %   FOV        [x y z] field-of-view (cm)
