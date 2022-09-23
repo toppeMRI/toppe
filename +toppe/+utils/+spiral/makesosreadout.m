@@ -1,13 +1,12 @@
-function [g,seq] = makesosreadout(fov, matrix, nLeafs, maxSlew, varargin)
+function [g,seq] = makesosreadout(sys, N, FOV, nLeafs, varargin)
 % Make stack-of-spirals readout.mod file (fully sampled)
 %
-% function makesosreadout(fov, matrix, nLeafs, maxSlew, varargin)
+% function g = makesosreadout(sys, N, FOV, nLeafs, varargin)
 %
 % Inputs:
-%   fov        [x y z] field-of-view (cm)
-%   matrix     [nx ny nz] reconstructed image matrix size
+%   FOV        [x y z] field-of-view (cm)
+%   N     [nx ny nz] reconstructed image matrix size
 %   nLeafs     number of spiral leafs 
-%   maxSlew    Max slew rate for design (G/cm/ms)
 % Options:
 %   system     struct specifying hardware system limits, see systemspecs.m
 %   maxGrad    Max gradient amplitude. Default: system.maxGrad
@@ -26,8 +25,10 @@ import toppe.utils.spiral.mintgrad.*
 
 %% parse and check inputs
 % Defaults
-arg.system  = toppe.systemspecs();
-arg.maxGrad = arg.system.maxGrad;
+arg.dsamp = 500;
+arg.Router = 2;
+arg.spiralDesign = 'genspivd2';  % use either genspivd2.m or vds.m to design spiral
+arg.maxGrad = sys.maxGrad;
 arg.inout   = 'out';
 arg.ofname  = 'readout.mod';
 arg.rewDerate = 0.8;
@@ -35,33 +36,40 @@ arg.rewDerate = 0.8;
 %arg = toppe.utils.vararg_pair(arg, varargin);
 arg = vararg_pair(arg, varargin);
 
-if fov(1) ~= fov(2)
+if FOV(1) ~= FOV(2)
 	error('Anisotropic x/y FOV not supported.');
 end
-if matrix(1) ~= matrix(2)
+if N(1) ~= N(2)
 	error('Anisotropic x/y matrix not supported.');
 end
 
 %% struct to be returned
-seq.maxSlew = maxSlew;
-seq.fov = fov;
-seq.matrix = matrix;
+seq.FOV = FOV;
+seq.N = N;
 seq.nLeafs = nLeafs;
-seq.system = arg.system;
+seq.system = sys;
 
-maxSlew = 0.999*maxSlew;
+maxSlew = 0.999*sys.maxSlew;
 
 %% design spiral waveform (balanced)
-npix = matrix(1);
+npix = N(1);
 
 doreverse= 0;
 dovardens = 0;
 
-rmax = npix/(2*fov(1));   % max k-space radius
+rmax = npix/(2*FOV(1));   % max k-space radius
 
-% vds returns complex k, g
-[k,g] = vds(maxSlew*1e3, arg.system.maxGrad, arg.system.raster, nLeafs, fov(1), 0, 0, rmax);
-cmd = sprintf('Created with Brian Hargreaves'' code: [k,g] = vds(%d,%d,4e-6,%d,fov,0,0,rmax);', maxSlew, arg.system.maxGrad, nLeafs);
+% genspivd2 returns complex g
+if strcmp(arg.spiralDesign, 'genspivd2')
+    FOVvd = FOV(1)/nLeafs;
+    xresvd = N(1)/nLeafs;
+    mxg = sys.maxGrad;   % G/cm
+    mxslew = 10*sys.maxSlew;   % T/m/s
+    [g] = toppe.utils.spiral.genspivd2(FOVvd, xresvd, arg.Router, mxg, mxslew, arg.dsamp);
+else
+    [g] = vds(maxSlew*1e3, sys.maxGrad, sys.raster, nLeafs, FOV(1), 0, 0, rmax);
+    %cmd = sprintf('Created with Brian Hargreaves'' code: [k,g] = vds(%d,%d,4e-6,%d,fov,0,0,rmax);', maxSlew, sys.maxGrad, nLeafs);
+end
 
 g = [0; 0; g(:)];  % add a couple of zeroes to make sure k=0 is sampled
 nsamp = length(g);
@@ -76,9 +84,9 @@ gx = [gx; zeros(n-length(gx), 1)];
 gy = [gy; zeros(n-length(gy), 1)];
 
 % partition (kz) encoding trapezoid
-gzamp = (1/arg.system.raster)/(arg.system.gamma*fov(3));     % Gauss/cm
-zarea = gzamp*matrix(3)*arg.system.raster;                   % Gauss/cm*sec
-gpe = -trapwave2(zarea/2, arg.system.maxGrad, arg.rewDerate*maxSlew, arg.system.raster*1e3);
+gzamp = (1/sys.raster)/(sys.gamma*FOV(3));     % Gauss/cm
+zarea = gzamp*N(3)*sys.raster;                   % Gauss/cm*sec
+gpe = -trapwave2(zarea/2, sys.maxGrad, arg.rewDerate*maxSlew, sys.raster*1e3);
 
 % put kz trapezoid and spiral together
 gxtmp = gx;
@@ -96,12 +104,12 @@ if strcmp(arg.inout, 'in')
 end
 
 % make sure duration is on 4-sample (16us) boundary
-gx = toppe.utils.makeGElength(gx);
-gy = toppe.utils.makeGElength(gy);
-gz = toppe.utils.makeGElength(gz);
+gx = toppe.makeGElength(gx);
+gy = toppe.makeGElength(gy);
+gz = toppe.makeGElength(gz);
 
 % write to .mod file
-writemod('gx', gx, 'gy', gy, 'gz', gz, 'ofname', arg.ofname, 'desc', 'stack-of-spirals readout module', 'system', arg.system);
+writemod(sys, 'gx', gx, 'gy', gy, 'gz', gz, 'ofname', arg.ofname, 'desc', 'stack-of-spirals readout module');
 
 % return gradients for one leaf (to be rotated and kz-blipped in scanloop.txt)
 g = [gx gy gz];
