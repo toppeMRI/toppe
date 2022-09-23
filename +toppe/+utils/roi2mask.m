@@ -8,7 +8,6 @@ function [mask, X, Y, Z] = roi2mask(roi, N, FOV)
 %   roi     struct containing rectangular ROI parameters. See toppe.getroi()
 %   N       [1 3]   matrix size
 %   FOV     [1 3]   field of view (cm)
-%   shoROI  true/false   
 %
 % Output:
 %   mask    [N(1) N(2) N(3)] logical mask
@@ -22,9 +21,6 @@ FOV = FOV*10;   % mm
 FOVc = FOV - FOV./N;
 
 [X, Y, Z] = toppe.utils.grid2xyz(N, FOV);
-%[X, Y, Z] = ndgrid(linspace(1,-1,N(1))*FOVc(1)/2, ...
-%                   linspace(1,-1,N(2))*FOVc(2)/2, ...
-%                   linspace(1,-1,N(3))*FOVc(3)/2);
 
 % get voxel locations inside rectangle (before rotating and translating)
 masktmp = ones(N);

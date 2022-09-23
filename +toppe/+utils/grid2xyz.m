@@ -3,7 +3,7 @@ function [X, Y, Z] = grid2xyz(N, FOV)
 %
 % Return spatial locations consistent with the 
 % 'universal coordinate system' (UCS) that is used by various
-% utitilites such as the Java SlicePlanner and the 
+% utilities such as the Java SlicePlanner and the 
 % B0 shimming tool.
 % This is a right-handed system with cm units:
 % Patient R = +x; A = +y; S = +z; with (0,0,0) at scanner iso-center
