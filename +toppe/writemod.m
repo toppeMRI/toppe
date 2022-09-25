@@ -1,4 +1,6 @@
 function writemod(system, varargin)
+% function writemod(system, varargin)
+%
 % Write waveforms to .mod file, for use with toppe psd on GE scanners.
 %
 % function writemod(system, varargin)

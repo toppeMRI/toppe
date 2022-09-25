@@ -8,7 +8,9 @@ function [g,seq] = makesosreadout(sys, N, FOV, nLeafs, varargin)
 %   N     [nx ny nz] reconstructed image matrix size
 %   nLeafs     number of spiral leafs 
 % Options:
-%   system     struct specifying hardware system limits, see systemspecs.m
+%   dsamp      Number of samples for fully-sampled center (when spiralDesign = 'genspivd2'). Default: 500.
+%   Router     Undersampling factor outside dense center (when spiralDesign = 'genspivd2'). Default: 2.
+%   spiralDesign    'genspivd2' (default) or 'vds'
 %   maxGrad    Max gradient amplitude. Default: system.maxGrad
 %   inout      'in' or 'out' (default) for spiral-in/out
 %   ofname     output file name. Default: 'readout.mod'
