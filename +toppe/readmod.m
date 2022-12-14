@@ -41,11 +41,11 @@ desc = char(desc');
 
 % read rest of header
 hdr.ncoils = fread(fid, 1, 'int16');
-hdr.res    = fread(fid, 1, 'int16');
+hdr.res    = fread(fid, 1, 'int32');
 hdr.npulses = fread(fid, 1, 'int16');
 hdr.b1max  = fscanf(fid, 'b1max:  %f\n');
 hdr.gmax   = fscanf(fid, 'gmax:   %f\n');
-hdr.res = fscanf(fid, 'res:   %d\n');
+%hdr.res = fscanf(fid, 'res:   %d\n');
 
 nparamsint16 = fread(fid, 1,            'int16');
 paramsint16  = fread(fid, nparamsint16, 'int16');
