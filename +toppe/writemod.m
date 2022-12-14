@@ -266,7 +266,7 @@ fwrite(fid, numel(desc), 'int16');      % number of characters in ASCII descript
 fwrite(fid, desc, 'uchar');
 
 fwrite(fid, ncoils,  'int16');          % shorts must be written in binary -- otherwise it won't work on scanner 
-fwrite(fid, res,     'int32');
+fwrite(fid, res,     'int16');
 fwrite(fid, npulses, 'int16');
 fprintf(fid, 'b1max:  %f\n', system.maxRF);           % (floats are OK in ASCII on scanner)
 fprintf(fid, 'gmax:   %f\n', gmax);
