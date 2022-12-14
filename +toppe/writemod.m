@@ -110,9 +110,9 @@ end
 %[rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp);
 
 %% Check waveforms against system hardware limits
-if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
-	error('Waveforms failed system hardware checks -- exiting');
-end
+%if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
+%	('Waveforms failed system hardware checks -- exiting');
+%end
 
 %% Header arrays
 [paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, system);
@@ -266,7 +266,7 @@ fwrite(fid, numel(desc), 'int16');      % number of characters in ASCII descript
 fwrite(fid, desc, 'uchar');
 
 fwrite(fid, ncoils,  'int16');          % shorts must be written in binary -- otherwise it won't work on scanner 
-fwrite(fid, res,     'int16');
+fwrite(fid, res,     'int32');
 fwrite(fid, npulses, 'int16');
 fprintf(fid, 'b1max:  %f\n', system.maxRF);           % (floats are OK in ASCII on scanner)
 fprintf(fid, 'gmax:   %f\n', gmax);
