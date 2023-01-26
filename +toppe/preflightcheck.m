@@ -103,18 +103,30 @@ for ii = 1:length(modArr)
 end
 
 % write file checksums
-[status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', moduleListFile    ));
-fprintf(fout, '%s', cs);  % cs contains trailing newline
-[status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', loopFile          ));
-fprintf(fout, '%s', cs);
-[status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', b1CheckFile       ));
-fprintf(fout, '%s', cs);
-[status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', readoutFilterFile ));
-fprintf(fout, '%s', cs);
-fprintf(fout, '%d\n', length(modArr));  % number of .mod files ('cores' in .e file)
-for ii = 1:length(modArr)
-    [status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', modArr{ii}.fname));
+% first check if md5 is present. If not, write dummy value.
+[status, cs] = eval(sprintf('system("md5strum %s | cut -d '' '' -f 1")', moduleListFile    ));
+if isempty(strfind(cs, 'not found'))
+    fprintf(fout, '%s', cs);  % cs contains trailing newline
+    [status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', loopFile          ));
     fprintf(fout, '%s', cs);
+    [status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', b1CheckFile       ));
+    fprintf(fout, '%s', cs);
+    [status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', readoutFilterFile ));
+    fprintf(fout, '%s', cs);
+    fprintf(fout, '%d\n', length(modArr));  % number of .mod files ('cores' in .e file)
+    for ii = 1:length(modArr)
+        [status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', modArr{ii}.fname));
+        fprintf(fout, '%s', cs);
+    end
+else
+    fprintf(fout, '123456789\n');
+    fprintf(fout, '123456789\n');
+    fprintf(fout, '123456789\n');
+    fprintf(fout, '123456789\n');
+    fprintf(fout, '%d\n', length(modArr));  % number of .mod files ('cores' in .e file)
+    for ii = 1:length(modArr)
+        fprintf(fout, '123456789\n');
+    end
 end
 
 % Calculate 'equivalent' TR (TRequiv) corresponding to worst-case 10-sec SAR.
