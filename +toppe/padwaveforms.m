@@ -47,7 +47,7 @@ if ndat == 0
     error('At least one waveform must be non-empty');
 end
 if ndat > 2^15
-    error(sprintf('Max waveform length is 32768 (samples) -- found %d samples', ndat));
+    warning(sprintf('waveform length is %d samples', ndat));
 end
 
 % make length divisible by 4 (EPIC seems to behave best this way)

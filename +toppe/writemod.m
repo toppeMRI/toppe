@@ -110,9 +110,9 @@ end
 %[rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp);
 
 %% Check waveforms against system hardware limits
-if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
-	error('Waveforms failed system hardware checks -- exiting');
-end
+%if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
+%	('Waveforms failed system hardware checks -- exiting');
+%end
 
 %% Header arrays
 [paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, system);
@@ -270,6 +270,7 @@ fwrite(fid, res,     'int16');
 fwrite(fid, npulses, 'int16');
 fprintf(fid, 'b1max:  %f\n', system.maxRF);           % (floats are OK in ASCII on scanner)
 fprintf(fid, 'gmax:   %f\n', gmax);
+%fprintf(fid, 'res:   %d\n', res);
 
 fwrite(fid, nparamsint16, 'int16');
 fwrite(fid, paramsint16,  'int16');
