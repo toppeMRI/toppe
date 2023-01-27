@@ -107,9 +107,9 @@ for it = nstart:nstop
     % delay past gradient due to RF/DAQ window (us)
     % nChop = number of discarded samples at beginning + end of RF/ADC window
     if cores{ic}.hasRF
-        coredel = max(system.myrfdel - dt*nChop(2), 0);
+        coredel = max(system.psd_rf_wait - dt*nChop(2), 0);
     elseif cores{ic}.hasDAQ
-        coredel = max(system.daqdel - dt*nChop(2), 0);
+        coredel = max(system.psd_grd_wait - dt*nChop(2), 0);
     else
         coredel = 0;
     end
@@ -147,10 +147,10 @@ for it = nstart:nstop
         gzit = G(3,:)';
         
         % build waveforms for this startseq call
-        rho1 = [zeros(round((delay + system.myrfdel + dt*nChop(1))/dt),1); ...
+        rho1 = [zeros(round((delay + system.psd_rf_wait + dt*nChop(1))/dt),1); ...
                 ia_rf/max_pg_iamp*  abs(cores{ic}.rf((nChop(1)+1):(end-nChop(2)),waveform)); ...
                 zeros(round((system.timetrwait + system.tminwait + system.timessi)/dt),1)];
-        th1  = [zeros(round((delay + system.myrfdel + dt*nChop(1))/dt),1); ...
+        th1  = [zeros(round((delay + system.psd_rf_wait + dt*nChop(1))/dt),1); ...
                 ia_th/max_pg_iamp*angle(cores{ic}.rf((nChop(1)+1):(end-nChop(2)),waveform)); ...
                 zeros(round((system.timetrwait + system.tminwait + system.timessi)/dt),1)];
         gx1  = [zeros(round((delay)/dt),1); ...
@@ -199,7 +199,7 @@ end
 
 if length(rf) ~= length(gx)
     msg = ['RF and gradient waveform durations are not equal length. ' ... 
-        'This is likely due to system.myrfdel or system.daqdel not being ' ...
+        'This is likely due to system.psd_rf_wait or system.psd_grd_wait not being ' ...
         'on a 4us boundary.'];
     error(msg);
 end

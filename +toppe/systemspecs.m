@@ -19,7 +19,7 @@ function sys = systemspecs(varargin)
 %   maxSlice        Max slice index in Pfile data storage. Don't yet know what the limit is here. Default: 200
 %   maxView         Max view index in Pfile data storage. Also not sure here. Default: 500
 %   maxEcho         Max echo index in Pfile data storage. Default: 16. 
-%   addDelays       Set toppe.<start_core*/myrfdel/daqdel/timetrwait/timessi> = 0 (e.g., for converting to/from Pulseq)
+%   addDelays       Set toppe.<start_core*/psd_rf_wait/psd_grd_wait/timetrwait/timessi> = 0 (e.g., for converting to/from Pulseq)
 %   version         Default: 'v4'
 %   gradient        For PNS calculation (see toppe.pns()). Currently suppports:
 %                   'xrm' (MR750) (default)
@@ -31,8 +31,8 @@ function sys = systemspecs(varargin)
 %   start_core_rf   Minimum start time (us) for rf modules. Default: 0. 
 %   start_core_daq  Minimum start time (us) for data acquisition modules. Default: 126
 %   start_core_grad Minimum start time (us) for gradient-only modules. Default: 0.
-%   myrfdel         rf/gradient delay (us). Set to 'psd_rf_wait'.
-%   daqdel          adc/gradient delay (us). Set to 'psd_grd_wait'.
+%   psd_rf_wait     rf/gradient delay (us). Get from scanner host computer (CV).
+%   psd_grd_wait    adc/gradient delay (us). Get from scanner host computer (CV).
 %   timetrwait      Required delay at end of module (us). Determined empiricially. Default: 64.
 %   timessi         EPIC 'ssi' time, i.e., minimum duration/delay between modules (us). Default: 100.
 %   nMaxModules     max number of .mod files. Not known. Default: 30.
@@ -46,8 +46,8 @@ function sys = systemspecs(varargin)
 % >> GE.sys = toppe.systemspecs('maxSlew', 12.3, ...
 %    'maxGrad', 5, ...
 %    'start_core_daq', 126, ...
-%    'myrfdel', 94, ...
-%    'daqdel', 100, ...
+%    'psd_rf_wait', 94, ...
+%    'psd_grd_wait', 100, ...
 %    'timetrwait', 0, ...
 %    'timessi', 100);
 
@@ -73,27 +73,22 @@ sys.forbiddenEspRange = [0.41 0.51]; % (ms) Forbidden echo spacings (mechanical 
 
 
 % TOPPE version
-sys.version = 'v4';
+sys.version = 'v5';
 
 % timing
 sys.start_core_rf  = 0;      % minimum start time (us) for rf modules
 sys.start_core_daq = 126;    % minimum start time (us) for data acquisition modules
 sys.start_core_grad = 0;     % minimum start time (us) for gradient-only modules
-sys.myrfdel    = 78;         % rf/gradient delay (us) ( = psd_rf_wait). Inside scanner: 78. Outside scanner: 94.
-sys.daqdel     = 84;         % daq/gradient delay (us) (= psd_grd_wait). Inside scanner: 84. Outside scanner: 100.
+sys.psd_rf_wait = 100;       % rf/gradient delay (us)
+sys.psd_grd_wait = 100;      % ADC/gradient delay (us)
 sys.timetrwait = 64;         % required delay at end of module (us)
 sys.timessi    = 100;        % EPIC 'ssi' time, i.e., minimum duration/delay between modules
 sys.tminwait   = 12;         % minimum duration of wait pulse in EPIC code
 
-% gradient subsystem. See also pns.m.
-% Scanner  Gradient coil   chronaxie rheobase alpha  gmax  smax
-% MR750w   XRMW            360d-6    20.0     0.324  33    120
-% MR750    XRM             334d-6    23.4     0.333  50    200
-% HDx      TRM WHOLE       370d-6    23.7     0.344  23    77
-% HDx      TRM ZOOM        354d-6    29.1     0.309  40    150
-% UHP      HRMB            359d-6    26.5     0.370  100   200
-%
-% values on scanner from /w/config/Scandbdt.cfg + GRSubsystemHWO.xml
+% include the following for backward compatibility with v4
+sys.myrfdel    = [];  
+sys.daqdel     = [];
+
 sys.gradient = 'xrm';
 
 % other
@@ -110,11 +105,21 @@ if ~sys.addDelays
 	start_core_rf = 0;
 	start_core_daq = 0;
 	start_core_grad = 0;
-	myrfdel    = 0;
-	daqdel     = 0;
+	psd_rf_wait    = 0;
+	psd_grd_wait     = 0;
 	timetrwait = 0;
 	timessi    = 0;
 end
+
+% If myrfdel/daqdel is specified, set psd_rf_wait/psd_grd_wait to those values
+if ~isempty(sys.myrfdel)
+    sys.psd_rf_wait = sys.myrfdel;
+end
+if ~isempty(sys.daqdel)
+    sys.psd_grd_wait = sys.daqdel;
+end
+sys = rmfield(sys, 'myrfdel');
+sys = rmfield(sys, 'daqdel');
 
 %% Input checks
 if sys.maxRF ~= maxRFDefault
