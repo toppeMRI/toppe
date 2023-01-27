@@ -20,6 +20,8 @@ function [gx,gy,gz,fname] = makegre(fov, npix, zres, system, varargin)
 %              (or ADC window) by this many samples. Even int.
 %              Default: [48 48]
 %              Using non-zero nChop can reduce module duration on scanner.
+%  autoChop    [bool] If true, set nChop such that only data on gradient plateau is sampled.
+%                     default: false (for backward compatibility)
 
 zres = zres*10;   % mm
 
@@ -35,6 +37,7 @@ arg.flip   = false;
 arg.isdess = 0;
 arg.slewDerate = 0.8;
 arg.nChop = [48 48];  
+arg.autoChop = false;
 
 % Substitute varargin values as appropriate
 arg = vararg_pair(arg, varargin);      % requires MIRT
@@ -158,11 +161,17 @@ end
 %	  fov, npix, arg.ncycles, arg.oprbw, 10*zres, date);
 %end
 hdrints = [npre npixro iref];    % some useful numbers for recon
+if arg.autoChop
+    % keep only samples on plateau
+    nChop = [npre length(gx)-npre-npixro];
+else
+    nChop = arg.nChop;
+end
 hdrfloats = [arg.oprbw];
 writemod(system, ...
         'gx', gx(:), 'gy', gy(:), 'gz', gz(:), ...
         'ofname', arg.ofname, ...
-        'nChop', arg.nChop, ...
+        'nChop', nChop, ...
         'desc', '3D spin-warp (GRE) waveform', ...
         'hdrints', hdrints, 'hdrfloats', hdrfloats);
 
