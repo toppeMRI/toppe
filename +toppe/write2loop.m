@@ -31,9 +31,7 @@ function write2loop(modname, system, varargin)
 %    rotmat             [3 3]    3x3 rotation matrix (for toppe >= v3). If 'version'=2, then 'rot' is applied and 'rotmat' is ignored.
 %    trig               [1 1]    Trigger mode (int): internal (0) or cardiac (1)
 %    trigout            [1 1]    Trigger out (int): off (0) or on (1)
-
 %    version            [1 1]    Default: 4. Only needs to be passed if the first argument is 'setup' (otherwise ignored w/o warning)
-
 %
 % RF module input options:
 %    RFamplitude        [1 1]    Amplitude scaling of RF waveform
