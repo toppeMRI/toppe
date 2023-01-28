@@ -1,17 +1,13 @@
-# Matlab scripts for TOPPE v2b
+# Matlab scripts for TOPPE
 
-These scripts work with the toppev2b.e driver/psd.
-
-These scripts are self-contained; the only dependency is the ./+utils/ folder.
-
-For conversion to/from Pulseq, use ge2seq.m/seq2ge.m
+These scripts work with the tv4 and tv5 TOPPE interpreters.
 
 https://toppemri.github.io/
 
 
 ## A typical workflow
 
-1. Design RF and gradient waveforms (functions in +utils/+rf/ and +utils/+epi/ may be helpful for you)
+1. Design RF and gradient waveforms (you may find functions in +utils, +utils/+rf/, and +utils/+epi/ helpful)
 
 2. Edit systemspecs.m according to your scanner, or call with options.
 ```
