@@ -29,7 +29,8 @@ import toppe.*
 import toppe.utils.*
 
 % defaults
-arg.oprbw  = 125/4;  % kHz
+arg.dwell = 16;       % sample (ADC) time, microseconds (us). Must be multiple of 2.
+arg.oprbw  = [];     % kHz. Deprecated (use dwell instead). Included here for backward compatibility
 arg.ncycles = 0;
 arg.ofname = 'readout.mod';
 arg.extrafiles = false;
@@ -42,8 +43,14 @@ arg.autoChop = false;
 % Substitute varargin values as appropriate
 arg = vararg_pair(arg, varargin);      % requires MIRT
 
-if arg.oprbw > 125
-	error('oprbw can''t be larger than +/- 125 kHz');
+if isempty(arg.oprbw)
+    arg.oprbw = 1000/(2*arg.dwell);
+end
+
+fprintf('Set oprbw = %.3f\n', arg.oprbw);
+
+if mod(arg.dwell, 2)
+	error('dwell (ADC sample) time must be multiple of 2us');
 end
 
 % Gradient limits
