@@ -104,8 +104,8 @@ end
 
 % write file checksums
 % first check if md5 is present. If not, write dummy value.
-[status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', moduleListFile    ));
-if isempty(strfind(cs, 'not found'))
+%[status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', moduleListFile    ));
+if false %isempty(strfind(cs, 'not found'))
     fprintf(fout, '%s', cs);  % cs contains trailing newline
     [status, cs] = eval(sprintf('system("md5sum %s | cut -d '' '' -f 1")', loopFile          ));
     fprintf(fout, '%s', cs);
