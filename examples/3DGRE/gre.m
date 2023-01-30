@@ -1,4 +1,3 @@
-function sys = gre
 % 3D RF-spoiled gradient-echo sequence example
 %
 % This script generates the following files:
