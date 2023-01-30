@@ -36,16 +36,17 @@ $ git clone git@github.com:toppeMRI/toppe.git
 In Matlab:
 ```
 >> addpath ../..   % folder containing the +toppe package
->> sys = gre; 
+>> gre;
 ```
 This creates the files `modules.txt`, `scanloop.txt`, `seqstamp.txt`, and two `.mod` files (`tipdown.mod` and `readout.mod`).
 The return value is a struct containing hardware parameters, that is needed for plotting.
+
 
 ### Plot the sequence
 
 ```
 >> iStart = 1; iStop = 2;  % row numbers in scanloop.txt
->> toppe.plotseq(iStart, iStop, sys, 'moduleListFile', 'modules.txt', 'loopFile', 'scanloop.txt');
+>> toppe.plotseq(iStart, iStop, sys);
 ```
 
 ![GRE](resource/gre.png)
@@ -69,7 +70,7 @@ To plot the contents of these files, do:
 
 ```
 >> nModulesPerTR = 2;
->> toppe.playseq(nModulesPerTR, sys, 'moduleListFile', 'modules.txt', 'loopFile', 'scanloop.txt', 'tpause', 0.01, 'nTRskip', 10);
+>> toppe.playseq(nModulesPerTR, sys, 'tpause', 0.2, 'nTRskip', 10);
 ```
 
 You should observe that the phase- and partition-encoding gradient amplitudes, 
