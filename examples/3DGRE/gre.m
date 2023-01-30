@@ -81,8 +81,13 @@ toppe.write2loop('setup', sys, 'version', 5);  % initialize file
 
 for iz = 0:nz     % We'll use iz=0 for approach to steady-state
     for iy = 1:ny
-        a_gy = -((iy-1+0.5)-ny/2)/(ny/2);  % negative so it starts at -kymax/-kzmax (convention)
-        a_gz = -((max(iz,1)-1+0.5)-nz/2)/(nz/2);
+        if iz > 0
+            a_gy = -((iy-1+0.5)-ny/2)/(ny/2);  % negative so it starts at -kymax/-kzmax (convention)
+            a_gz = -((max(iz,1)-1+0.5)-nz/2)/(nz/2);
+        else
+            a_gy = 0;
+            a_gz = 0;
+        end
 
         toppe.write2loop('tipdown.mod', sys, ...
             'RFphase', rfphs);
