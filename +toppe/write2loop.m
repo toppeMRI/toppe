@@ -24,6 +24,8 @@ function write2loop(modname, system, varargin)
 %    moduleListFile     [string] File that lists modules to use, default: 'modules.txt'
 %    Gamplitude         [3 1]    Amplitude scaling of gradient waveform
 %                                Range -1 to 1, default: 1
+%    core               [1 1]    core id (positive int; defined in cores.txt)
+%                                Default: 1
 %    waveform           [1 1]    Waveform number to play (1,...,nwaveforms)
 %                                Default: 1
 %    textra             [1 1]    Extra time at end of waveform (ms)
@@ -63,6 +65,7 @@ import toppe.utils.*
 arg.loopFile        = 'scanloop.txt';
 arg.moduleListFile  = 'modules.txt';
 arg.Gamplitude      = [1 1 1]';
+arg.core            = 1;
 arg.waveform        = 1;
 arg.textra          = 0;
 arg.RFamplitude     = 1;
@@ -116,9 +119,13 @@ if strcmp(modname,'setup')
     
     % Load modules in only once and keep persistent for speed
     modules = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+
+    % Load cores
     
     % Preallocate 
     switch toppeVer
+        case 6
+            d = zeros(1000000,28); % 28th column is core id
         case 5
             d = zeros(1000000,27); % 27th column is trigger out flag (0 or 1)
         case 4
@@ -134,6 +141,8 @@ if strcmp(modname,'setup')
     setupdone = 1;
     return
 end
+
+%if strcmp(modname, 'core')
 
 if strcmp(modname,'finish')
     % Remove rows that are all zeros (preallocated but unused)
@@ -243,7 +252,7 @@ else
     trig = []; 
 end
 
-% trigger out
+% trigger (TTL pulse) out
 if toppeVer > 4
     trigout = arg.trigout;
 end
@@ -276,10 +285,13 @@ if module.hasRF % Write RF module
     f = arg.RFoffset;
  
     % Write line values and increment
-    if (toppeVer <= 4)
-    d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot trig];
-    elseif (toppeVer > 4) % Adding 1 column for trigger out.
-        d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot trig trigout];
+    switch toppeVer
+        case {4}
+            d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot trig];
+        case {5}   % Adding 1 column for trigger out.
+            d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot trig trigout];
+        case {6}   % Adding 1 column for core id
+            d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot trig trigout arg.core];
     end    
     d_index = d_index + 1;
 elseif module.hasDAQ % Write DAQ module
@@ -300,10 +312,13 @@ elseif module.hasDAQ % Write DAQ module
     else
        idaqphase = phase2int(arg.DAQphase);
     end
-    if (toppeVer <= 4)
-        d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig];
-    elseif (toppeVer > 4) % Adding 2 columns for trigger out.
-        d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig trigout];
+    switch toppeVer
+        case {4} 
+            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig];
+        case {5} 
+            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig trigout];
+        case {6} 
+            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig trigout arg.core];
     end    
 
     d_index = d_index + 1;
@@ -312,10 +327,13 @@ else
     %error(['Module didn''t have RF or DAQ specified, check ' arg.moduleListFile]);
 
     % rotation
-    if (toppeVer <= 4)
-        d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot trig];
-    elseif (toppeVer > 4) % Adding 2 columns for trigger out.
-        d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot trig trigout];
+    switch toppeVer
+        case {4}
+            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot trig];
+        case {5}
+            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot trig trigout];
+        case {6}
+            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot trig trigout arg.core];
     end
     d_index = d_index + 1;
 end
@@ -380,8 +398,8 @@ end
 if arg.view ~= round(abs(arg.view)) || arg.view < 1
     error('View must be an integer > 0');
 end
-if arg.version < 2 || arg.version > 5
-    error('version must be 2, 3, or 4');
+if arg.version < 4 || arg.version > 6
+    error('version must be 4, 5, or 6');
 end
 end
 
