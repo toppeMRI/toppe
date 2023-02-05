@@ -23,6 +23,6 @@ for ic = 1:ncores
     nmod = fscanf(fid, '%d', 1);
     cores{ic} = fscanf(fid, '%d', nmod);
 end
-
+ 
 fclose(fid);
 
