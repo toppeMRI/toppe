@@ -19,9 +19,11 @@ ncores = fscanf(fid, '%d\n', 1);
 
 s = fgets(fid);  % skip line
 
-for ic = 1:ncores
-    nmod = fscanf(fid, '%d', 1);
-    cores{ic} = fscanf(fid, '%d', nmod);
+for ic = 1:ncore
+    % number of module instances (columns in cores.txt) for this core
+    nModInstance = fscanf(fid, '%d', 1); 
+
+    cores{ic} = fscanf(fid, '%d', nModInstance);  % [1 nModInstance]
 end
  
 fclose(fid);
