@@ -1,11 +1,12 @@
-function cores = readcorelistfile(fn)
-% function cores = readModuleListFile(fn='cores.txt')
+function cores = readcoresdeffile(fn)
+% function cores = readcoresdeffile(fn='cores.txt')
 %
 % Input:
-%  fn           default: 'cores.txt'
+%  fn           file name. default: 'cores.txt'
 %
 % Output:
-%  cores        cell array where each entry contains the module IDs for one row from cores.txt
+%  cores        cell array where each entry contains the sequence 
+%               of module IDs from one row in cores.txt
 
 if ~exist('fn', 'var')
 	fn = 'cores.txt';
