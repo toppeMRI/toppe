@@ -1,30 +1,13 @@
-function writeblock2file(ofname, sys, blk)
+function writeblock2file(ofname, blk, sys)
 %
-% Write a collection of rf/gx/gy/gz/adc Pulseq structs to a .mod file.
-%
-% Input options:
-%   rf
-%   gx/gy/gz   Gradient struct with fields:
-%              type         int        1 (TRAP) or 2 (ARBITRARY)
-%              waveform     double     arbitrary waveform
-%              trap         struct with fields:
-%                  amplitude    double     Gauss/cm 
-%                  riseTime     double     ms
-%                  flatTime     double     ms
-%                  fallTime     double     ms
-%                  delay        double     delay from beginning of block (ms)
-% 
-% TODO: support for multiple waveforms/traps on each channel 
-
-% gradient channels
-X = 1;
-Y = 2;
-Z = 3;
+% Write a Pulseq block to a custome file format that
+% can be read by the PulseGEq interpreter.
 
 % open file for writing
 fid = fopen(ofname, 'w', 'ieee-be');
 
 % order is important
+sub_writerf(fid, blk.rf, sys);
 sub_writegrad(fid, blk.gx, sys);
 sub_writegrad(fid, blk.gy, sys);
 sub_writegrad(fid, blk.gz, sys);
@@ -34,13 +17,31 @@ fclose(fid);
 
 return
 
+function sub_writerf(fid, rf, sys)
+if isempty(rf)
+    fwrite(fid, NULL, 'int16');
+else
+    fwrite(fid, ARBITRARY, 'int16');
+    amp = max(abs(rf.signal/sys.gamma));     % Gauss
+    fprintf(fid, 'amp: %.5f\n', amp);
+    rho = 2*round(abs(rf.signal)/amp*max_pg_iamp/2);
+    keyboard
+    fwrite(fid, round(rf.delay*1e6), 'int16');     % us
+    fwrite(fid, numel(signal), 'int16');           % us
+end
 
 function sub_writegrad(fid, g, sys)
 if isempty(g)
     fwrite(fid, NULL, 'int16');
 else
+    if strcmp(g.type, 'trap')
+        fwrite(fid, TRAP, 'int16');
+    else
+        fwrite(fid, ARBITRARY, 'int16');
+    end
+    amp = g.amplitude/sys.gamma/100;  % Gauss/cm
+    fprintf(fid, 'amp: %.5f\n', amp); 
     fwrite(fid, round(g.delay*1e6), 'int16');     % us
-    fprintf(fid, 'amp: %.5f\n', g.amplitude/sys.gamma/100);    % (floats are OK in ASCII on scanner)
     if strcmp(g.type, 'trap')
         fwrite(fid, round(g.riseTime*1e6), 'int16');
         fwrite(fid, round(g.flatTime*1e6), 'int16');
@@ -55,7 +56,6 @@ return
 
 % define constants via functions
 
-% gradient types
 function v = NULL
     v = 0;
 return
@@ -65,6 +65,9 @@ return
 function v = ARBITRARY
     v = 2;
 return
+function v = max_pg_iamp
+    v = 2^15-2;  
+return 
 
 
 %if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
