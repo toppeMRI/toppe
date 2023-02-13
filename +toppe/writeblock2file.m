@@ -11,50 +11,89 @@ sub_writerf(fid, blk.rf, sys);
 sub_writegrad(fid, blk.gx, sys);
 sub_writegrad(fid, blk.gy, sys);
 sub_writegrad(fid, blk.gz, sys);
+sub_writeadc(fid, blk.adc, sys);
 
 % done
 fclose(fid);
 
 return
 
+
+%% Functions for writing channels to file
 function sub_writerf(fid, rf, sys)
+
+ % type
 if isempty(rf)
     fwrite(fid, NULL, 'int16');
-else
-    fwrite(fid, ARBITRARY, 'int16');
-    amp = max(abs(rf.signal/sys.gamma));     % Gauss
-    fprintf(fid, 'amp: %.5f\n', amp);
-    rho = 2*round(abs(rf.signal)/amp*max_pg_iamp/2);
-    keyboard
-    fwrite(fid, round(rf.delay*1e6), 'int16');     % us
-    fwrite(fid, numel(signal), 'int16');           % us
+    return
 end
+fwrite(fid, ARBITRARY, 'int16');
+
+% delay
+fwrite(fid, round(rf.delay*1e6), 'int16');     % us
+
+% amplitude
+amp = max(abs(rf.signal/sys.gamma));     % Gauss
+fprintf(fid, 'amp: %.5f\n', amp);
+
+% waveform
+rho = 2*round(abs(rf.signal/sys.gamma)/amp*max_pg_iamp/2);
+theta = 2*round(angle(rf.signal)/pi*max_pg_iamp/2);
+fwrite(fid, numel(rho), 'int16');   % number of samples in waveform
+fwrite(fid, rho, 'int16');
+fwrite(fid, theta, 'int16');
+
+return
+
 
 function sub_writegrad(fid, g, sys)
+
+% type
 if isempty(g)
     fwrite(fid, NULL, 'int16');
+    return;
+end
+if strcmp(g.type, 'trap')
+    fwrite(fid, TRAP, 'int16');
 else
-    if strcmp(g.type, 'trap')
-        fwrite(fid, TRAP, 'int16');
-    else
-        fwrite(fid, ARBITRARY, 'int16');
-    end
-    amp = g.amplitude/sys.gamma/100;  % Gauss/cm
-    fprintf(fid, 'amp: %.5f\n', amp); 
-    fwrite(fid, round(g.delay*1e6), 'int16');     % us
-    if strcmp(g.type, 'trap')
-        fwrite(fid, round(g.riseTime*1e6), 'int16');
-        fwrite(fid, round(g.flatTime*1e6), 'int16');
-        fwrite(fid, round(g.fallTime*1e6), 'int16');
-    else
-        fwrite(fid, ARBITRARY, 'int16');
-        % 
-    end
+    fwrite(fid, ARBITRARY, 'int16');
+end
+
+% delay
+fwrite(fid, round(g.delay*1e6), 'int16');     % us
+
+% amplitude
+amp = g.amplitude/sys.gamma/100;  % Gauss/cm
+fprintf(fid, 'amp: %.5f\n', amp); 
+
+% waveform
+if strcmp(g.type, 'trap')
+    fwrite(fid, round(g.riseTime*1e6), 'int16');
+    fwrite(fid, round(g.flatTime*1e6), 'int16');
+    fwrite(fid, round(g.fallTime*1e6), 'int16');
+else
+    % TODO
 end
 
 return
 
-% define constants via functions
+
+function sub_writeadc(fid, adc, sys)
+
+if isempty(adc)
+    fwrite(fid, NULL, 'int16');
+    return
+end
+fwrite(fid, ADC, 'int16');
+
+fwrite(fid, adc.numSamples, 'int16');   
+fwrite(fid, round(adc.dwell*1e6), 'int16');   % us
+fwrite(fid, round(adc.delay*1e6), 'int16');   % us
+
+return
+
+
+%% define constants via functions
 
 function v = NULL
     v = 0;
@@ -65,9 +104,20 @@ return
 function v = ARBITRARY
     v = 2;
 return
+function v = ADC
+    v = 1;
+return
 function v = max_pg_iamp
     v = 2^15-2;  
 return 
+
+
+
+
+
+
+
+%% OLD CODE
 
 
 %if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
