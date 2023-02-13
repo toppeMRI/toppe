@@ -12,8 +12,8 @@ if type ~= C.NULL
     n = fread(fid, 1, 'int16');
     blk.rf.rho = fread(fid, n, 'int16');
     blk.rf.theta = fread(fid, n, 'int16');
-    %rho = fread(fid, n, 'int16')/C.max_pg_iamp*blk.rf.amp;    % Gauss
-    %theta = fread(fid, n, 'int16')/C.max_pg_iamp*pi;   % radians
+    %rho = fread(fid, n, 'int16')/C.MAXIAMP*blk.rf.amp;    % Gauss
+    %theta = fread(fid, n, 'int16')/C.MAXIAMP*pi;   % radians
     %blk.rf.signal = rho.*exp(1i*theta);
 else
     blk.rf = [];
