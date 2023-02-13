@@ -42,8 +42,8 @@ amp = max(abs(rf.signal)/sys.gamma);     % Gauss
 fwrite(fid, round(amp*C.rfscale), 'int16');
 
 % waveform
-rho = 2*round(abs(rf.signal/sys.gamma)/amp*C.max_pg_iamp/2);
-theta = 2*round(angle(rf.signal)/pi*C.max_pg_iamp/2);
+rho = 2*round(abs(rf.signal/sys.gamma)/amp*C.max_pg_iamp/2);  % int16
+theta = 2*round(angle(rf.signal)/pi*C.max_pg_iamp/2);         % int16
 fwrite(fid, numel(rho), 'int16');   % number of samples in waveform
 fwrite(fid, rho, 'int16');
 fwrite(fid, theta, 'int16');
