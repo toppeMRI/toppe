@@ -7,5 +7,5 @@ C.ADC = 1;
 C.MAXIAMP = 2^15-2;  
 
 % internal constants used to avoid writing floats to .mod file
-C.rfscale = 1e4;  
-C.gscale = 3000;  
+C.RFSCALE = 1e4;  
+C.GSCALE = 3000;  
