@@ -1,6 +1,9 @@
-function writeblockfile(ofname, system, varargin)
+function writeblock2file(ofname, sys, blk)
+%
+% Write a collection of rf/gx/gy/gz/adc Pulseq structs to a .mod file.
 %
 % Input options:
+%   rf
 %   gx/gy/gz   Gradient struct with fields:
 %              type         int        1 (TRAP) or 2 (ARBITRARY)
 %              waveform     double     arbitrary waveform
@@ -13,22 +16,54 @@ function writeblockfile(ofname, system, varargin)
 % 
 % TODO: support for multiple waveforms/traps on each channel 
 
+% gradient channels
+X = 1;
+Y = 2;
+Z = 3;
+
+% open file for writing
+fid = fopen(ofname, 'w', 'ieee-be');
+
+% order is important
+sub_writegrad(fid, blk.gx, sys);
+sub_writegrad(fid, blk.gy, sys);
+sub_writegrad(fid, blk.gz, sys);
+
+% done
+fclose(fid);
+
+return
+
+
+function sub_writegrad(fid, g, sys)
+if isempty(g)
+    fwrite(fid, NULL, 'int16');
+else
+    fwrite(fid, round(g.delay*1e6), 'int16');     % us
+    fprintf(fid, 'amp: %.5f\n', g.amplitude/sys.gamma/100);    % (floats are OK in ASCII on scanner)
+    if strcmp(g.type, 'trap')
+        fwrite(fid, round(g.riseTime*1e6), 'int16');
+        fwrite(fid, round(g.flatTime*1e6), 'int16');
+        fwrite(fid, round(g.fallTime*1e6), 'int16');
+    else
+        fwrite(fid, ARBITRARY, 'int16');
+        % 
+    end
+end
+
+return
+
+% define constants via functions
+
 % gradient types
-TRAP = 1;
-ARBITRARY = 2;
-
-% Defaults
-arg.rf = [];   
-arg.gx = [];
-arg.gy = [];
-arg.gz = [];
-arg.adc = [];
-
-%arg = toppe.utils.vararg_pair(arg, varargin);
-arg = vararg_pair(arg, varargin)
-
-b = arg;
-
+function v = NULL
+    v = 0;
+return
+function v = TRAP
+    v = 1;
+return
+function v = ARBITRARY
+    v = 2;
 return
 
 
