@@ -22,12 +22,14 @@ return
 %% Functions for writing channels to file
 function sub_writerf(fid, rf, sys)
 
+C = toppe.constants;
+
  % type
 if isempty(rf)
-    fwrite(fid, NULL, 'int16');
+    fwrite(fid, C.NULL, 'int16');
     return
 end
-fwrite(fid, ARBITRARY, 'int16');
+fwrite(fid, C.ARBITRARY, 'int16');
 
 % delay
 fwrite(fid, round(rf.delay*1e6), 'int16');     % us
@@ -37,8 +39,8 @@ amp = max(abs(rf.signal/sys.gamma));     % Gauss
 fprintf(fid, 'amp: %.5f\n', amp);
 
 % waveform
-rho = 2*round(abs(rf.signal/sys.gamma)/amp*max_pg_iamp/2);
-theta = 2*round(angle(rf.signal)/pi*max_pg_iamp/2);
+rho = 2*round(abs(rf.signal/sys.gamma)/amp*C.max_pg_iamp/2);
+theta = 2*round(angle(rf.signal)/pi*C.max_pg_iamp/2);
 fwrite(fid, numel(rho), 'int16');   % number of samples in waveform
 fwrite(fid, rho, 'int16');
 fwrite(fid, theta, 'int16');
@@ -48,15 +50,17 @@ return
 
 function sub_writegrad(fid, g, sys)
 
+C = toppe.constants;
+
 % type
 if isempty(g)
-    fwrite(fid, NULL, 'int16');
+    fwrite(fid, C.NULL, 'int16');
     return;
 end
 if strcmp(g.type, 'trap')
-    fwrite(fid, TRAP, 'int16');
+    fwrite(fid, C.TRAP, 'int16');
 else
-    fwrite(fid, ARBITRARY, 'int16');
+    fwrite(fid, C.ARBITRARY, 'int16');
 end
 
 % delay
@@ -80,36 +84,19 @@ return
 
 function sub_writeadc(fid, adc, sys)
 
+C = toppe.constants;
+
 if isempty(adc)
-    fwrite(fid, NULL, 'int16');
+    fwrite(fid, C.NULL, 'int16');
     return
 end
-fwrite(fid, ADC, 'int16');
+fwrite(fid, C.ADC, 'int16');
 
 fwrite(fid, adc.numSamples, 'int16');   
 fwrite(fid, round(adc.dwell*1e6), 'int16');   % us
 fwrite(fid, round(adc.delay*1e6), 'int16');   % us
 
 return
-
-
-%% define constants via functions
-
-function v = NULL
-    v = 0;
-return
-function v = TRAP
-    v = 1;
-return
-function v = ARBITRARY
-    v = 2;
-return
-function v = ADC
-    v = 1;
-return
-function v = max_pg_iamp
-    v = 2^15-2;  
-return 
 
 
 
