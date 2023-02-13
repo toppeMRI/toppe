@@ -39,7 +39,7 @@ fwrite(fid, round(rf.delay*1e6), 'int16');     % us
 
 % amplitude
 amp = max(abs(rf.signal)/sys.gamma);     % Gauss
-fwrite(fid, round(amp*C.rfscale), 'int16');
+fwrite(fid, round(amp*C.RFSCALE), 'int16');
 
 % waveform
 rho = 2*round(abs(rf.signal/sys.gamma)/amp*C.MAXIAMP/2);  % int16
@@ -71,7 +71,7 @@ fwrite(fid, round(g.delay*1e6), 'int16');     % us
 
 % amplitude
 amp = g.amplitude/sys.gamma/100;  % Gauss/cm
-fwrite(fid, round(amp*C.gscale), 'int16');
+fwrite(fid, round(amp*C.GSCALE), 'int16');
 
 % waveform
 if strcmp(g.type, 'trap')

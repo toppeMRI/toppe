@@ -8,7 +8,7 @@ fid = fopen(fname, 'r', 'ieee-be');
 type = fread(fid, 1, 'int16');
 if type ~= C.NULL
     blk.rf.delay = fread(fid, 1, 'int16')/1e6;  % sec
-    blk.rf.amp = fread(fid, 1, 'int16')/C.rfscale;     % Gauss
+    blk.rf.amp = fread(fid, 1, 'int16')/C.RFSCALE;     % Gauss
     n = fread(fid, 1, 'int16');
     blk.rf.rho = fread(fid, n, 'int16');
     blk.rf.theta = fread(fid, n, 'int16');
@@ -52,7 +52,7 @@ end
 
 delayus = fread(fid, 1, 'int16');
 g.delay = delayus/1e6;  % sec
-g.amplitude = fread(fid, 1, 'int16')/C.gscale;   % Gauss/cm
+g.amplitude = fread(fid, 1, 'int16')/C.GSCALE;   % Gauss/cm
 
 if type == C.TRAP
     g.type = 'trap';
