@@ -1,6 +1,6 @@
 function writeblock(ofname, blk, sys)
 %
-% Write a Pulseq block to a custome file format that
+% Write a Pulseq block to a custom file format that
 % can be read by the PulseGEq interpreter.
 
 % open file for writing
@@ -23,6 +23,9 @@ return
 function sub_writerf(fid, rf, sys)
 
 C = toppe.constants;
+
+% downsample from 1us to 4us raster
+rf.signal = rf.signal(2:4:end);
 
 % type
 if isempty(rf)

@@ -7,18 +7,19 @@ fid = fopen(fname, 'r', 'ieee-be');
 % rf
 type = fread(fid, 1, 'int16');
 if type ~= C.NULL
-    delayus = fread(fid, 1, 'int16');
-    blk.rf.delay = delayus/1e6;  % sec
-    amp = fread(fid, 1, 'int16')/C.rfscale;
+    blk.rf.delay = fread(fid, 1, 'int16')/1e6;  % sec
+    blk.rf.amp = fread(fid, 1, 'int16')/C.rfscale;     % Gauss
     n = fread(fid, 1, 'int16');
-    rho = fread(fid, n, 'int16')/C.max_pg_iamp*amp;  % Gauss
-    theta = fread(fid, n, 'int16');
-    blk.rf.signal = rho.*exp(1i*theta/C.max_pg_iamp);
+    blk.rf.rho = fread(fid, n, 'int16');
+    blk.rf.theta = fread(fid, n, 'int16');
+    %rho = fread(fid, n, 'int16')/C.max_pg_iamp*blk.rf.amp;    % Gauss
+    %theta = fread(fid, n, 'int16')/C.max_pg_iamp*pi;   % radians
+    %blk.rf.signal = rho.*exp(1i*theta);
 else
     blk.rf = [];
 end
 
-% gradients (remember that order is important)
+% gradients 
 blk.gx = sub_readgrad(fid);
 blk.gy = sub_readgrad(fid);
 blk.gz = sub_readgrad(fid);
@@ -51,7 +52,7 @@ end
 
 delayus = fread(fid, 1, 'int16');
 g.delay = delayus/1e6;  % sec
-amp = fread(fid, 1, 'int16')/C.gscale;
+g.amplitude = fread(fid, 1, 'int16')/C.gscale;   % Gauss/cm
 
 if type == C.TRAP
     g.type = 'trap';
