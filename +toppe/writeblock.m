@@ -24,7 +24,7 @@ function sub_writerf(fid, rf, sys)
 
 C = toppe.constants;
 
- % type
+% type
 if isempty(rf)
     fwrite(fid, C.NULL, 'int16');
     return
@@ -72,7 +72,7 @@ fwrite(fid, round(amp*C.gscale), 'int16');
 
 % waveform
 if strcmp(g.type, 'trap')
-    fwrite(fid, round(g.riseTime*1e6), 'int16');
+    fwrite(fid, round(g.riseTime*1e6), 'int16');  % us
     fwrite(fid, round(g.flatTime*1e6), 'int16');
     fwrite(fid, round(g.fallTime*1e6), 'int16');
 else
