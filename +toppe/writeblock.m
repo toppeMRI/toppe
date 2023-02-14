@@ -79,7 +79,7 @@ if strcmp(g.type, 'trap')
     fwrite(fid, round(g.flatTime*1e6), 'int16');
     fwrite(fid, round(g.fallTime*1e6), 'int16');
 else
-    % TODO
+    % TODO. Remember to resample to 4us raster for ge
 end
 
 return
