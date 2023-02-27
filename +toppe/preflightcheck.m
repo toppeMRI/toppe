@@ -50,7 +50,10 @@ fid = fopen(entryFile, 'r');
 if fid == -1
     error('Failed to open entry file');
 end
-fpath = fgetl(fid);  % location of TOPPE scan file -- don't need it here
+fpath = fgetl(fid);  % location of TOPPE scan file 
+if ~strcmp(fpath(end), '/')
+    error(sprintf('Path in %s must end with a slash (''/'')', entryFile));
+end
 moduleListFile    = fgetl(fid);    % e.g., 'modules.txt'
 loopFile          = fgetl(fid);    % e.g., 'scanloop.txt'
 b1CheckFile       = fgetl(fid);    % .mod file used for b1 scaling and SAR checks, e.g., 'tipdown.mod'
