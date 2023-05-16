@@ -35,7 +35,7 @@ function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
 % HDx      TRM ZOOM        354d-6    29.1     0.309  40    150
 % UHP      HRMB            359d-6    26.5     0.370  100   200
 % Premier  HRMW            642.4d-6  17.9     0.310  70    200 
-%          Magnus          611d-6    52.2     0.324  300   750
+% Magnus   MAGNUS          611d-6    52.2     0.324  300   750
 %
 % values on scanner from /w/config/Scandbdt.cfg or GRSubsystemHWO.xml
 % (e.g., /export/home/mx/host/config/current/GRSubsystemHWO.xml)
