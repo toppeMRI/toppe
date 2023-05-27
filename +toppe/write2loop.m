@@ -277,8 +277,8 @@ if module.hasRF % Write RF module
  
     % Write line values and increment
     if (toppeVer <= 4)
-    d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot trig];
-    elseif (toppeVer > 4) % Adding 1 column for trigger out.
+        d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot trig];
+    elseif (toppeVer == 5) % Adding 1 column for trigger out.
         d(d_index,:) = [iModule ia_rf ia_th ia_gx ia_gy ia_gz dabslice dabecho dabview 0 iphi irfphase irfphase textra_us f arg.waveform drot trig trigout];
     end    
     d_index = d_index + 1;
@@ -302,7 +302,7 @@ elseif module.hasDAQ % Write DAQ module
     end
     if (toppeVer <= 4)
         d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig];
-    elseif (toppeVer > 4) % Adding 2 columns for trigger out.
+    elseif (toppeVer == 5) % Adding 1 column for trigger out.
         d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig trigout];
     end    
 
@@ -314,7 +314,7 @@ else
     % rotation
     if (toppeVer <= 4)
         d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot trig];
-    elseif (toppeVer > 4) % Adding 2 columns for trigger out.
+    elseif (toppeVer == 5) % Adding 1 column for trigger out.
         d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz 0 0 0 0 iphi 0 0 textra_us 0 arg.waveform drot trig trigout];
     end
     d_index = d_index + 1;
