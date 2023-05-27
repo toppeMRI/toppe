@@ -115,9 +115,6 @@ for jj = 1:size(gx,2)   % loop through all waveforms (pulses)
         if max(pThresh) > 100
             warning(sprintf('PNS (%d%%) exceeds first controlled mode (100%%)!!! (waveform %d)', ...
                 round(max(pThresh)), jj));
-        else
-            warning(sprintf('PNS(%d%%) exceeds normal mode (80%%)! (waveform %d)', ...
-                round(max(pThresh)), jj));
         end
     end
 end
