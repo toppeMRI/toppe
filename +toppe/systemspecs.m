@@ -133,6 +133,7 @@ switch sys.gradient
     case 'zoom',
     case 'hrmb',
     case 'hrmw',
+    case 'magnus',
     otherwise, error('Gradient coil (%s) unkown', sys.gradient);
 end
 
