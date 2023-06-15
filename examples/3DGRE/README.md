@@ -10,18 +10,18 @@ in TOPPE format for execution on GE scanners.
     >> gre;
     ```
 
-2. Copy the contents of gre.tar to /usr/g/research/pulseq/gre/
+2. Copy the contents of gre.tar to /usr/g/research/pulseq/v5/gre/
    on the scanner host computer.
     ```
     $ pwd
-    /usr/g/research/pulseq/gre/
+    /usr/g/research/pulseq/v5/gre/
     $ tar xf gre.tar
     ```
 
-3. Move toppe0.entry to /usr/g/research/pulseq/:
+3. Move toppe0.entry to /usr/g/research/pulseq/v5/:
     ```
     $ pwd
-    /usr/g/research/pulseq/gre/
+    /usr/g/research/pulseq/v5/gre/
     $ mv toppe0.entry ..
     ```
 
