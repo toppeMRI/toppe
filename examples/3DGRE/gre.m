@@ -10,7 +10,7 @@
 %
 % These must be copied to the scanner host, in the folder specified on the first line in toppe0.entry.
 % toppe0.entry (provided in this folder) is the entry point for the TOPPE interpreter,
-% and must be placed in /usr/g/research/pulseq/ on the scanner host.
+% and must be placed in /usr/g/research/pulseq/v5/ on the scanner host.
 
 % GE system parameters.
 % If desired (e.g., for waveform design or to reduce PNS), 
@@ -106,10 +106,10 @@ end
 
 toppe.write2loop('finish', sys);  % finalize file
 
-% Write TOPPE entry file (to be placed in /usr/g/research/pulseq/ on scanner).
+% Write TOPPE entry file (to be placed in /usr/g/research/pulseq/v5/ on scanner).
 % This can be edited by hand as needed after copying to scanner.
 toppe.writeentryfile('toppe0.entry', ...
-    'filePath', '/usr/g/research/pulseq/gre/', ...
+    'filePath', '/usr/g/research/pulseq/v5/gre/', ...
     'b1ScalingFile', 'tipdown.mod', ...
     'readoutFile', 'readout.mod');
 
