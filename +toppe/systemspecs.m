@@ -122,9 +122,9 @@ sys = rmfield(sys, 'myrfdel');
 sys = rmfield(sys, 'daqdel');
 
 %% Input checks
-if sys.maxRF ~= maxRFDefault
-    warning('Using non-default max RF setting -- b1 scaling may be incorrect!');
-end
+%if sys.maxRF ~= maxRFDefault
+%    warning('Using non-default max RF setting -- b1 scaling may be incorrect!');
+%end
 
 switch sys.gradient
     case 'xrmw', 
