@@ -34,7 +34,8 @@ function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
 % HDx      TRM WHOLE       370d-6    23.7     0.344  23    77
 % HDx      TRM ZOOM        354d-6    29.1     0.309  40    150
 % UHP      HRMB            359d-6    26.5     0.370  100   200
-% Premier  HRMW            642.4d-6  17.9     0.310  70    200
+% Premier  HRMW            642.4d-6  17.9     0.310  70    200 
+% Magnus   MAGNUS          611d-6    52.2     0.324  300   750
 %
 % values on scanner from /w/config/Scandbdt.cfg or GRSubsystemHWO.xml
 % (e.g., /export/home/mx/host/config/current/GRSubsystemHWO.xml)
@@ -79,6 +80,7 @@ switch lower(coil)
     case 'zoom',  chronaxie=354d-6; rheobase=29.1; alpha=0.309;
     case 'hrmb',  chronaxie=359d-6; rheobase=26.5; alpha=0.370;
     case 'hrmw',  chronaxie=642.4d-6; rheobase=17.9; alpha=0.310;
+    case 'magnus', chronaxie=611d-6; rheobase=55.2; alpha=0.324;
     otherwise, error('gradient coil (%s) unkown', coil);
 end
 
@@ -89,7 +91,7 @@ if isempty(gdt), gdt = 4d-6; end
 if (chronaxie>700d-6) || (chronaxie<200d-6),
     warning('pns:chronaxie','chronaxie=%g; typical values in help',chronaxie);
 end
-if (rheobase>30) || (rheobase<17),
+if (rheobase>80) || (rheobase<17),
     warning('pns:rheobase','rheobase=%g; typical values in help',rheobase);
 end
 if (alpha>0.4) || (alpha<0.3),
