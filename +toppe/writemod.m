@@ -30,8 +30,6 @@ function writemod(system, varargin)
 %   nChop         [1 2] (int, multiple of 2) trim (chop) the start and end of
 %                 the RF wavevorm (or ADC window) by this many 4us samples.
 %                 Using non-zero nChop helps reduce module duration on scanner.
-%                 If converting to Pulseq using pulsegeq.ge2seq, nChop(2) must
-%                 be non zero to allow time for RF ringdown.
 %                 Default: [0 0] 
 
 import toppe.*
@@ -61,12 +59,6 @@ arg.nChop = nChopDefault;
 arg = vararg_pair(arg, varargin);
 
 %% Check nChop
-if arg.nChop(1) < nChopDefault(1) | arg.nChop(2) < nChopDefault(2)
-    msg = ['nChop < 48 samples. Module duration (on scanner) may be ', ...
-          'extended to account for RF/ADC dead/ringdown times as needed.'];
-    warning(msg);
-end
-
 if ~isempty(arg.rf)
     if sum(abs(arg.rf([1:arg.nChop(1) (end-arg.nChop(2)+1):end]))) > 0
         msg = ['RF waveform must be zero during the first/last ', ...
@@ -149,7 +141,7 @@ function paramsfloat = sub_myrfstat(b1, nom_fa, system);
 g = 1;  % legacy dummy value, ignore
 nom_bw = 2000;
 
-dt = 4e-6;                        % use 4 us RF sample width
+dt = 4e-6;                        % use 4 us RF raster time
 %gamma = 4.2575e3;                  % Hz/Gauss
 tbwdummy = 2;
 
