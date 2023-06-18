@@ -7,6 +7,6 @@ function g = makeGElength(g)
 %   g    waveform array [nt ...]
 %
 
-[res, npulses] = size(g, 1);
-g = [g; zeros(mod(res, 2), npulses)];
+[res, npulses] = size(g);
+g = [g; zeros(mod(res,2), npulses)];
 
