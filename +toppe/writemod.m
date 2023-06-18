@@ -27,7 +27,7 @@ function writemod(system, varargin)
 %                 but has no influence on b1 scaling. Default: 90.
 %   hdrfloats     Additional floats to put in header (max 12)
 %   hdrints       Additional ints to put in header (max 29)
-%   nChop         [1 2] (int, multiple of 2) trim (chop) the start and end of
+%   nChop         [1 2] (int) trim (chop) the start and end of
 %                 the RF wavevorm (or ADC window) by this many 4us samples.
 %                 Using non-zero nChop helps reduce module duration on scanner.
 %                 Default: [0 0] 
@@ -67,9 +67,9 @@ if ~isempty(arg.rf)
     end
 end
 
-if mod(arg.nChop(1),2) | mod(arg.nChop(2),2)
-    error('Both entries in nChop must be a multiple of 2');
-end
+%if mod(arg.nChop(1),2) | mod(arg.nChop(2),2)
+%    error('Both entries in nChop must be a multiple of 2');
+%end
 
 %% Detect all-zero RF waveform, treat as empty, and give warning to user
 if ~isempty(arg.rf) & norm(abs(arg.rf(:,1))) == 0
@@ -98,13 +98,11 @@ end
 %% Force all waveform arrays to have the same dimensions 
 [rf, gx, gy, gz] = padwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz);
 	
-% Fixes to avoid idiosyncratic issues on scanner
-%[rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp);
 
 %% Check waveforms against system hardware limits
-%if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
-%	('Waveforms failed system hardware checks -- exiting');
-%end
+if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
+	('Waveforms failed system hardware checks -- exiting');
+end
 
 %% Header arrays
 [paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, system);

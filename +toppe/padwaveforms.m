@@ -39,8 +39,8 @@ for ii = 1:length(fields)
     eval(cmd);
 end
 
-%% Force all waveform arrays to have the same dimensions,
-%% and make length multiple of 4.
+%% Force all waveform arrays to have the same dimensions.
+%% and make length multiple of 2.
 ndat    = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
 npulses = max( [size(rf,2) size(gx,2) size(gy,2) size(gz,2)] );
 if ndat == 0
@@ -50,10 +50,10 @@ if ndat > 2^15
     warning(sprintf('waveform length is %d samples', ndat));
 end
 
-% make length divisible by 4 (EPIC seems to behave best this way)
-if mod(ndat, 4)
-    warning('Waveform duration will be padded to 4 sample boundary.')
-    ndat = ndat - mod(ndat, 4) + 4;
+% make length divisible by 2 (EPIC seems to behave best this way)
+if mod(ndat, 2)
+    warning('Waveform duration will be padded to 2 sample boundary.')
+    ndat = ndat + mod(ndat, 2);
 end
 
 for ii = 1:length(fields)

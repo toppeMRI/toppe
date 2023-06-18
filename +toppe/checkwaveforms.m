@@ -43,10 +43,10 @@ for ii = 1:length(fields)
 	eval(cmd);
 end
 
-%% Is (max) waveform duration on a 4 sample (16us) boundary?
+%% Is (max) waveform duration on a 2 sample (8 us) boundary?
 ndat = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
-if mod(ndat, 4)
-	fprintf('Error: waveform duration must be on a 4 sample (16 us) boundary.');
+if mod(ndat, 2)
+	fprintf('Error: waveform duration must be on a 2 sample (8 us) boundary.');
 	isValid = false;
 end
 
