@@ -3,7 +3,7 @@ function [rf, gx, gy, gz] = padwaveforms(varargin)
 %
 % Pad input waveform(s) with zero, and return
 % arrays rf/gx/gy/gz of common size [ndat npulses],
-% where ndat is multiple of 4.
+% where ndat is multiple of 2.
 %
 % Input options:
 %   rf            [nrf nrfpulses] Complex RF waveform, [ndat nrfpulses]
