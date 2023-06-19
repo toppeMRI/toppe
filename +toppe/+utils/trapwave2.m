@@ -3,7 +3,7 @@ function waveform = trapwave2(area, mxg, mxs, rasterTime)
 %
 % Like trapwave.m, but avoids overshoots at plateau edges.
 %
-% function waveform = trapwave2(area, mxg, mxs, varargin) 
+% function waveform = trapwave2(area, mxg, mxs, rasterTime) 
 %
 % Inputs:
 %  area        G/cm*sec
