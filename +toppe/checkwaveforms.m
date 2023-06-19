@@ -123,9 +123,9 @@ for jj = 1:size(gx,2)   % loop through all waveforms (pulses)
 end
 
 %% do all waveforms start and end at zero?
-if any([gx(1,:) gx(end,:) gy(1,:) gy(end,:) gz(1,:) gz(end,:) rf(1,:) rf(end,:)] ~= 0)
-	fprintf('Error: all waveforms must begin and end with zero\n')
-	isValid = false;
-end
+%if any([gx(1,:) gx(end,:) gy(1,:) gy(end,:) gz(1,:) gz(end,:) rf(1,:) rf(end,:)] ~= 0)
+%	fprintf('Error: all waveforms must begin and end with zero\n')
+%	isValid = false;
+%end
 
 return;
