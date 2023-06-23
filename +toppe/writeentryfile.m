@@ -19,7 +19,7 @@ arg.loopFile       = 'scanloop.txt';
 arg.b1ScalingFile  = 'tipdown.mod';
 arg.readoutFile    = 'readout.mod';
 arg.seqStampFile   = 'seqstamp.txt';
-arg.coresListFile  = 'cores.txt';
+arg.coresFile  = 'cores.txt';
 
 % substitute with provided keyword arguments
 arg = toppe.utils.vararg_pair(arg, varargin);
@@ -32,7 +32,7 @@ fprintf(fid, '%s\n', arg.loopFile);
 fprintf(fid, '%s\n', arg.b1ScalingFile);
 fprintf(fid, '%s\n', arg.readoutFile);
 fprintf(fid, '%s\n', arg.seqStampFile);
-fprintf(fid, '%s\n', arg.coresListFile);
+fprintf(fid, '%s\n', arg.coresFile);
 fclose(fid);
 
 
