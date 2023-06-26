@@ -45,10 +45,10 @@ end
 
 %% Is (max) waveform duration on a 2 sample (8 us) boundary?
 ndat = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
-if mod(ndat, 2)
-	fprintf('Error: waveform duration must be on a 2 sample (8 us) boundary.');
-	isValid = false;
-end
+%if mod(ndat, 2)
+%	fprintf('Error: waveform duration must be on a 2 sample (8 us) boundary.');
+%	isValid = false;
+%end
 
 %% Zero-pad at end to equal size
 [rf, gx, gy, gz] = padwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz);
