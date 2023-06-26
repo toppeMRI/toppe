@@ -62,9 +62,11 @@ for ii = 1:length(fields)
         wav = zeros(ndat, npulses);
     end
 
-    if channel == 'rf' & isempty(wav)
-        % Must have non-zero RF waveform to make toppe happy (even if it's not actually played out)
-        wav = [0; 0.01*ones(ndat-2, 1); 0];
+    if channel == 'rf'
+        if isempty(wav) | norm(wav) == 0
+            % Must have non-zero RF waveform to make toppe happy (even if it's not actually played out)
+            wav = [zeros(1, npulses); 0.01*ones(ndat-2, npulses); zeros(1, npulses)];
+        end
     end
 
     [nrows ncols] = size(wav);
