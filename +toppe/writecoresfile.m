@@ -19,3 +19,5 @@ for icore = 1:length(cores)
         end
     end
 end
+
+fclose(fid);
