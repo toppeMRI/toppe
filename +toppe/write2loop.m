@@ -170,7 +170,7 @@ if strcmp(modname,'finish')
         warning('maxview > system.maxView -- scan may not run!');   
     end
 
-    dur = toppe.getscantime(system,'loopArr',d,'mods',modules);
+    dur = 1; %toppe.getscantime(system,'loopArr',d,'mods',modules);
     udur = round(dur * 1e6);
     if toppeVer > 2
         newParams = [nt maxslice maxecho maxview udur toppeVer];
@@ -211,15 +211,23 @@ end
 
 %% Find input module in persistant module struct
 % Find module in cell array and store the index in moduleno
-for iModule = 1:size(modules,2)
-    if strcmp(modname,modules{iModule}.fname)
-        break;
+if strcmp(modname, 'delay')
+    % pure delay block
+    iModule = 0;
+    module = struct();
+    module.hasRF = 0;
+    module.hasDAQ = 0;
+else
+    for iModule = 1:size(modules,2)
+        if strcmp(modname,modules{iModule}.fname)
+            break;
+        end
+        if iModule == size(modules,2)
+            error(['Can''t find ' modname ' in ' arg.moduleListFile]);
+        end
     end
-    if iModule == size(modules,2)
-        error(['Can''t find ' modname ' in ' arg.moduleListFile]);
-    end
+    module = modules{iModule};
 end
-module = modules{iModule};
 
 % Calculate gradient scalings
 ia_gx = 2*round(arg.Gamplitude(1)*max_pg_iamp/2);
