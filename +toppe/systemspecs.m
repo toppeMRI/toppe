@@ -85,9 +85,10 @@ sys.timetrwait = 64;         % required delay at end of module (us)
 sys.timessi    = 100;        % EPIC 'ssi' time, i.e., minimum duration/delay between modules
 sys.tminwait   = 12;         % minimum duration of wait pulse in EPIC code
 
-sys.rfDeadTime = 50;         % us
-sys.rfRingdownTime = 54;     % us
-sys.adcDeadTime = 40;        % us
+sys.rfDeadTime = 72;              % us
+sys.rfRingdownTime = 54;          % us
+sys.adcDeadTime = 40;             % us
+sys.segmentRingdownTime = 104;    % us
 
 % include the following for backward compatibility with v4
 sys.myrfdel    = [];  
