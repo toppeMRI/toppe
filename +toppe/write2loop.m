@@ -235,7 +235,7 @@ ia_gy = 2*round(arg.Gamplitude(2)*max_pg_iamp/2);
 ia_gz = 2*round(arg.Gamplitude(3)*max_pg_iamp/2);
 
 % Calculate time at end of module
-textra_us = 2*round(1000*arg.textra/2);
+textra_us = 4*round(1000*arg.textra/4);
 
 % 3d rotation matrix
 if toppeVer > 2
