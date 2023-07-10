@@ -20,7 +20,7 @@ function sys = systemspecs(varargin)
 %   maxView         Max view index in Pfile data storage. Also not sure here. Default: 500
 %   maxEcho         Max echo index in Pfile data storage. Default: 16. 
 %   addDelays       Set toppe.<start_core*/psd_rf_wait/psd_grd_wait/timetrwait/timessi> = 0 (e.g., for converting to/from Pulseq)
-%   version         Default: 'v4'
+%   version         Default: 'v6'
 %   gradient        For PNS calculation (see toppe.pns()). Currently suppports:
 %                   'xrm' (MR750) (default)
 %                   'xrmw' (MR750W) 
@@ -73,7 +73,7 @@ sys.forbiddenEspRange = [0.41 0.51]; % (ms) Forbidden echo spacings (mechanical 
 
 
 % TOPPE version
-sys.version = 'v5';
+sys.version = 'v6';
 
 % timing
 sys.start_core_rf  = 0;      % minimum start time (us) for rf modules
