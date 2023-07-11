@@ -9,8 +9,6 @@ function [isValid, gmax, slewmax] = checkwaveforms(system, varargin)
 % Options 
 %  rf           rf waveform
 %  gx/gy/gz     [nt npulses]. Gradient waveforms. Can be different size.
-%  rfUnit       Gauss (default) or mT
-%  gradUnit     Gauss/cm (default) or mT/m
 %
 % Outputs
 %  isValid    boolean/logical (true/false)
@@ -29,8 +27,6 @@ arg.rf = [];
 arg.gx = [];
 arg.gy = [];
 arg.gz = [];
-arg.rfUnit   = 'Gauss';
-arg.gradUnit = 'Gauss/cm';
 
 arg = toppe.utils.vararg_pair(arg, varargin);
 
@@ -52,26 +48,6 @@ ndat = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
 
 %% Zero-pad at end to equal size
 [rf, gx, gy, gz] = padwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz);
-
-%% Convert input waveforms and system limits to Gauss and Gauss/cm
-if strcmp(arg.rfUnit, 'mT')
-	rf = rf/100;   % Gauss
-end
-if strcmp(arg.gradUnit, 'mT/m')
-	gx = gx/10;    % Gauss/cm
-	gy = gy/10;
-	gz = gz/10;
-end
-
-if strcmp(system.rfUnit, 'mT')
-	system.maxRF = system.maxRF/100;      % Gauss
-end
-if strcmp(system.gradUnit, 'mT/m')
-	system.maxGrad = system.maxGrad/10;   % Gauss/cm
-end
-if strcmp(system.slewUnit, 'T/m/s')
-	system.maxSlew = system.maxSlew/10;   % Gauss/cm/msec
-end
 
 %% Check against system hardware limits
 

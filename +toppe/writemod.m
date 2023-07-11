@@ -19,8 +19,6 @@ function writemod(system, varargin)
 %   gx            [ndat ngxpulses]
 %   gy            [ndat ngypulses]
 %   gz            [ndat ngzpulses]
-%   rfUnit        'Gauss' (default) or 'mT'
-%   gradUnit      'Gauss/cm' (default) or 'mT/m'
 %   ofname        Output filename.
 %   desc          Text string (ASCII) descriptor.
 %   nomflip       Excitation flip angle (degrees). Stored in .mod float header,
@@ -46,8 +44,6 @@ arg.rf = [];
 arg.gx = [];
 arg.gy = [];
 arg.gz = [];
-arg.rfUnit    = 'Gauss';
-arg.gradUnit  = 'Gauss/cm';
 arg.ofname    = 'out.mod'; 
 arg.desc      = 'TOPPE module';
 arg.nomflip   = 90;
@@ -83,16 +79,6 @@ for ii = 1:length(fields)
 	wavtype = fields{ii} ;   % 'rf', 'gx', 'gy', or 'gz'
 	cmd = sprintf('%s = %s;', wavtype, sprintf('arg.%s', wavtype));
 	eval(cmd);
-end
-
-%% Convert to Gauss and Gauss/cm
-if strcmp(arg.rfUnit, 'mT')
-	rf = rf/100;   % Gauss
-end
-if strcmp(arg.gradUnit, 'mT/m')
-	gx = gx/10;    % Gauss/cm
-	gy = gy/10;
-	gz = gz/10;
 end
 
 %% Force all waveform arrays to have the same dimensions 
@@ -209,17 +195,6 @@ npulses = size(rf,2);
 % max length of params* vectors
 nparamsint16 = 32;
 nparamsfloat = 32;
-
-% RF waveform is scaled relative to system.maxRF.
-% This may be 0.25G/0.125G for quadrature/body RF coils (according to John Pauly RF class notes), but haven't verified...
-if strcmp(system.rfUnit, 'mT')
-	system.maxRF = system.maxRF/100;   % Gauss
-end
-
-% gradient waveforms are scaled relative to system.maxGrad
-if strcmp(system.gradUnit, 'mT/m')
-	system.maxGrad = system.maxGrad / 10;          % Gauss/cm
-end
 
 b1max = max(abs(rho(:)));     % Gauss
 
