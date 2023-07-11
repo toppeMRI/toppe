@@ -1,5 +1,5 @@
-function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, system, varargin)
-% function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, system, varargin)
+function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, sysGE, varargin)
+% function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, sysGE, varargin)
 %
 % Display pulse sequence, as specified in modules.txt, scanloop.txt, and timing.txt.
 % Sequence timing is exact (at least that's the intent), i.e., it
@@ -8,31 +8,7 @@ function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, s
 %
 % Inputs:
 %   nstart,nstop       first and last startseq calls (as specified in scanloop.txt)
-%   system             struct specifying hardware system info, see systemspecs.m
-%
-% Input options:
-%   loopFile           default: 'scanloop.txt'
-%   loopArr            scan loop array (see readloop.m). Default: read from loopFile.
-%   moduleListFile     default: 'modules.txt'
-%   mods               Structure containing .mod file contents (see ./utils/readModulesListFile.m).
-%                      Use in playseq.m to speed up display.
-%                      Default: get values from moduleListFile.
-%   doDisplay          true (default) or false
-%   doTimeOnly         Returns outputs as zeros (but with correct length)
-%                      to speed up calculation of scan time.
-%                      False (default) or true
-%   drawpause          (boolean) include pauses (textra) or not
-%   gmax               display limit, Gauss/cm
-%   rhomax             display limit, Gauss
-%   printTime          False (default) or true
-%
-% Outputs:
-%   rf               Complex RF waveform (Gauss)
-%   gx,gy,gz         Gauss/cm
-%   rf1/gx1/...      Values from most recent startseq() call (used in, e.g., ge2seq.m and playseq.m)
-%   tdelay           Delay after end of module waveform.
-%                    Determined by duration in modules.txt AND by textra (column 14) in scanloop.txt
-%                    Used in ge2seq.m to set delay block, and in playseq.m.
+%   sysGE             struct specifying hardware system info, see systemspecs.m
 
 % Times in us
 
@@ -50,7 +26,6 @@ arg.printTime       = false;
 
 arg = toppe.utils.vararg_pair(arg, varargin);
 
-
 %% read scan files as needed
 % scanloop array
 if isempty(arg.loopArr)
@@ -61,132 +36,93 @@ end
 
 % module waveforms
 if isempty(arg.mods)
-    cores = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
+    modules = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
 else
-    cores = arg.mods;
+    modules = arg.mods;
 end
 
 %% Initialize counter and turn off display if we're only doing timings
 if arg.doTimeOnly
     nsamples = 0;
     arg.doDisplay = false;
-    for ic = 1:size(cores,2) % Compute table of core durations
-        core_size(ic) = size(cores{ic}.gx(:,1),1);
+    for p = 1:size(modules,2) % Compute table of core durations
+        core_size(p) = size(modules{p}.gx(:,1),1);
     end
 end
+
+%% Get block groups
+blockGroups = toppe.readcoresfile('cores.txt');
 
 %% build sequence. each sample is 4us.
 rho = []; th = []; gx = []; gy = []; gz = [];
 dt = 4;  % us
 max_pg_iamp = 2^15-2;
-for it = nstart:nstop
-    ic = loopArr(it,1);   % core id
-    if cores{ic}.hasRF
-        ia_rf = loopArr(it,2);
+raster = sysGE.raster*1e6;  % us
+
+for n = nstart:nstop
+
+    i = loopArr(n,28);  % block group id
+    p = loopArr(n,1);   % module id
+    w = loopArr(n,16);  % waveform index
+
+    % Pure delay block
+    if p == 0
+       w = zeros(round(loopArr(n,14)/raster), 1);  % TODO: make accurate
+       rho = [rho; w];
+       th = [th; w];
+       gx = [gx; w];
+       gy = [gy; w];
+       gz = [gz; w];
+       continue;
+    end
+
+    if modules{p}.hasRF
+        ia_rf = loopArr(n,2);
     else
         ia_rf = 0;
     end
-    ia_th = loopArr(it,3);
-    ia_gx = loopArr(it,4);
-    ia_gy = loopArr(it,5);
-    ia_gz = loopArr(it,6);
+    ia_th = loopArr(n,3);
+    ia_gx = loopArr(n,4);
+    ia_gy = loopArr(n,5);
+    ia_gz = loopArr(n,6);
 
-    % get number of discarded samples at beginning+end of RF/ADC modules
-    nChop(1) = cores{ic}.npre;
-    nChop(2) = cores{ic}.res - cores{ic}.rfres - cores{ic}.npre;
-    
-    % Delay/start_core (start of waveforms) (us)
-    if cores{ic}.hasRF
-        delay = max(system.start_core_rf - dt*nChop(1), 0);
-    elseif cores{ic}.hasDAQ
-        delay = max(system.start_core_daq - dt*nChop(1), 0);
-    else
-        delay = system.start_core_grad;
-    end
-
-    % delay past gradient due to RF/DAQ window (us)
-    % nChop = number of discarded samples at beginning + end of RF/ADC window
-    if cores{ic}.hasRF
-        coredel = max(system.psd_rf_wait - dt*nChop(2), 0);
-    elseif cores{ic}.hasDAQ
-        coredel = max(system.psd_grd_wait - dt*nChop(2), 0);
-    else
-        coredel = 0;
-    end
-
-    % Mimimum core duration (us).
-    % Should be identical to the CV 'mindur' in the EPIC code.
-    mindur = delay + cores{ic}.wavdur + coredel + system.timetrwait + system.tminwait + system.timessi;
-
-    % silence at end of core, as specified in 
-    % in both modules.txt and scanloop.txt
-    tdelay = max(cores{ic}.dur - mindur, 0); 
-    if size(loopArr,2)>13
-        tdelay = tdelay + loopArr(it,14);  % add textra
-    end
-    
-    waveform = loopArr(it,16); % waveform index
-    
     if arg.doTimeOnly % Calculate the length of one waveform and add it to our sample counter
-        gxlength = round((delay)/dt) + core_size(ic) ...
-            + round((coredel + system.timetrwait + system.tminwait + system.timessi)/dt);
-        nsamples = nsamples + gxlength + round(tdelay/dt);
+        gxlength = round(modules{p}.dur/raster);
+        nsamples = nsamples + gxlength;
     else % Calculate RF and gradients as normal
-        % get gradients
-        gxit = ia_gx/max_pg_iamp*cores{ic}.gx(:,waveform);
-        gyit = ia_gy/max_pg_iamp*cores{ic}.gy(:,waveform);
-        gzit = ia_gz/max_pg_iamp*cores{ic}.gz(:,waveform);
+        % waveforms for this block
+        rho1 = [ia_rf/max_pg_iamp*abs(modules{p}.rf(:,w))];
+        th1 = [ia_rf/max_pg_iamp*angle(modules{p}.rf(:,w))];
+        gxit = ia_gx/max_pg_iamp*modules{p}.gx(:,w);
+        gyit = ia_gy/max_pg_iamp*modules{p}.gy(:,w);
+        gzit = ia_gz/max_pg_iamp*modules{p}.gz(:,w);
 
         % apply 3d rotation matrix 
         % (which also accounts for any in-plane 2D rotation, i.e., 'phi' in write2loop.m)
-        Rv = loopArr(it,17:25)/max_pg_iamp;  % stored in row-major order
+        Rv = loopArr(n,17:25)/max_pg_iamp;  % stored in row-major order
         R = reshape(Rv, 3, 3);
         G = R * [gxit(:)'; gyit(:)'; gzit(:)'];
-        gxit = G(1,:)';
-        gyit = G(2,:)';
-        gzit = G(3,:)';
-        
-        % build waveforms for this startseq call
-        rho1 = [zeros(round((delay + system.psd_rf_wait + dt*nChop(1))/dt),1); ...
-                ia_rf/max_pg_iamp*  abs(cores{ic}.rf((nChop(1)+1):(end-nChop(2)),waveform)); ...
-                zeros(round((system.timetrwait + system.tminwait + system.timessi)/dt),1)];
-        th1  = [zeros(round((delay + system.psd_rf_wait + dt*nChop(1))/dt),1); ...
-                ia_th/max_pg_iamp*angle(cores{ic}.rf((nChop(1)+1):(end-nChop(2)),waveform)); ...
-                zeros(round((system.timetrwait + system.tminwait + system.timessi)/dt),1)];
-        gx1  = [zeros(round((delay)/dt),1); ...
-                gxit(:); ...
-                zeros(round((coredel + system.timetrwait + system.tminwait + system.timessi)/dt),1)];
-        gy1  = [zeros(round((delay)/dt),1); ...
-                gyit(:); ...
-                zeros(round((coredel + system.timetrwait + system.tminwait + system.timessi)/dt),1)];
-        gz1  = [zeros(round((delay)/dt),1); ...
-                gzit(:); ...
-                zeros(round((coredel + system.timetrwait + system.tminwait + system.timessi)/dt),1)];
-
-        % waveform length can differ by a couple of samples -- bandaid for now
-        l = max(numel(rho1), numel(gx1));
-        rho1 = [rho1; zeros(l - numel(rho1), 1)];
-        th1 = [th1; zeros(l - numel(th1), 1)];
-        gx1 = [gx1; zeros(l - numel(gx1), 1)];
-        gy1 = [gy1; zeros(l - numel(gy1), 1)];
-        gz1 = [gz1; zeros(l - numel(gz1), 1)];
+        gx1 = G(1,:)';
+        gy1 = G(2,:)';
+        gz1 = G(3,:)';
 
         % apply RF phase offset
-        if cores{ic}.hasRF
-            th1 = th1 + loopArr(it,12)/max_pg_iamp*pi;
+        if modules{p}.hasRF
+            th1 = th1 + loopArr(n,12)/max_pg_iamp*pi;
             th1 = angle(exp(1i*th1));   % wrap to [-pi pi] range
         end
 
-        % add to running waveform
-        rho = [rho; rho1; zeros(round(tdelay/dt),1)];
-        th  = [th;  th1;  zeros(round(tdelay/dt),1)];
-        gx  = [gx;  gx1;  zeros(round(tdelay/dt),1)];
-        gy  = [gy;  gy1;  zeros(round(tdelay/dt),1)];
-        gz  = [gz;  gz1;  zeros(round(tdelay/dt),1)];
+        % pad to desired duration and add to running waveform
+        res = round(modules{p}.dur/raster);
+        rho = [rho; rho1; zeros(res - modules{p}.res, 1)];
+        th = [th; th1; zeros(res - modules{p}.res, 1)];
+        gx = [gx; gx1; zeros(res - modules{p}.res, 1)];
+        gy = [gy; gy1; zeros(res - modules{p}.res, 1)];
+        gz = [gz; gz1; zeros(res - modules{p}.res, 1)];
     end
     
     if arg.printTime
-        fprintf(1, 'it %d: mindur = %d us, rf t = %d us, grad t = %d us\n', it, mindur, numel(rho)*dt, numel(gx)*dt);
+        fprintf(1, 'n %d: mindur = %d us, rf t = %d us, grad t = %d us\n', n, mindur, numel(rho)*raster, numel(gx)*raster);
     end
 end
 
@@ -194,19 +130,11 @@ if arg.doTimeOnly % Make all vectors the correct length but zeros
     [rf, th, gx, gy, gz] = deal(zeros(nsamples,1));
 else
     rf = rho.*exp(1i*th);
-    rf1 = rho1.*exp(1i*th1);     % waveforms in last module, without the delay after it (if any)
-end
-
-if length(rf) ~= length(gx)
-    msg = ['RF and gradient waveform durations are not equal length. ' ... 
-        'This is likely due to system.psd_rf_wait or system.psd_grd_wait not being ' ...
-        'on a 4us boundary.'];
-    error(msg);
 end
 
 % plot
 if arg.doDisplay
-    T = (0:(numel(rho)-1))*dt/1000; % msec
+    T = (0:(numel(rho)-1))*raster/1000; % msec
     if ~arg.drawpause
         Tend = 1.01*T(find(any([rho th gx gy gz],2),1,'last')); %Find last non-zero value in any of the waveforms
     else
