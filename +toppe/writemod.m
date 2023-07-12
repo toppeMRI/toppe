@@ -1,9 +1,9 @@
-function writemod(system, varargin)
-% function writemod(system, varargin)
+function writemod(sysGE, varargin)
+% function writemod(sysGE, varargin)
 %
 % Write waveforms to .mod file, for use with toppe psd on GE scanners.
 %
-% function writemod(system, varargin)
+% function writemod(sysGE, varargin)
 %
 % Assumes raster time (sample duration) of 4e-6 sec for all waveforms.
 %
@@ -12,7 +12,7 @@ function writemod(system, varargin)
 % >> writemod(sys, 'gz', gzwaveform, 'desc', 'my spoiler gradient', 'ofname', 'spoiler.mod');
 %
 % Input:
-%   system        struct specifying hardware system info, see systemspecs.m
+%   sysGE        struct specifying hardware system info, see systemspecs.m
 %
 % Input options:
 %   rf            Complex RF waveform, [ndat nrfpulses]
@@ -86,12 +86,12 @@ end
 	
 
 %% Check waveforms against system hardware limits
-if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
+if ~checkwaveforms(sysGE, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
 	('Waveforms failed system hardware checks -- exiting');
 end
 
 %% Header arrays
-[paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, system);
+[paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, sysGE);
 if ~isempty(arg.hdrfloats)
 	if length(arg.hdrfloats) > 12
 		error('max number of extra floats in .mod file header is 12');
@@ -108,13 +108,13 @@ end
 
 %% Write to .mod file
 arg.desc = sprintf('Filename: %s\n%s', arg.ofname, arg.desc);
-sub_writemod(arg.ofname, arg.desc, rf, gx, gy, gz, paramsint16, paramsfloat, system);
+sub_writemod(arg.ofname, arg.desc, rf, gx, gy, gz, paramsint16, paramsfloat, sysGE);
 
 return;
 
 
 
-function paramsfloat = sub_myrfstat(b1, nom_fa, system);
+function paramsfloat = sub_myrfstat(b1, nom_fa, sysGE);
 % Calculate RF parameters needed for RFPULSE struct in .e file.
 % Needed for B1 scaling, SAR calculations, and enforcing duty cycle limits.
 % See also mat2signa_krishna.m
@@ -144,7 +144,7 @@ area          = abs(sum(b1)) / abs(sum(hardpulse));
 dtycyc        = length(find(abs(b1)>0.2236*max(abs(b1)))) / length(b1);
 maxpw         = dtycyc;
 num           = 1;
-max_b1        = system.maxRF;                       	% Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
+max_b1        = sysGE.maxRF;                       	% Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
 																		% as long as other RF .mod files (if any) use the same max_b1.
 max_int_b1_sq = max( cumsum(abs(b1).^2)*dt*1e3 );   	% Gauss^2 - ms
 max_rms_b1    = sqrt(mean(abs(b1).^2));              	% Gauss
@@ -175,7 +175,7 @@ return;
 
 
 %%
-function sub_writemod(fname,desc,rf,gx,gy,gz,paramsint16,paramsfloat,system)
+function sub_writemod(fname,desc,rf,gx,gy,gz,paramsint16,paramsfloat,sysGE)
 %
 %   desc           ASCII description 
 %   rf             size(rho) = N x 1, where N = # waveform samples, 
@@ -233,7 +233,7 @@ fwrite(fid, desc, 'uchar');
 fwrite(fid, ncoils,  'int16');          % shorts must be written in binary -- otherwise it won't work on scanner 
 fwrite(fid, res,     'int16');
 fwrite(fid, npulses, 'int16');
-fprintf(fid, 'b1max:  %f\n', system.maxRF);           % (floats are OK in ASCII on scanner)
+fprintf(fid, 'b1max:  %f\n', sysGE.maxRF);           % (floats are OK in ASCII on scanner)
 fprintf(fid, 'gmax:   %f\n', gmax);
 %fprintf(fid, 'res:   %d\n', res);
 
@@ -246,7 +246,7 @@ end
 
 % write binary waveforms (*even* short integers -- the toppe driver/interpreter sets the EOS bit, so don't have to worry about it here)
 max_pg_iamp = 2^15-2;                                   % RF amp is flipped if setting to 2^15 (as observed on scope), so subtract 2
-rho   = 2*round(rho/system.maxRF*max_pg_iamp/2);
+rho   = 2*round(rho/sysGE.maxRF*max_pg_iamp/2);
 theta = 2*round(theta/pi*max_pg_iamp/2);
 gx    = 2*round(gx/gmax*max_pg_iamp/2);
 gy    = 2*round(gy/gmax*max_pg_iamp/2);
