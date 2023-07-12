@@ -5,23 +5,23 @@ function sys = systemspecs(varargin)
 % 
 % 'maxSlew' and 'maxGrad' options can be < scanner limit, and can vary across .mod files. 
 %
-% Times are in microseconds, except raster (sec)
+% Times are in microseconds
 
 
 %% Defaults
 
 % Global constants
-sys.raster = 4e-6;              % sec. Raster time for gradient and RF waveforms.
+sys.raster = 4;                 % us. Raster time for gradient and RF waveforms.
 sys.gamma  = 42.576e6;          % Hz/T
 
 % Scanner-specific settings
 sys.B0 = 3.0;                     % field strength (T)
 sys.gradient = 'xrm';             % gradient coil
-sys.psd_grd_wait = 100;           % ADC/gradient delay (us).
-sys.psd_rf_wait = 100;            % rf/gradient delay (us)
+sys.psd_rf_wait = 148;            % rf/gradient delay (us)
+sys.psd_grd_wait = 156;           % ADC/gradient delay (us).
 sys.segmentDeadTime = 12;         % Dead time before start of block group, equals RUP_GRD(9us)
 sys.segmentRingdownTime = 104;    % Delay at end of block group, equals 4us + timssi. 
-sys.forbiddenEspRange = [0.41 0.51];    % (ms) Forbidden echo spacings (mechanical resonance). See /usr/g/bin/epiesp.dat
+sys.forbiddenEspRange = [410 510];    % (us) Forbidden echo spacings (mechanical resonance). See /usr/g/bin/epiesp.dat
 sys.tminwait   = 12;              % minimum duration of wait pulse in EPIC code (us)
 
 % Design choices (need not equal scanner limits)
