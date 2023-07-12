@@ -1,16 +1,14 @@
-function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, sysGE, varargin)
-% function [rf, gx, gy, gz, rf1, gx1, gy1, gz1, tdelay] = plotseq(nstart, nstop, sysGE, varargin)
+function [rf, gx, gy, gz] = plotseq(nstart, nstop, sysGE, varargin)
+% function [rf, gx, gy, gz] = plotseq(nstart, nstop, sysGE, varargin)
 %
 % Display pulse sequence, as specified in modules.txt, scanloop.txt, and timing.txt.
-% Sequence timing is exact (at least that's the intent), i.e., it
-% tries to match the timing on the scanner exactly.
-% See resources/timing.svg for a detailed sequence timing diagram
+%
+% Sequence timing here is approximate.
+% See v6/figs/timing.svg in the TOPPEpsdSourceCode Github repo for detailed sequence timing.
 %
 % Inputs:
 %   nstart,nstop       first and last startseq calls (as specified in scanloop.txt)
 %   sysGE             struct specifying hardware system info, see systemspecs.m
-
-% Times in us
 
 %% parse inputs
 arg.loopArr         = [];
@@ -57,7 +55,7 @@ blockGroups = toppe.readcoresfile('cores.txt');
 rho = []; th = []; gx = []; gy = []; gz = [];
 dt = 4;  % us
 max_pg_iamp = 2^15-2;
-raster = sysGE.raster*1e6;  % us
+raster = sysGE.raster;  % us
 
 for n = nstart:nstop
 
