@@ -55,13 +55,7 @@ end
 
 % Gradient limits
 mxg = system.maxGrad;          
-if strcmp(system.gradUnit, 'mT/m')
-	mxg = mxg/10;     % Gauss/cm
-end
 mxs = system.maxSlew;
-if strcmp(system.slewUnit, 'T/m/s')
-	mxs = mxs/10;     % Gauss/cm/ms
-end
 
 % gradient/daq sample duration (msec)
 dt = 4e-3;             

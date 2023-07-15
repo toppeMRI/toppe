@@ -9,8 +9,6 @@ function [isValid, gmax, slewmax] = checkwaveforms(system, varargin)
 % Options 
 %  rf           rf waveform
 %  gx/gy/gz     [nt npulses]. Gradient waveforms. Can be different size.
-%  rfUnit       Gauss (default) or mT
-%  gradUnit     Gauss/cm (default) or mT/m
 %
 % Outputs
 %  isValid    boolean/logical (true/false)
@@ -29,8 +27,6 @@ arg.rf = [];
 arg.gx = [];
 arg.gy = [];
 arg.gz = [];
-arg.rfUnit   = 'Gauss';
-arg.gradUnit = 'Gauss/cm';
 
 arg = toppe.utils.vararg_pair(arg, varargin);
 
@@ -43,35 +39,8 @@ for ii = 1:length(fields)
 	eval(cmd);
 end
 
-%% Is (max) waveform duration on a 4 sample (16us) boundary?
-ndat = max( [size(rf,1) size(gx,1) size(gy,1) size(gz,1)] );
-if mod(ndat, 4)
-	fprintf('Error: waveform duration must be on a 4 sample (16 us) boundary.');
-	isValid = false;
-end
-
 %% Zero-pad at end to equal size
 [rf, gx, gy, gz] = padwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz);
-
-%% Convert input waveforms and system limits to Gauss and Gauss/cm
-if strcmp(arg.rfUnit, 'mT')
-	rf = rf/100;   % Gauss
-end
-if strcmp(arg.gradUnit, 'mT/m')
-	gx = gx/10;    % Gauss/cm
-	gy = gy/10;
-	gz = gz/10;
-end
-
-if strcmp(system.rfUnit, 'mT')
-	system.maxRF = system.maxRF/100;      % Gauss
-end
-if strcmp(system.gradUnit, 'mT/m')
-	system.maxGrad = system.maxGrad/10;   % Gauss/cm
-end
-if strcmp(system.slewUnit, 'T/m/s')
-	system.maxSlew = system.maxSlew/10;   % Gauss/cm/msec
-end
 
 %% Check against system hardware limits
 
@@ -115,14 +84,17 @@ for jj = 1:size(gx,2)   % loop through all waveforms (pulses)
         if max(pThresh) > 100
             warning(sprintf('PNS (%d%%) exceeds first controlled mode (100%%)!!! (waveform %d)', ...
                 round(max(pThresh)), jj));
+        else
+            warning(sprintf('PNS(%d%%) exceeds normal mode (80%%)! (waveform %d)', ...
+                round(max(pThresh)), jj));
         end
     end
 end
 
 %% do all waveforms start and end at zero?
-if any([gx(1,:) gx(end,:) gy(1,:) gy(end,:) gz(1,:) gz(end,:) rf(1,:) rf(end,:)] ~= 0)
-	fprintf('Error: all waveforms must begin and end with zero\n')
-	isValid = false;
-end
+%if any([gx(1,:) gx(end,:) gy(1,:) gy(end,:) gz(1,:) gz(end,:) rf(1,:) rf(end,:)] ~= 0)
+%	fprintf('Error: all waveforms must begin and end with zero\n')
+%	isValid = false;
+%end
 
 return;

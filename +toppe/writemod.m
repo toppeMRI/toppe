@@ -1,9 +1,9 @@
-function writemod(system, varargin)
-% function writemod(system, varargin)
+function writemod(sysGE, varargin)
+% function writemod(sysGE, varargin)
 %
 % Write waveforms to .mod file, for use with toppe psd on GE scanners.
 %
-% function writemod(system, varargin)
+% function writemod(sysGE, varargin)
 %
 % Assumes raster time (sample duration) of 4e-6 sec for all waveforms.
 %
@@ -12,26 +12,22 @@ function writemod(system, varargin)
 % >> writemod(sys, 'gz', gzwaveform, 'desc', 'my spoiler gradient', 'ofname', 'spoiler.mod');
 %
 % Input:
-%   system        struct specifying hardware system info, see systemspecs.m
+%   sysGE        struct specifying hardware system info, see systemspecs.m
 %
 % Input options:
 %   rf            Complex RF waveform, [ndat nrfpulses]
 %   gx            [ndat ngxpulses]
 %   gy            [ndat ngypulses]
 %   gz            [ndat ngzpulses]
-%   rfUnit        'Gauss' (default) or 'mT'
-%   gradUnit      'Gauss/cm' (default) or 'mT/m'
 %   ofname        Output filename.
 %   desc          Text string (ASCII) descriptor.
 %   nomflip       Excitation flip angle (degrees). Stored in .mod float header,
 %                 but has no influence on b1 scaling. Default: 90.
 %   hdrfloats     Additional floats to put in header (max 12)
 %   hdrints       Additional ints to put in header (max 29)
-%   nChop         [1 2] (int, multiple of 2) trim (chop) the start and end of
+%   nChop         [1 2] (int) trim (chop) the start and end of
 %                 the RF wavevorm (or ADC window) by this many 4us samples.
 %                 Using non-zero nChop helps reduce module duration on scanner.
-%                 If converting to Pulseq using pulsegeq.ge2seq, nChop(2) must
-%                 be non zero to allow time for RF ringdown.
 %                 Default: [0 0] 
 
 import toppe.*
@@ -48,8 +44,6 @@ arg.rf = [];
 arg.gx = [];
 arg.gy = [];
 arg.gz = [];
-arg.rfUnit    = 'Gauss';
-arg.gradUnit  = 'Gauss/cm';
 arg.ofname    = 'out.mod'; 
 arg.desc      = 'TOPPE module';
 arg.nomflip   = 90;
@@ -61,12 +55,6 @@ arg.nChop = nChopDefault;
 arg = vararg_pair(arg, varargin);
 
 %% Check nChop
-if arg.nChop(1) < nChopDefault(1) | arg.nChop(2) < nChopDefault(2)
-    msg = ['nChop < 48 samples. Module duration (on scanner) may be ', ...
-          'extended to account for RF/ADC dead/ringdown times as needed.'];
-    warning(msg);
-end
-
 if ~isempty(arg.rf)
     if sum(abs(arg.rf([1:arg.nChop(1) (end-arg.nChop(2)+1):end]))) > 0
         msg = ['RF waveform must be zero during the first/last ', ...
@@ -75,9 +63,9 @@ if ~isempty(arg.rf)
     end
 end
 
-if mod(arg.nChop(1),2) | mod(arg.nChop(2),2)
-    error('Both entries in nChop must be a multiple of 2');
-end
+%if mod(arg.nChop(1),2) | mod(arg.nChop(2),2)
+%    error('Both entries in nChop must be a multiple of 2');
+%end
 
 %% Detect all-zero RF waveform, treat as empty, and give warning to user
 if ~isempty(arg.rf) & norm(abs(arg.rf(:,1))) == 0
@@ -93,29 +81,17 @@ for ii = 1:length(fields)
 	eval(cmd);
 end
 
-%% Convert to Gauss and Gauss/cm
-if strcmp(arg.rfUnit, 'mT')
-	rf = rf/100;   % Gauss
-end
-if strcmp(arg.gradUnit, 'mT/m')
-	gx = gx/10;    % Gauss/cm
-	gy = gy/10;
-	gz = gz/10;
-end
-
 %% Force all waveform arrays to have the same dimensions 
 [rf, gx, gy, gz] = padwaveforms('rf', rf, 'gx', gx, 'gy', gy, 'gz', gz);
 	
-% Fixes to avoid idiosyncratic issues on scanner
-%[rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp);
 
 %% Check waveforms against system hardware limits
-%if ~checkwaveforms(system, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
-%	('Waveforms failed system hardware checks -- exiting');
-%end
+if ~checkwaveforms(sysGE, 'rf', rf, 'gx', gx, 'gy', gy, 'gz', gz)
+	('Waveforms failed system hardware checks -- exiting');
+end
 
 %% Header arrays
-[paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, system);
+[paramsfloat] = sub_myrfstat(abs(rf(:,1,1)), arg.nomflip, sysGE);
 if ~isempty(arg.hdrfloats)
 	if length(arg.hdrfloats) > 12
 		error('max number of extra floats in .mod file header is 12');
@@ -132,13 +108,13 @@ end
 
 %% Write to .mod file
 arg.desc = sprintf('Filename: %s\n%s', arg.ofname, arg.desc);
-sub_writemod(arg.ofname, arg.desc, rf, gx, gy, gz, paramsint16, paramsfloat, system);
+sub_writemod(arg.ofname, arg.desc, rf, gx, gy, gz, paramsint16, paramsfloat, sysGE);
 
 return;
 
 
 
-function paramsfloat = sub_myrfstat(b1, nom_fa, system);
+function paramsfloat = sub_myrfstat(b1, nom_fa, sysGE);
 % Calculate RF parameters needed for RFPULSE struct in .e file.
 % Needed for B1 scaling, SAR calculations, and enforcing duty cycle limits.
 % See also mat2signa_krishna.m
@@ -149,7 +125,7 @@ function paramsfloat = sub_myrfstat(b1, nom_fa, system);
 g = 1;  % legacy dummy value, ignore
 nom_bw = 2000;
 
-dt = 4e-6;                        % use 4 us RF sample width
+dt = 4e-6;                        % use 4 us RF raster time
 %gamma = 4.2575e3;                  % Hz/Gauss
 tbwdummy = 2;
 
@@ -168,7 +144,7 @@ area          = abs(sum(b1)) / abs(sum(hardpulse));
 dtycyc        = length(find(abs(b1)>0.2236*max(abs(b1)))) / length(b1);
 maxpw         = dtycyc;
 num           = 1;
-max_b1        = system.maxRF;                       	% Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
+max_b1        = sysGE.maxRF;                       	% Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
 																		% as long as other RF .mod files (if any) use the same max_b1.
 max_int_b1_sq = max( cumsum(abs(b1).^2)*dt*1e3 );   	% Gauss^2 - ms
 max_rms_b1    = sqrt(mean(abs(b1).^2));              	% Gauss
@@ -199,7 +175,7 @@ return;
 
 
 %%
-function sub_writemod(fname,desc,rf,gx,gy,gz,paramsint16,paramsfloat,system)
+function sub_writemod(fname,desc,rf,gx,gy,gz,paramsint16,paramsfloat,sysGE)
 %
 %   desc           ASCII description 
 %   rf             size(rho) = N x 1, where N = # waveform samples, 
@@ -219,17 +195,6 @@ npulses = size(rf,2);
 % max length of params* vectors
 nparamsint16 = 32;
 nparamsfloat = 32;
-
-% RF waveform is scaled relative to system.maxRF.
-% This may be 0.25G/0.125G for quadrature/body RF coils (according to John Pauly RF class notes), but haven't verified...
-if strcmp(system.rfUnit, 'mT')
-	system.maxRF = system.maxRF/100;   % Gauss
-end
-
-% gradient waveforms are scaled relative to system.maxGrad
-if strcmp(system.gradUnit, 'mT/m')
-	system.maxGrad = system.maxGrad / 10;          % Gauss/cm
-end
 
 b1max = max(abs(rho(:)));     % Gauss
 
@@ -268,7 +233,7 @@ fwrite(fid, desc, 'uchar');
 fwrite(fid, ncoils,  'int16');          % shorts must be written in binary -- otherwise it won't work on scanner 
 fwrite(fid, res,     'int16');
 fwrite(fid, npulses, 'int16');
-fprintf(fid, 'b1max:  %f\n', system.maxRF);           % (floats are OK in ASCII on scanner)
+fprintf(fid, 'b1max:  %f\n', sysGE.maxRF);           % (floats are OK in ASCII on scanner)
 fprintf(fid, 'gmax:   %f\n', gmax);
 %fprintf(fid, 'res:   %d\n', res);
 
@@ -281,7 +246,7 @@ end
 
 % write binary waveforms (*even* short integers -- the toppe driver/interpreter sets the EOS bit, so don't have to worry about it here)
 max_pg_iamp = 2^15-2;                                   % RF amp is flipped if setting to 2^15 (as observed on scope), so subtract 2
-rho   = 2*round(rho/system.maxRF*max_pg_iamp/2);
+rho   = 2*round(rho/sysGE.maxRF*max_pg_iamp/2);
 theta = 2*round(theta/pi*max_pg_iamp/2);
 gx    = 2*round(gx/gmax*max_pg_iamp/2);
 gy    = 2*round(gy/gmax*max_pg_iamp/2);
