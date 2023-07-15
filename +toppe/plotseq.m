@@ -32,6 +32,12 @@ else
     loopArr = arg.loopArr;
 end
 
+if size(loopArr,2) > 27
+    toppeVersion = 6;
+else
+    toppeVersion = 5;
+end
+
 % module waveforms
 if isempty(arg.mods)
     modules = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
@@ -49,7 +55,9 @@ if arg.doTimeOnly
 end
 
 %% Get block groups
-blockGroups = toppe.readcoresfile('cores.txt');
+if toppeVersion > 5
+    blockGroups = toppe.readcoresfile('cores.txt');
+end
 
 %% build sequence. each sample is 4us.
 rho = []; th = []; gx = []; gy = []; gz = [];
@@ -59,8 +67,12 @@ raster = sysGE.raster;  % us
 
 for n = nstart:nstop
 
-    i = loopArr(n,28);  % block group id
     p = loopArr(n,1);   % module id
+    if toppeVersion > 5
+        i = loopArr(n,28);  % block group id
+    else
+        i = p;
+    end
     w = loopArr(n,16);  % waveform index
 
     % Pure delay block
