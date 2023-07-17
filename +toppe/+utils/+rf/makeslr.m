@@ -73,14 +73,8 @@ if round(tbw) ~= tbw
 end
 
 mxg = system.maxGrad;          
-if strcmp(system.gradUnit, 'mT/m')
-	mxg = mxg/10;     % Gauss/cm
-end
 mxs = system.maxSlew;
 mxs = arg.maxSlewScale * mxs;
-if strcmp(system.slewUnit, 'T/m/s')
-	mxs = mxs/10;     % Gauss/cm/ms
-end
 
 sliceOffset = arg.sliceOffset;
 
@@ -90,7 +84,7 @@ else
 	isBalanced=0;
 end
 
-dt = system.raster*1e3;        % msec
+dt = system.raster*1e-3;        % msec
 
 % 
 %switch arg.type
@@ -266,7 +260,7 @@ import toppe.utils.rf.*
 import toppe.utils.rf.jpauly.*
 
 %% make rf waveform
-dt = sys.raster*1e3;                 % sample size (msec)
+dt = sys.raster*1e-3;                 % sample size (msec)
 res = round(dur/dt);
 dur = res*dt;
 
@@ -375,6 +369,9 @@ return;
 
 function sub_test
 
+sys = toppe.systemspecs('maxSlew', 15, 'maxRF', 0.25);
+
+if false
 % design a spin-echo pulse and simulate SE slice profile
 flip = 180;
 slthick = 2;   % cm
@@ -382,9 +379,8 @@ tbw = 6;
 dur = 6;       % ms
 ncycles = 8;   % number of cycles of spoiling across slthick
 ofname = 'se.mod';
-sys = toppe.systemspecs('maxSlew', 15, 'maxRf', 0.25);
-[rf,gex,freq180] = toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncycles,...
-	'system', sys, 'sliceOffset', 0, 'ofname', ofname, 'type', 'se');
+[rf,gex,freq180] = toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncycles, sys, ...
+	'sliceOffset', 0, 'ofname', ofname, 'type', 'se');
 toppe.plotmod(ofname);
 
 m0 = [1 0 0];  % initial magnetization
@@ -393,6 +389,7 @@ Z = linspace(-slthick, slthick);
 T1 = 1000; T2 = 100;
 figure;
 toppe.utils.rf.slicesim(m0,rf,gex,dt,Z,T1,T2);
+end
 
 % design a small-tip pulse and simulate slice profile
 flip = 20;
@@ -401,8 +398,8 @@ tbw = 6;
 dur = 2;       % ms
 ncycles = 2;   % number of cycles of spoiling across slthick
 ofname = 'st.mod';
-[rf,gex] = toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncycles,...
-	'system', sys, 'sliceOffset', 0, 'ofname', ofname, 'type', 'st');
+[rf,gex] = toppe.utils.rf.makeslr(flip, slthick, tbw, dur, ncycles, sys, ...
+	'sliceOffset', 0, 'ofname', ofname, 'type', 'st');
 toppe.plotmod(ofname);
 
 m0 = [0 0 1];  % initial magnetization
