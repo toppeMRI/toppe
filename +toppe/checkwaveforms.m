@@ -1,10 +1,10 @@
-function [isValid, gmax, slewmax] = checkwaveforms(system, varargin)
+function [isValid, gmax, slewmax] = checkwaveforms(sysGE, varargin)
 % Check rf/gradient waveforms against system limits.
 %
-% function [isValid, gmax, slewmax] = checkwaveforms(system, varargin)
+% function [isValid, gmax, slewmax] = checkwaveforms(sysGE, varargin)
 %
 % Inputs:
-%  system       (required) struct containing hardware specs. See systemspecs.m
+%  sysGE       (required) struct containing hardware specs. See systemspecs.m
 %
 % Options 
 %  rf           rf waveform
@@ -51,25 +51,25 @@ for ii = 1:3
 	eval(sprintf('g = g%s;', axes(ii))); 
 
     gmax(ii) = max(abs(g(:)));
-    if gmax(ii) > system.maxGrad
-        fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', axes(ii), gmax(ii)/system.maxGrad*100);
+    if gmax(ii) > sysGE.maxGrad
+        fprintf('Error: %s gradient amplitude exceeds system limit (%.1f%%)\n', axes(ii), gmax(ii)/sysGE.maxGrad*100);
         isValid = false;
     end
 
     slewmax(ii) = 0;
     for jj = 1:size(g,2)   % loop through all waveforms (pulses)
-	    slewmax(ii) = max(slewmax(ii), max(abs(diff(g(:,jj)/(system.raster*1e3)))));
+	    slewmax(ii) = max(slewmax(ii), max(abs(diff(g(:,jj)/(sysGE.raster*1e3)))));
     end
-    if slewmax(ii) > system.maxSlew
-        fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', axes(ii), slewmax(ii)/system.maxSlew*100);
+    if slewmax(ii) > sysGE.maxSlew
+        fprintf('Error: %s gradient slew rate exceeds system limit (%.1f%%)\n', axes(ii), slewmax(ii)/sysGE.maxSlew*100);
         isValid = false;
     end
 end
 
 % peak rf
 maxRF = max(abs(rf));
-if maxRF > system.maxRF
-	fprintf('Error: rf amplitude exceeds system limit (%.1f%%)\n', maxRF/system.maxRF*100);
+if maxRF > sysGE.maxRF
+	fprintf('Error: rf amplitude exceeds system limit (%.1f%%)\n', maxRF/sysGE.maxRF*100);
 	isValid = false;
 end
 
@@ -79,7 +79,7 @@ for jj = 1:size(gx,2)   % loop through all waveforms (pulses)
     gtm(1,:) = gx(:,jj)'*1d-2;    % T/m
     gtm(2,:) = gy(:,jj)'*1d-2;
     gtm(3,:) = gz(:,jj)'*1d-2;
-    [pThresh] = toppe.pns(gtm, system.gradient, 'gdt', system.raster, 'plt', false, 'print', false);
+    [pThresh] = toppe.pns(gtm, sysGE.gradient, 'gdt', sysGE.raster, 'plt', false, 'print', false);
     if max(pThresh) > 80
         if max(pThresh) > 100
             warning(sprintf('PNS (%d%%) exceeds first controlled mode (100%%)!!! (waveform %d)', ...
