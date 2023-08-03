@@ -170,7 +170,7 @@ if strcmp(modname,'finish')
         warning('maxview > system.maxView -- scan may not run!');   
     end
 
-    dur = 1; %toppe.getscantime(system,'loopArr',d,'mods',modules);
+    dur = toppe.getscantime(system,'loopArr',d,'mods',modules);
     udur = round(dur * 1e6);
     if toppeVer > 2
         newParams = [nt maxslice maxecho maxview udur toppeVer];

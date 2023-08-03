@@ -147,11 +147,16 @@ peakrfpower = 0;
 peakgxes = 0;
 peakgyes = 0;
 peakgzes = 0;
+
+fprintf('\nChecking iter %d of %d',1,nit)
+prev_ii = 1; % Tracker for previous message length
 for ii = 1:nit
-    for ib = 1:30
+    for ib = 1:strlength(sprintf('Checking iter %d of %d',prev_ii,nit))
         fprintf('\b');
     end
-    fprintf('\titer %d of %d', ii, nit);
+    prev_ii = ii;
+    fprintf('Checking iter %d of %d',prev_ii,nit);
+
     iStart = (ii-1)*nStartseqPerIter + 1;
     iStop = min(ii*nStartseqPerIter + 1000, nStartseq); % overlap a bit
     [b1, gx, gy, gz] = toppe.plotseq(iStart, iStop, sys, ...

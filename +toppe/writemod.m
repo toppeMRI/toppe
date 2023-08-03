@@ -55,13 +55,13 @@ arg.nChop = nChopDefault;
 arg = vararg_pair(arg, varargin);
 
 %% Check nChop
-if ~isempty(arg.rf)
-    if sum(abs(arg.rf([1:arg.nChop(1) (end-arg.nChop(2)+1):end]))) > 0
-        msg = ['RF waveform must be zero during the first/last ', ...
-              sprintf('%d/%d (nChop) samples.', arg.nChop(1), arg.nChop(2))]; 
-        error(msg);
-    end
-end
+%if ~isempty(arg.rf)
+%    if sum(abs(arg.rf([1:arg.nChop(1) (end-arg.nChop(2)+1):end]))) > 0
+%        msg = ['RF waveform must be zero during the first/last ', ...
+%              sprintf('%d/%d (nChop) samples.', arg.nChop(1), arg.nChop(2))]; 
+%        error(msg);
+%    end
+%end
 
 %if mod(arg.nChop(1),2) | mod(arg.nChop(2),2)
 %    error('Both entries in nChop must be a multiple of 2');
@@ -265,33 +265,5 @@ for ip = 1:npulses
 end
 
 fclose(fid);
-
-return;
-
-
-
-%% function [rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp); %,tipupdelx,tipupdely)
-function [rho,theta,gx,gy,gz] = sub_prepare_for_modfile(rho,theta,gx,gy,gz,addrframp); %,tipupdelx,tipupdely)
-
-% make smooth RF ramp to avoid RF amp error
-ramp = rho(1)*[linspace(0,1,5)]';
-ramp = [-ramp/2; flipud(-ramp/2); ramp];
-if ~addrframp
-	ramp = [0; 0];   % to avoid non-zero gradients at beginning/end which causes problems with readmod
-end
-
-[n npulses ncoils] = size(rho);   % ncoils is number of RF transmit coils 
-for ip = 1:npulses
-	for ic = 1:ncoils
-		rho2(:,ip,ic) = [ramp; rho(:,ip,ic)];
-		theta2(:,ip,ic) = [0*ramp; theta(:,ip,ic)];
-	end
-end
-rho = rho2;
-theta = theta2;
-gx = [zeros(numel(ramp),npulses); gx];
-gy = [zeros(numel(ramp),npulses); gy];
-gz = [zeros(numel(ramp),npulses); gz];
-
 
 return;
