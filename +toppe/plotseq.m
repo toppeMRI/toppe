@@ -19,13 +19,16 @@ arg.doDisplay       = true;
 arg.doTimeOnly      = false;
 arg.drawpause       = 1;
 arg.gmax            = [];     % Gauss/cm
-arg.rhomax          = 0.25;  % Gauss
+arg.rhomax          = [];  % Gauss
 arg.printTime       = false;
 
 arg = toppe.utils.vararg_pair(arg, varargin);
 
 if isempty(arg.gmax)
     arg.gmax = sysGE.maxGrad;  % default
+end
+if isempty(arg.rhomax)
+    arg.rhomax = sysGE.maxRF;  % default
 end
 
 %% read scan files as needed
@@ -155,8 +158,8 @@ if arg.doDisplay
         Tend = 1.01*T(end);
     end
     
-    gmax = arg.gmax;   % Gauss/cm
-    srho = arg.rhomax; %max(1.1*max(abs(rho(:))),0.05);
+    gmax = 1.1*arg.gmax;   % Gauss/cm
+    srho = 1.1*arg.rhomax; %max(1.1*max(abs(rho(:))),0.05);
     lw = 2;
     bgColor = 'k';
 
@@ -178,14 +181,14 @@ if arg.doDisplay
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
     ax5 = nexttile;
-    plot(T, th, '-g', 'LineWidth', lw);  ylabel('∠b1 (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
+    plot(T, th, '-g', 'LineWidth', lw);  ylabel('∠b1 (rad)'); axis([T(1) Tend -1.1*pi 1.1*pi]);
     set(gca, 'color', bgColor);
     xlabel('time (ms)');
 
     t.TileSpacing = 'none';
     t.Padding = 'none';
 
-    linkaxes([ax1 ax2 ax3 ax4 ax5], 'xy');
+    linkaxes([ax1 ax2 ax3 ax4 ax5], 'x');
 end
 
 return;
