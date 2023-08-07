@@ -161,29 +161,31 @@ if arg.doDisplay
     bgColor = 'k';
 
     t = tiledlayout(5, 1);
-    nexttile;
+    ax1 = nexttile;
     plot(T, gx, '-y', 'LineWidth', lw);  ylabel('X (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
-    nexttile;
+    ax2 = nexttile;
     plot(T, gy, '-c', 'LineWidth', lw);  ylabel('Y (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
     
-    nexttile;
+    ax3 = nexttile;
     plot(T, gz, '-m', 'LineWidth', lw);  ylabel('Z (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
-    nexttile;
+    ax4 = nexttile;
     plot(T, rho, '-r', 'LineWidth', lw); ylabel('|b1| (Gauss)'); axis([T(1) Tend -srho srho]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
-    nexttile;
+    ax5 = nexttile;
     plot(T, th, '-g', 'LineWidth', lw);  ylabel('∠b1 (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
     set(gca, 'color', bgColor);
     xlabel('time (ms)');
 
     t.TileSpacing = 'none';
     t.Padding = 'none';
+
+    linkaxes([ax1 ax2 ax3 ax4 ax5], 'xy');
 end
 
 return;
