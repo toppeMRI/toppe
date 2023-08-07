@@ -18,11 +18,15 @@ arg.moduleListFile  = 'modules.txt';
 arg.doDisplay       = true;
 arg.doTimeOnly      = false;
 arg.drawpause       = 1;
-arg.gmax            = 5;     % Gauss/cm
+arg.gmax            = [];     % Gauss/cm
 arg.rhomax          = 0.25;  % Gauss
 arg.printTime       = false;
 
 arg = toppe.utils.vararg_pair(arg, varargin);
+
+if isempty(arg.gmax)
+    arg.gmax = sysGE.maxGrad;  % default
+end
 
 %% read scan files as needed
 % scanloop array
@@ -151,16 +155,35 @@ if arg.doDisplay
         Tend = 1.01*T(end);
     end
     
-    gmax = arg.gmax; %5;  % Gauss/cm
+    gmax = arg.gmax;   % Gauss/cm
     srho = arg.rhomax; %max(1.1*max(abs(rho(:))),0.05);
-    lw = 1.5;
-    subplot(511); plot(T, rho, 'LineWidth', lw); ylabel('|b1| (Gauss)'); axis([T(1) Tend -srho srho]);
-    subplot(512); plot(T, th, 'LineWidth', lw);  ylabel('∠b1 (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
-    subplot(513); plot(T, gx, 'LineWidth', lw);  ylabel('gx (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
-    %gmax = 1;  % Gauss/cm
-    subplot(514); plot(T, gy, 'LineWidth', lw);  ylabel('gy (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
-    subplot(515); plot(T, gz, 'LineWidth', lw);  ylabel('gz (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
-    xlabel('msec');
+    lw = 2;
+    bgColor = 'k';
+
+    t = tiledlayout(5, 1);
+    nexttile;
+    plot(T, gx, '-y', 'LineWidth', lw);  ylabel('X (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+    set(gca, 'color', bgColor);  set(gca, 'XTick', []);
+
+    nexttile;
+    plot(T, gy, '-c', 'LineWidth', lw);  ylabel('Y (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+    set(gca, 'color', bgColor);  set(gca, 'XTick', []);
+    
+    nexttile;
+    plot(T, gz, '-m', 'LineWidth', lw);  ylabel('Z (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+    set(gca, 'color', bgColor);  set(gca, 'XTick', []);
+
+    nexttile;
+    plot(T, rho, '-r', 'LineWidth', lw); ylabel('|b1| (Gauss)'); axis([T(1) Tend -srho srho]);
+    set(gca, 'color', bgColor);  set(gca, 'XTick', []);
+
+    nexttile;
+    plot(T, th, '-g', 'LineWidth', lw);  ylabel('∠b1 (rad)'); axis([T(1) Tend -1.3*pi 1.3*pi]);
+    set(gca, 'color', bgColor);
+    xlabel('time (ms)');
+
+    t.TileSpacing = 'none';
+    t.Padding = 'none';
 end
 
 return;
