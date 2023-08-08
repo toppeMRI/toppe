@@ -1,5 +1,5 @@
-function [rf, gx, gy, gz] = plotseq(sysGE, varargin)
-% function [rf, gx, gy, gz] = plotseq(sysGE, varargin)
+function [rf, gx, gy, gz, tRange] = plotseq(sysGE, varargin)
+% function [rf, gx, gy, gz, tRange] = plotseq(sysGE, varargin)
 %
 % Display pulse sequence, as specified in modules.txt and scanloop.txt in current folder
 %
@@ -12,11 +12,15 @@ function [rf, gx, gy, gz] = plotseq(sysGE, varargin)
 % Options:
 %   'timeRange'       Specify time range, [tStart tStop] (sec)
 %   'blockRange'      Block range, [iStart iStop]
+%   'doDisplay'       true/false
+%
+% Outputs:
+%   tRange            [tStart tStop]  Start and stop times (sec)
 
 %% parse inputs
 arg.timeRange       = [];
 arg.blockRange      = [];
-arg.loop         = [];
+arg.loop            = [];
 arg.loopFile        = 'scanloop.txt';
 arg.mods            = [];
 arg.moduleListFile  = 'modules.txt';
@@ -38,6 +42,10 @@ end
 
 arg.timeRange = round(arg.timeRange*1e6);   % us
 
+if arg.doTimeOnly
+    arg.doDisplay = false;
+end
+
 %% read scan files
 % scanloop 
 if isempty(arg.loop)
@@ -51,11 +59,6 @@ if isempty(arg.mods)
     modules = toppe.tryread(@toppe.readmodulelistfile, arg.moduleListFile);
 else
     modules = arg.mods;
-end
-
-%% Default is to plot the whole sequence
-if isempty(arg.timeRange) & isempty(arg.blockRange)
-    arg.blockRange = 1 : size(loop, 1);
 end
 
 %% Initialize counter and turn off display if we're only doing timings
@@ -76,12 +79,10 @@ end
 
 %% build sequence. each sample is 4us.
 rho = []; th = []; gx = []; gy = []; gz = [];
-dt = 4;  % us
-max_pg_iamp = 2^15-2;
 raster = sysGE.raster;  % us
 
 if ~isempty(arg.blockRange)
-    % get vector of time points (for plotting)
+    % get start and stop times (for plotting)
     n = 1;
     t = 0;
     for n = 1:(arg.blockRange(1)-1)
@@ -92,7 +93,7 @@ if ~isempty(arg.blockRange)
             t = t + modules{p}.dur;
         end
     end
-    tnStart = t;
+    tStart = t;
     for n = arg.blockRange(1):arg.blockRange(2)
         p = loop(n,1);   % module id
         if p == 0
@@ -101,16 +102,18 @@ if ~isempty(arg.blockRange)
             t = t + modules{p}.dur;
         end
     end
-    tnStop = t;
-    T = (tnStart+raster/2) : raster : tnStop;
+    tStop = t;
+    T = (tStart+raster/2) : raster : tStop;
 
-    [rho, th, gx, gy, gz] = sub_getwavs(arg.blockRange(1), arg.blockRange(2), loop, modules, sysGE);
+    tRange = [tStart tStop]*1e-6;  % s
+
+    [rho, th, gx, gy, gz, dur] = sub_getwavs(arg.blockRange(1), arg.blockRange(2), loop, modules, sysGE, arg.doTimeOnly);
 else
     % Plot time range
     tic = arg.timeRange(1);
     toc = arg.timeRange(2);
 
-    % find blocks containg start and end times
+    % find blocks containing start and stop times
     n = 1;
     t = 0;  % time counter (us)
     while t <= tic
@@ -118,14 +121,15 @@ else
         i = loop(n,28);  % block group id
 
         if p == 0
-            t = t + loop(n,14);    % us
+            dur = loop(n,14);    % us
         else
-            t = t + modules{p}.dur;
+            dur = modules{p}.dur;  % us
         end
+        t = t + dur;
         n = n + 1;
     end
 
-    tnStart = max(t-modules{p}.dur, 0);
+    tStart = max(t-dur, 0);
     nStart = max(n-1, 1);
 
     while t <= toc & n <= size(loop, 1)
@@ -140,33 +144,34 @@ else
         n = n + 1;
     end
 
-    tnStop = t;
+    tStop = t;
     nStop = max(n-1, 1);
 
     % get waveforms
-    [rho, th, gx, gy, gz] = sub_getwavs(nStart, nStop, loop, modules, sysGE);
+    [rho, th, gx, gy, gz, dur] = sub_getwavs(nStart, nStop, loop, modules, sysGE, arg.doTimeOnly);
 
-    % vector of time points (for plotting)
-    % keep only desired time range
-    T = (tnStart+raster/2):raster:tnStop;
-    mask = T >= tic & T <= toc;
-    T = T (mask);
-    rho = rho(mask);
-    th = th(mask);
-    gx = gx(mask);
-    gy = gy(mask);
-    gz = gz(mask);
+    if ~arg.doTimeOnly
+        % vector of time points (for plotting)
+        % keep only desired time range
+        T = (tStart+raster/2):raster:tStop;
+        mask = T >= tic & T <= toc;
+        T = T (mask);
+        rho = rho(mask);
+        th = th(mask);
+        gx = gx(mask);
+        gy = gy(mask);
+        gz = gz(mask);
+    end
+
+    tRange = arg.timeRange*1e-6;
 end
+
+rf = rho.*exp(1i*th);
+
 
 %if arg.printTime
 %    fprintf(1, 'n %d: mindur = %d us, rf t = %d us, grad t = %d us\n', n, mindur, numel(rho)*raster, numel(gx)*raster);
 %end
-
-if arg.doTimeOnly % Make all vectors the correct length but zeros
-    [rf, th, gx, gy, gz] = deal(zeros(nsamples,1));
-else
-    rf = rho.*exp(1i*th);
-end
 
 %% plot
 if arg.doDisplay
@@ -208,10 +213,8 @@ if arg.doDisplay
     linkaxes([ax1 ax2 ax3 ax4 ax5], 'x');
 end
 
-
-
 % build sequence. Each sample is 4us.
-function [rho, th, gx, gy, gz] = sub_getwavs(blockStart, blockStop, loop, modules, sysGE)
+function [rho, th, gx, gy, gz, dur] = sub_getwavs(blockStart, blockStop, loop, modules, sysGE, doTimeOnly)
 
 rho = []; th = []; gx = []; gy = []; gz = [];
 max_pg_iamp = 2^15-2;
@@ -223,15 +226,20 @@ for n = blockStart : blockStop
     i = loop(n,28);  % block group id
     w = loop(n,16);  % waveform index
 
+    dur = 0;
+
     % Pure delay block
     if p == 0
-       w = zeros(round(loop(n,14)/raster), 1);  % TODO: make accurate
-       rho = [rho; w];
-       th = [th; w];
-       gx = [gx; w];
-       gy = [gy; w];
-       gz = [gz; w];
-       continue;
+        dur = dur + loop(n,14);  % TODO: make accurate
+        if ~doTimeOnly   
+            w = zeros(round(loop(n,14)/raster), 1);  % TODO: make accurate
+            rho = [rho; w];
+            th = [th; w];
+            gx = [gx; w];
+            gy = [gy; w];
+            gz = [gz; w];
+        end
+        continue;
     end
 
     if modules{p}.hasRF
