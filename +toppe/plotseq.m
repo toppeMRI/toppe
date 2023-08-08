@@ -161,9 +161,11 @@ else
         gx = gx(mask);
         gy = gy(mask);
         gz = gz(mask);
+        tRange = [T(1) T(end)];
+    else
+        tRange = [tStart tStop]*1e-6;
     end
 
-    tRange = arg.timeRange*1e-6;
 end
 
 rf = rho.*exp(1i*th);
