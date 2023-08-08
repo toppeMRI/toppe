@@ -1,5 +1,5 @@
-function preflightcheck(entryFile, seqstampFile, sys)
-% function preflightcheck(entryFile, seqstampFile, sys)
+function preflightcheck(entryFile, seqstampFile, sysGE)
+% function preflightcheck(entryFile, seqstampFile, sysGE)
 %
 % Generate 'sequence stamp' file containing file checksums,
 % and patient- and scanner-related safety-related information.
@@ -19,7 +19,7 @@ function preflightcheck(entryFile, seqstampFile, sys)
 %                  in the current Matlab working folder.
 %                  See https://github.com/toppeMRI/toppe/blob/main/Files.md for details.
 %   seqstampFile   (string) Output file name. Must be listed in line 6 of entryFile.
-%   sys            GE system struct. See toppe.systemspecs().
+%   sysGE          GE system struct. See toppe.systemspecs().
 %
 % Example usage:
 %  Step 1: Create the file 'toppe0.entry' by hand, and copy to /usr/g/research/pulseq/
@@ -34,7 +34,7 @@ function preflightcheck(entryFile, seqstampFile, sys)
 %  Step 5: Prescribe the interpreter and scan, following the README in the
 %          interpreter code repository.
 
-fprintf('Preflight check (for GE)...\n');
+fprintf('Preflight check for Pulseq on GE v1.0...\n');
 
 % open output file
 fout = fopen(seqstampFile, 'w');
@@ -96,7 +96,7 @@ gmax = 0;
 slewmax = 0;
 for ii = 1:length(modArr)
     [~,gx,gy,gz,~,~,~,~] = toppe.readmod(modArr{ii}.fname); 
-    [isValid, gmaxtmp, slewmaxtmp] = toppe.checkwaveforms(sys, ...
+    [isValid, gmaxtmp, slewmaxtmp] = toppe.checkwaveforms(sysGE, ...
         'gx', gx, 'gy', gy, 'gz', gz);
     if ~isValid
         error('checkwaveforms failed for module %d', ii);
@@ -136,69 +136,58 @@ end
 % Assumes use of the RF pulse in 'b1CheckFile'.  
 % (TODO: consider replacing with a fixed reference pulse, e.g., 90 deg tbw=6 dur=2.3ms sinc as in 3dgrass.e)
 % To stay within SAR limits, TRequiv must be greater than the value returned by 'maxseqsar' in the EPIC code.
-% Also calculate gradient power = energy per TRequiv.
-% Do it in small chunks to limit memory usage.
-d = toppe.readloop(loopFile);
-nStartseq = size(d,1);   % number rows in scanloop.txt (= number of 'startseq' calls in the EPIC code).
-dt = 4e-6;         % RF raster time (sec)
-nStartseqPerIter = 5000;
-nit = ceil(nStartseq/nStartseqPerIter);
+% Also calculate gradient 'power' = energy per TRequiv.
+% Do it in 10s chunks, in 5s steps.
+loop = toppe.readloop(loopFile);
+
 peakrfpower = 0;
-peakgxes = 0;
-peakgyes = 0;
-peakgzes = 0;
+peakgxs = 0;  % Squared gradient, peak 10s average
+peakgys = 0;
+peakgzs = 0;
 
-fprintf('\nChecking iter %d of %d',1,nit)
-prev_ii = 1; % Tracker for previous message length
-for ii = 1:nit
-    for ib = 1:strlength(sprintf('Checking iter %d of %d',prev_ii,nit))
-        fprintf('\b');
-    end
-    prev_ii = ii;
-    fprintf('Checking iter %d of %d',prev_ii,nit);
+tSpan = 10;   % time span to average over (sec)
 
-    iStart = (ii-1)*nStartseqPerIter + 1;
-    iStop = min(ii*nStartseqPerIter + 1000, nStartseq); % overlap a bit
-    [b1, gx, gy, gz] = toppe.plotseq(iStart, iStop, sys, ...
-        'loopFile',       loopFile, ...
-        'moduleListFile', moduleListFile, ...
-        'doDisplay',      false);
-    % b1: Gauss. gx/gy/gz: Gauss/cm
-    b1s = abs(b1).^2;    % RF power waveform (energy per 4us sample)
-    gxes = gx.^2;        % gradient power waveform (energy per 4us sample)
-    gyes = gy.^2;        % gradient power waveform (energy per 4us sample)
-    gzes = gz.^2;        % gradient power waveform (energy per 4us sample)
-    n10s = round(10/dt);  % number of rf samples in 10s
-    if length(b1s) > n10s
-        b1s = movmean(b1s, n10s, 'Endpoints', 'discard');
-        peakrfpower = max(peakrfpower, max(b1s));
-        gxes = movmean(gxes, n10s, 'Endpoints', 'discard');
-        gyes = movmean(gyes, n10s, 'Endpoints', 'discard');
-        gzes = movmean(gzes, n10s, 'Endpoints', 'discard');
-        peakgxes = max(peakgxes, max(gxes));
-        peakgyes = max(peakgyes, max(gyes));
-        peakgzes = max(peakgzes, max(gzes));
-    else
-        peakrfpower = mean(b1s)/n10s*length(b1s);
-        peakgxes = mean(gxes)/n10s*length(b1s);
-        peakgyes = mean(gyes)/n10s*length(b1s);
-        peakgzes = mean(gzes)/n10s*length(b1s);
+rf = toppe.readmod(b1CheckFile);
+refPulse.energy = sum(abs(rf).^2) * sysGE.raster*1e-6;  % Gauss^2*s
+
+% get peak 10s RF power
+maxEnergy = 0;
+%maxPowerX = 0;
+fprintf('Checking max 10s Sar ');
+for tStart = 0:5:1000
+    fprintf('.');
+    %for ib = 1:strlength(sprintf('Checking sequence (iter %d of %d)',prev_ii,nit))
+    %    fprintf('\b');
+    %end
+    %prev_ii = ii;
+    %fprintf('Checking sequence (iter %d of %d)',prev_ii,nit);
+
+    [rf, gx, gy, gz, tRange] = toppe.plotseq(sysGE, 'timeRange', [tStart tStart+10], 'doDisplay', false);
+
+    maxEnergy = max(maxEnergy, sum(abs(rf).^2) * sysGE.raster*1e-6);   % Gauss^2 * s
+    %maxPowerX = max(maxPowerX, sum(gx.^2) * sysGE.raster);             % (G/cm)^2 * us. Interpreter converts to Ampere^2 * usec
+
+    dur = diff(tRange);  % duration of span (<= tSpan)
+    if tSpan - dur > 2*sysGE.raster*1e-6
+        break;  % end of scan
     end
 end
+fprintf('/n');
+
+TRequiv = round(tSpan*1e6 * refPulse.energy/maxEnergy);     % microsec
+%maxPowerX = round(maxPowerX * TRequiv/tSpan
 
 % equivalent TR, and gradient power
 rf = toppe.readmod(b1CheckFile);
-energy = sum(abs(rf).^2) * dt;  % energy per RF pulse
-TRequiv = 2*floor(1e6 * energy / peakrfpower / 2);     % microsec
-powerx = peakgxes * TRequiv;          % (G/cm)^2 * usec. Will be converted to Ampere^2 * usec in the .e file.
-powery = peakgyes * TRequiv;          % (G/cm)^2 * usec
-powerz = peakgzes * TRequiv;          % (G/cm)^2 * usec
+powerx = 0;          % (G/cm)^2 * usec. 
+powery = 0;          % (G/cm)^2 * usec
+powerz = 0;          % (G/cm)^2 * usec
 
 % SAR, relative to a reference scan empirically observed to reach 10s SAR = 6.2 W/kg in 150 lbs male subject
 E_ref = 2.3514;     % RF energy per TR in reference scan. sum(rf.^2), Gauss^2, for 4us RF raster.
 TR_ref = 12.192e-3;   % TR of reference scan (s)
-P_ref = dt * E_ref / TR_ref ;   % RF power (Gauss^2) of reference scan
-P_this = peakrfpower ;    % peak 10s average RF power (Gauss^2 of current scan)
+P_ref = sysGE.raster*1e-6 * E_ref / TR_ref ;   % RF power (Gauss^2) of reference scan
+P_this = maxEnergy/tSpan;    % peak 10s average RF power (Gauss^2 of current scan)
 SAR_predicted = P_this/P_ref * 6.2;    % W/kg
 
 % Print various parameters to file
