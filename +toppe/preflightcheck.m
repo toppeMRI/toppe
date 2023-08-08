@@ -190,9 +190,9 @@ end
 rf = toppe.readmod(b1CheckFile);
 energy = sum(abs(rf).^2) * dt;  % energy per RF pulse
 TRequiv = 2*floor(1e6 * energy / peakrfpower / 2);     % microsec
-powerx = peakgxes/4 * TRequiv;          % (G/cm)^2 * usec. Will be converted to Ampere^2 * usec in the .e file.
-powery = peakgyes/4 * TRequiv;          % (G/cm)^2 * usec
-powerz = peakgzes/4 * TRequiv;          % (G/cm)^2 * usec
+powerx = peakgxes * TRequiv;          % (G/cm)^2 * usec. Will be converted to Ampere^2 * usec in the .e file.
+powery = peakgyes * TRequiv;          % (G/cm)^2 * usec
+powerz = peakgzes * TRequiv;          % (G/cm)^2 * usec
 
 % SAR, relative to a reference scan empirically observed to reach 10s SAR = 6.2 W/kg in 150 lbs male subject
 E_ref = 2.3514;     % RF energy per TR in reference scan. sum(rf.^2), Gauss^2, for 4us RF raster.
