@@ -116,7 +116,12 @@ else
     % find blocks containing start and stop times
     n = 1;
     t = 0;  % time counter (us)
-    while t <= tic
+    dur = [];
+    while t <= tic 
+        if n == size(loop,1)-1
+            error('invalid start time');
+        end
+        
         p = loop(n,1);   % module id
         i = loop(n,28);  % block group id
 
@@ -129,10 +134,14 @@ else
         n = n + 1;
     end
 
+    if isempty(dur)
+        error('invalid time range');
+    end
+
     tStart = max(t-dur, 0);
     nStart = max(n-1, 1);
 
-    while t <= toc & n <= size(loop, 1)
+    while t < toc & n <= size(loop, 1)
         p = loop(n,1);   % module id
         i = loop(n,28);  % block group id
 
@@ -161,7 +170,7 @@ else
         gx = gx(mask);
         gy = gy(mask);
         gz = gz(mask);
-        tRange = [T(1) T(end)];
+        tRange = [T(1) T(end)]*1e-6;
     else
         tRange = [tStart tStop]*1e-6;
     end
@@ -169,7 +178,6 @@ else
 end
 
 rf = rho.*exp(1i*th);
-
 
 %if arg.printTime
 %    fprintf(1, 'n %d: mindur = %d us, rf t = %d us, grad t = %d us\n', n, mindur, numel(rho)*raster, numel(gx)*raster);
@@ -215,7 +223,8 @@ if arg.doDisplay
     linkaxes([ax1 ax2 ax3 ax4 ax5], 'x');
 end
 
-% build sequence. Each sample is 4us.
+
+%% Function to build sequence. Each sample is 4us.
 function [rho, th, gx, gy, gz, dur] = sub_getwavs(blockStart, blockStop, loop, modules, sysGE, doTimeOnly)
 
 rho = []; th = []; gx = []; gy = []; gz = [];
