@@ -19,8 +19,8 @@ sys.B0 = 3.0;                     % field strength (T)
 sys.gradient = 'xrm';             % gradient coil
 sys.psd_rf_wait = 148;            % rf/gradient delay (us)
 sys.psd_grd_wait = 156;           % ADC/gradient delay (us).
-sys.segmentDeadTime = 12;         % Dead time before start of block group, equals RUP_GRD(9us)
-sys.segmentRingdownTime = 104;    % Delay at end of block group, equals 4us + timssi. 
+%sys.segmentDeadTime = 12;         % Dead time before start of block group, equals RUP_GRD(9us)
+sys.segmentRingdownTime = 116;    % Delay at end of block group, equals 4us + timssi. 
 sys.forbiddenEspRange = [410 510];    % (us) Forbidden echo spacings (mechanical resonance). See /usr/g/bin/epiesp.dat
 sys.tminwait   = 12;              % minimum duration of wait pulse in EPIC code (us)
 
