@@ -15,15 +15,21 @@ function [rf, gx, gy, gz, tRange] = plotseq(sysGE, varargin)
 % Options:
 %   'timeRange'       Specify time range, [tStart tStop] (sec)
 %   'blockRange'      Block range, [iStart iStop]
-%   'doDisplay'       true/false
 %
 % Outputs:
 %   tRange            [tStart tStop]  Start and stop times (sec)
+%
+% Example:
+%  Plot the whole sequence:
+%    >> toppe.plotseq(sysGE, 'timeRange', [0 inf]);
+%    or just:
+%    >> toppe.plotseq(sysGE);
+
 
 %% parse input options
 
+% Support the old way of calling plotseq: plotseq(nStart, nStep, sysGE, varargin)
 if isnumeric(sysGE)
-    % support the old way of calling plotseq: plotseq(nStart, nStep, sysGE, varargin)
     arg.blockRange = [sysGE varargin{1}];
     sysGE = varargin{2};
     if length(varargin) > 2
@@ -32,9 +38,10 @@ if isnumeric(sysGE)
         varargin = {};
     end
 else
-    arg.blockRange      = [];
+    arg.blockRange = [];
 end
 
+% defaults
 arg.timeRange       = [];
 arg.loop            = [];
 arg.loopFile        = 'scanloop.txt';
@@ -42,18 +49,11 @@ arg.mods            = [];
 arg.moduleListFile  = 'modules.txt';
 arg.doDisplay       = true;
 arg.doTimeOnly      = false;
-arg.gmax            = [];     % Gauss/cm
+arg.gmax            = [];  % Gauss/cm
 arg.rhomax          = [];  % Gauss
 arg.printTime       = false;
 
 arg = toppe.utils.vararg_pair(arg, varargin);
-
-if isempty(arg.gmax)
-    arg.gmax = sysGE.maxGrad;  % default
-end
-if isempty(arg.rhomax)
-    arg.rhomax = sysGE.maxRF;  % default
-end
 
 if isempty(arg.timeRange) & isempty(arg.blockRange)
     arg.timeRange = [0 inf];
@@ -208,27 +208,53 @@ if arg.doDisplay
     T = T*1e-3;  % ms
     
     Tend = max(T);
+
+    if isempty(arg.gmax)
+        gxmax = 1.3*max(abs(gx));
+        if gxmax == 0
+            gxmax = sysGE.maxGrad;
+        end
+        gymax = 1.3*max(abs(gy));
+        if gymax == 0
+            gymax = sysGE.maxGrad;
+        end
+        gzmax = 1.3*max(abs(gz));
+        if gzmax == 0
+            gzmax = sysGE.maxGrad;
+        end
+    else
+        gxmax = arg.gmax;
+        gymax = arg.gmax;
+        gzmax = arg.gmax;
+    end
+
+    if isempty(arg.rhomax)
+        rhomax = 1.3*max(abs(rho));
+        if rhomax == 0
+            rhomax = sysGE.maxRF;
+        end
+    else
+        rhomax = arg.rhomax;
+    end
     
-    gmax = 1.1*arg.gmax;   % Gauss/cm
-    srho = 1.1*arg.rhomax; %max(1.1*max(abs(rho(:))),0.05);
     lw = 2;
     bgColor = 'k';
 
     t = tiledlayout(5, 1);
     ax1 = nexttile;
-    plot(T, gx, '-y', 'LineWidth', lw);  ylabel('X (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+    plot(T, gx, '-y', 'LineWidth', lw);  ylabel('X (G/cm)'); axis([T(1) Tend -gxmax gxmax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
     ax2 = nexttile;
-    plot(T, gy, '-c', 'LineWidth', lw);  ylabel('Y (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+    plot(T, gy, '-c', 'LineWidth', lw);  ylabel('Y (G/cm)'); axis([T(1) Tend -gymax gymax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
     
     ax3 = nexttile;
-    plot(T, gz, '-m', 'LineWidth', lw);  ylabel('Z (G/cm)'); axis([T(1) Tend -1.05*gmax 1.05*gmax]);
+    plot(T, gz, '-m', 'LineWidth', lw);  ylabel('Z (G/cm)'); axis([T(1) Tend -gzmax gzmax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
     ax4 = nexttile;
-    plot(T, rho, '-r', 'LineWidth', lw); ylabel('|b1| (Gauss)'); axis([T(1) Tend -srho srho]);
+    plot(T, rho, '-r', 'LineWidth', lw); ylabel('|b1| (Gauss)'); axis([T(1) Tend -rhomax rhomax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
     ax5 = nexttile;
