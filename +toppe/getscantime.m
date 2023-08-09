@@ -47,6 +47,6 @@ else
 end
 
 %% Call plotseq with 'doTimeOnly' argument to get the sequence duration quickly
-[rf,gx,gy,gz,T] = toppe.plotseq(sysGE, 'timeRange', [0 inf], 'doTimeOnly', true);
+[rf,gx,gy,gz,T] = toppe.plotseq(sysGE, 'timeRange', [0 inf], 'doTimeOnly', true, 'loop', loopArr);
 dur = T(2);
 %fprintf('Total scan time: %dm %0.1f s\n', floor(dur/60), dur - 60*floor(dur/60) );
