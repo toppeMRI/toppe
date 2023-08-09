@@ -1,7 +1,10 @@
 function [rf, gx, gy, gz, tRange] = plotseq(sysGE, varargin)
 % function [rf, gx, gy, gz, tRange] = plotseq(sysGE, varargin)
 %
-% Display pulse sequence, as specified in modules.txt and scanloop.txt in current folder
+% Display pulse sequence, as specified in modules.txt and scanloop.txt in current folder.
+%
+% Can also be called the old way for backward compatibility:
+%     function plotseq(nStart, nStop, sysGE, varargin)
 %
 % Sequence timing here is approximate.
 % See v6/figs/timing.svg in the TOPPEpsdSourceCode Github repo for detailed sequence timing.
@@ -17,9 +20,18 @@ function [rf, gx, gy, gz, tRange] = plotseq(sysGE, varargin)
 % Outputs:
 %   tRange            [tStart tStop]  Start and stop times (sec)
 
-%% parse inputs
+%% parse input options
+
+if isnumeric(sysGE)
+    % support the old way of calling plotseq: plotseq(nStart, nStep, sysGE, varargin)
+    arg.blockRange = [sysGE varargin{1}];
+    sysGE = varargin{2};
+    varargin = {};
+else
+    arg.blockRange      = [];
+end
+
 arg.timeRange       = [];
-arg.blockRange      = [];
 arg.loop            = [];
 arg.loopFile        = 'scanloop.txt';
 arg.mods            = [];
