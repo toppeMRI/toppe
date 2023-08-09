@@ -6,7 +6,7 @@ function [rf, gx, gy, gz, tRange] = plotseq(sysGE, varargin)
 % Can also be called the old way for backward compatibility:
 %     function plotseq(nStart, nStop, sysGE, varargin)
 %
-% Sequence timing here is approximate.
+% NB! Sequence timing is approximate (for now).
 % See v6/figs/timing.svg in the TOPPEpsdSourceCode Github repo for detailed sequence timing.
 %
 % Inputs:
@@ -26,7 +26,11 @@ if isnumeric(sysGE)
     % support the old way of calling plotseq: plotseq(nStart, nStep, sysGE, varargin)
     arg.blockRange = [sysGE varargin{1}];
     sysGE = varargin{2};
-    varargin = {};
+    if length(varargin) > 2
+        varargin = varargin(3:end);
+    else
+        varargin = {};
+    end
 else
     arg.blockRange      = [];
 end
@@ -38,7 +42,6 @@ arg.mods            = [];
 arg.moduleListFile  = 'modules.txt';
 arg.doDisplay       = true;
 arg.doTimeOnly      = false;
-arg.drawpause       = 1;
 arg.gmax            = [];     % Gauss/cm
 arg.rhomax          = [];  % Gauss
 arg.printTime       = false;
@@ -50,6 +53,10 @@ if isempty(arg.gmax)
 end
 if isempty(arg.rhomax)
     arg.rhomax = sysGE.maxRF;  % default
+end
+
+if isempty(arg.timeRange) & isempty(arg.blockRange)
+    arg.timeRange = [0 inf];
 end
 
 arg.timeRange = round(arg.timeRange*1e6);   % us
