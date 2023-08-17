@@ -34,8 +34,6 @@ function preflightcheck(entryFile, seqstampFile, sysGE)
 %  Step 5: Prescribe the interpreter and scan, following the README in the
 %          interpreter code repository.
 
-fprintf('Preflight check for Pulseq on GE v1.0...\n');
-
 % open output file
 fout = fopen(seqstampFile, 'w');
 
@@ -154,13 +152,13 @@ refPulse.energy = sum(abs(rf).^2) * sysGE.raster*1e-6;  % Gauss^2*s
 % get peak 10s RF power
 maxEnergy = 0;
 %maxPowerX = 0;
-fprintf('Checking max 10s SAR: ');
+fprintf('preflightcheck: Checking max 10s SAR, ');
 msgLast = '';
 for tStart = 0:5:1000
     for ib = 1:length(msgLast);
         fprintf('\b');
     end
-    msg = sprintf('time interval %d-%d sec (of %d)', tStart, tStart+10, round(scanDur));
+    msg = sprintf('time interval %d-%ds (scan duration: %ds)', tStart, tStart+10, round(scanDur));
     fprintf('%s', msg);
     msgLast = msg;
 
@@ -202,9 +200,7 @@ fprintf(fout, '%.4f\n', b1limit);       % hardware b1 limit (Gauss)
 
 fclose(fout);
 
-fprintf(' done\n');
-
-fprintf('Predicted peak 10s SAR in 150 lbs subject: %.1f W/kg\n', SAR_predicted);
+fprintf('\tPredicted peak 10s SAR in 150 lbs subject: %.1f W/kg\n', SAR_predicted);
 if SAR_predicted > 6.4
     warning('Predicted peak 10s SAR exceeds first-level limit!!');
 end
