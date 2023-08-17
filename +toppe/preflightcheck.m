@@ -138,7 +138,8 @@ end
 % To stay within SAR limits, TRequiv must be greater than the value returned by 'maxseqsar' in the EPIC code.
 % Also calculate gradient 'power' = energy per TRequiv.
 % Do it in 10s chunks, in 5s steps.
-loop = toppe.readloop(loopFile);
+[loop, loophdr] = toppe.readloop(loopFile);
+scanDur = loophdr.scandur*1e-6;  % scan duration, sec
 
 peakrfpower = 0;
 peakgxs = 0;  % Squared gradient, peak 10s average
@@ -153,14 +154,15 @@ refPulse.energy = sum(abs(rf).^2) * sysGE.raster*1e-6;  % Gauss^2*s
 % get peak 10s RF power
 maxEnergy = 0;
 %maxPowerX = 0;
-fprintf('Checking max 10s Sar ');
+fprintf('Checking max 10s SAR: ');
+msgLast = '';
 for tStart = 0:5:1000
-    fprintf('.');
-    %for ib = 1:strlength(sprintf('Checking sequence (iter %d of %d)',prev_ii,nit))
-    %    fprintf('\b');
-    %end
-    %prev_ii = ii;
-    %fprintf('Checking sequence (iter %d of %d)',prev_ii,nit);
+    for ib = 1:length(msgLast);
+        fprintf('\b');
+    end
+    msg = sprintf('time interval %d-%d sec (of %d)', tStart, tStart+10, round(scanDur));
+    fprintf('%s', msg);
+    msgLast = msg;
 
     [rf, gx, gy, gz, tRange] = toppe.plotseq(sysGE, 'timeRange', [tStart tStart+10], 'doDisplay', false);
 
@@ -172,7 +174,7 @@ for tStart = 0:5:1000
         break;  % end of scan
     end
 end
-fprintf('/n');
+fprintf('\n');
 
 TRequiv = round(tSpan*1e6 * refPulse.energy/maxEnergy);     % microsec
 %maxPowerX = round(maxPowerX * TRequiv/tSpan
