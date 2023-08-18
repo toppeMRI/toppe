@@ -25,6 +25,8 @@ function [rf, gx, gy, gz, tRange] = plotseq(sysGE, varargin)
 %    or just:
 %    >> toppe.plotseq(sysGE);
 
+% In the code:
+%   - time in us
 
 %% parse input options
 
@@ -80,23 +82,30 @@ else
     modules = arg.mods;
 end
 
-%% Initialize counter and turn off display if we're only doing timings
-if arg.doTimeOnly
-    nsamples = 0;
-    arg.doDisplay = false;
-    for p = 1:size(modules,2) % Compute table of core durations
-        core_size(p) = size(modules{p}.gx(:,1),1);
+% segment definitions (here referred to as 'module groups' in accordance with tv6.e)
+if isfile('cores.txt')
+    modGroups = toppe.tryread(@toppe.readcoresfile, 'cores.txt');
+    useDefaultSegments = false;
+else
+    % Assign each .mod file to its own segment
+    for p = 1:length(modules)
+        modGroups{p} = p;
     end
+    useDefaultSegments = true; 
 end
 
-%% Get block groups. Not used at the moment [TODO]
-%blockGroups = toppe.readcoresfile('cores.txt');
+%% Add end of segment label to loop so we know when to insert
+%% the segmentRingdownTime (= 116 us)
+% TODO
+n = 1;
+isLastBlockInSegment = zeros(size(loop, 1), 1);  % initial values
+while n < size(loop, 1)
+    ii = loop(n, end);   % Segment ID
+    isLastBlockInSegment(n + length(modGroups{ii}) - 1) = 1;
+    n = n + length(modGroups{ii});
+end
 
-%if arg.doTimeOnly 
-%    gxlength = round(modules{p}.dur/raster);
-%    nsamples = nsamples + gxlength;
-
-%% build sequence. each sample is 4us.
+%% Build sequence. Each time sample is 4us.
 rho = []; th = []; gx = []; gy = []; gz = [];
 raster = sysGE.raster;  % us
 
@@ -126,7 +135,7 @@ if ~isempty(arg.blockRange)
 
     tRange = [tStart tStop]*1e-6;  % s
 
-    [rho, th, gx, gy, gz, dur] = sub_getwavs(arg.blockRange(1), arg.blockRange(2), loop, modules, sysGE, arg.doTimeOnly);
+    [rho, th, gx, gy, gz, dur] = sub_getwavs(arg.blockRange(1), arg.blockRange(2), loop, modules, sysGE, arg.doTimeOnly, isLastBlockInSegment);
 else
     % Plot time range
     tic = arg.timeRange(1);
@@ -150,6 +159,9 @@ else
             dur = modules{p}.dur;  % us
         end
         t = t + dur;
+        if isLastBlockInSegment(n)
+            t = t + sysGE.segmentRingdownTime;
+        end
         n = n + 1;
     end
 
@@ -169,6 +181,9 @@ else
         else
             t = t + modules{p}.dur;
         end
+        if isLastBlockInSegment(n)
+            t = t + sysGE.segmentRingdownTime;
+        end
         n = n + 1;
     end
 
@@ -176,7 +191,7 @@ else
     nStop = max(n-1, 1);
 
     % get waveforms
-    [rho, th, gx, gy, gz, dur] = sub_getwavs(nStart, nStop, loop, modules, sysGE, arg.doTimeOnly);
+    [rho, th, gx, gy, gz, dur] = sub_getwavs(nStart, nStop, loop, modules, sysGE, arg.doTimeOnly, isLastBlockInSegment);
 
     if ~arg.doTimeOnly
         % vector of time points (for plotting)
@@ -204,10 +219,12 @@ rf = rho.*exp(1i*th);
 
 %% plot
 if arg.doDisplay
-%    T = (0:(numel(rho)-1))*raster/1000; % msec
     T = T*1e-3;  % ms
     
-    Tend = max(T);
+    % start/end of time axis (for plotting)
+    tPad = (T(end)-T(1))/100;  % pad with some blank space before and after plot
+    Tstart = T(1) - tPad;
+    Tend = max(T) + tPad;
 
     if isempty(arg.gmax)
         gxmax = 1.3*max(abs(gx));
@@ -242,19 +259,19 @@ if arg.doDisplay
 
     t = tiledlayout(5, 1);
     ax1 = nexttile;
-    plot(T, gx, '-y', 'LineWidth', lw);  ylabel('X (G/cm)'); axis([T(1) Tend -gxmax gxmax]);
+    plot(T, gx, '-y', 'LineWidth', lw);  ylabel('X (G/cm)'); axis([Tstart Tend -gxmax gxmax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
     ax2 = nexttile;
-    plot(T, gy, '-c', 'LineWidth', lw);  ylabel('Y (G/cm)'); axis([T(1) Tend -gymax gymax]);
+    plot(T, gy, '-c', 'LineWidth', lw);  ylabel('Y (G/cm)'); axis([Tstart Tend -gymax gymax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
     
     ax3 = nexttile;
-    plot(T, gz, '-m', 'LineWidth', lw);  ylabel('Z (G/cm)'); axis([T(1) Tend -gzmax gzmax]);
+    plot(T, gz, '-m', 'LineWidth', lw);  ylabel('Z (G/cm)'); axis([Tstart Tend -gzmax gzmax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
     ax4 = nexttile;
-    plot(T, rho, '-r', 'LineWidth', lw); ylabel('|b1| (Gauss)'); axis([T(1) Tend -rhomax rhomax]);
+    plot(T, rho, '-r', 'LineWidth', lw); ylabel('|b1| (Gauss)'); axis([Tstart Tend -rhomax rhomax]);
     set(gca, 'color', bgColor);  set(gca, 'XTick', []);
 
     ax5 = nexttile;
@@ -265,12 +282,12 @@ if arg.doDisplay
     t.TileSpacing = 'none';
     t.Padding = 'none';
 
-    linkaxes([ax1 ax2 ax3 ax4 ax5], 'x');
+    linkaxes([ax1 ax2 ax3 ax4 ax5], 'x');  % common zoom setting (along time axis) for all tiles
 end
 
 
 %% Function to build sequence. Each sample is 4us.
-function [rho, th, gx, gy, gz, dur] = sub_getwavs(blockStart, blockStop, loop, modules, sysGE, doTimeOnly)
+function [rho, th, gx, gy, gz, dur] = sub_getwavs(blockStart, blockStop, loop, modules, sysGE, doTimeOnly, isLastBlockInSegment)
 
 rho = []; th = []; gx = []; gy = []; gz = [];
 max_pg_iamp = 2^15-2;
@@ -286,9 +303,12 @@ for n = blockStart : blockStop
 
     % Pure delay block
     if p == 0
-        dur = dur + loop(n,14);  % TODO: make accurate
+        dur = dur + loop(n,14);
+        if isLastBlockInSegment(n)
+            dur = dur + sysGE.segmentRingdownTime;
+        end
         if ~doTimeOnly   
-            w = zeros(round(loop(n,14)/raster), 1);  % TODO: make accurate
+            w = zeros(round(dur/raster), 1);
             rho = [rho; w];
             th = [th; w];
             gx = [gx; w];
@@ -331,7 +351,11 @@ for n = blockStart : blockStop
     end
 
     % pad to desired duration and add to running waveform
-    res = round(modules{p}.dur/raster);
+    dur = modules{p}.dur;
+    if isLastBlockInSegment(n)
+        dur = dur + sysGE.segmentRingdownTime;
+    end
+    res = round(dur/raster);
     rho = [rho; rho1; zeros(res - modules{p}.res, 1)];
     th = [th; th1; zeros(res - modules{p}.res, 1)];
     gx = [gx; gx1; zeros(res - modules{p}.res, 1)];
