@@ -73,14 +73,8 @@ if round(tbw) ~= tbw
 end
 
 mxg = system.maxGrad;          
-if strcmp(system.gradUnit, 'mT/m')
-	mxg = mxg/10;     % Gauss/cm
-end
 mxs = system.maxSlew;
 mxs = arg.maxSlewScale * mxs;
-if strcmp(system.slewUnit, 'T/m/s')
-	mxs = mxs/10;     % Gauss/cm/ms
-end
 
 sliceOffset = arg.sliceOffset;
 
@@ -90,7 +84,7 @@ else
 	isBalanced=0;
 end
 
-dt = system.raster*1e3;        % msec
+dt = system.raster*1e-3;        % msec
 
 % 
 %switch arg.type
@@ -266,7 +260,7 @@ import toppe.utils.rf.*
 import toppe.utils.rf.jpauly.*
 
 %% make rf waveform
-dt = sys.raster*1e3;                 % sample size (msec)
+dt = sys.raster*1e-3;                 % sample size (msec)
 res = round(dur/dt);
 dur = res*dt;
 
@@ -279,9 +273,9 @@ rf = real(rf);
 rf = resample(rf, res, nrf);
 
 % scale to Gauss
-rf = flip/180*pi * rf / sum(rf);               % normalized such that flip angle (radians) = sum(rf)
-gamma = sys.gamma*1e-3;               % kHz/Gauss
-rf = rf / gamma / dt /2/pi;             % Gauss
+rf = flip/180*pi * rf / sum(rf);     % normalized such that flip angle (radians) = sum(rf)
+gamma = sys.gamma*1e-7;              % kHz/Gauss
+rf = rf / gamma / dt /2/pi;          % Gauss
 
 % make duration even
 rf = [rf(:); zeros(mod(length(rf),2),1)];
