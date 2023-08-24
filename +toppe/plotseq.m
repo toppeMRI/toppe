@@ -96,13 +96,17 @@ end
 
 %% Add end of segment label to loop so we know when to insert
 %% the segmentRingdownTime (= 116 us)
-% TODO
 n = 1;
 isLastBlockInSegment = zeros(size(loop, 1), 1);  % initial values
 while n < size(loop, 1)
-    ii = loop(n, end);   % Segment ID
-    isLastBlockInSegment(n + length(modGroups{ii}) - 1) = 1;
-    n = n + length(modGroups{ii});
+    if useDefaultSegments
+        i = loop(n, 1);   % segment ID = module ID
+    else
+        i = loop(n, end);   % segment ID
+    end
+
+    isLastBlockInSegment(n + length(modGroups{i}) - 1) = 1;
+    n = n + length(modGroups{i});
 end
 
 %% Build sequence. Each time sample is 4us.
@@ -118,7 +122,8 @@ if ~isempty(arg.blockRange)
         if p == 0
             t = t + loop(n,14);    % us
         else
-            t = t + modules{p}.dur;
+            minimumModuleDuration = modules{p}.res*raster;  % us
+            t = t + max(modules{p}.dur, minimumModuleDuration);
         end
     end
     tStart = t;
@@ -127,7 +132,8 @@ if ~isempty(arg.blockRange)
         if p == 0
             t = t + loop(n,14);    % us
         else
-            t = t + modules{p}.dur;
+            minimumModuleDuration = modules{p}.res*raster;  % us
+            t = t + max(modules{p}.dur, minimumModuleDuration);
         end
     end
     tStop = t;
@@ -135,7 +141,7 @@ if ~isempty(arg.blockRange)
 
     tRange = [tStart tStop]*1e-6;  % s
 
-    [rho, th, gx, gy, gz, dur] = sub_getwavs(arg.blockRange(1), arg.blockRange(2), loop, modules, sysGE, arg.doTimeOnly, isLastBlockInSegment);
+    [rho, th, gx, gy, gz, dur] = sub_getwavs(arg.blockRange(1), arg.blockRange(2), loop, modules, sysGE, arg.doTimeOnly, isLastBlockInSegment, useDefaultSegments);
 else
     % Plot time range
     tic = arg.timeRange(1);
@@ -151,12 +157,11 @@ else
         end
         
         p = loop(n,1);   % module id
-        i = loop(n,28);  % block group id
-
         if p == 0
             dur = loop(n,14);    % us
         else
-            dur = modules{p}.dur;  % us
+            minimumModuleDuration = modules{p}.res*raster;  % us
+            dur = max(modules{p}.dur, minimumModuleDuration);
         end
         t = t + dur;
         if isLastBlockInSegment(n)
@@ -166,7 +171,7 @@ else
     end
 
     if isempty(dur)
-        error('invalid time range');
+        error('Invalid time range');
     end
 
     tStart = max(t-dur, 0);
@@ -174,13 +179,14 @@ else
 
     while t < toc & n <= size(loop, 1)
         p = loop(n,1);   % module id
-        i = loop(n,28);  % block group id
 
         if p == 0
-            t = t + loop(n,14);    % us
+            dur = loop(n,14);    % us
         else
-            t = t + modules{p}.dur;
+            minimumModuleDuration = modules{p}.res*raster;  % us
+            dur = max(modules{p}.dur, minimumModuleDuration);
         end
+        t = t + dur;
         if isLastBlockInSegment(n)
             t = t + sysGE.segmentRingdownTime;
         end
@@ -191,7 +197,7 @@ else
     nStop = max(n-1, 1);
 
     % get waveforms
-    [rho, th, gx, gy, gz, dur] = sub_getwavs(nStart, nStop, loop, modules, sysGE, arg.doTimeOnly, isLastBlockInSegment);
+    [rho, th, gx, gy, gz, dur] = sub_getwavs(nStart, nStop, loop, modules, sysGE, arg.doTimeOnly, isLastBlockInSegment, useDefaultSegments);
 
     if ~arg.doTimeOnly
         % vector of time points (for plotting)
@@ -212,10 +218,6 @@ else
 end
 
 rf = rho.*exp(1i*th);
-
-%if arg.printTime
-%    fprintf(1, 'n %d: mindur = %d us, rf t = %d us, grad t = %d us\n', n, mindur, numel(rho)*raster, numel(gx)*raster);
-%end
 
 %% plot
 if arg.doDisplay
@@ -287,7 +289,7 @@ end
 
 
 %% Function to build sequence. Each sample is 4us.
-function [rho, th, gx, gy, gz, dur] = sub_getwavs(blockStart, blockStop, loop, modules, sysGE, doTimeOnly, isLastBlockInSegment)
+function [rho, th, gx, gy, gz, dur] = sub_getwavs(blockStart, blockStop, loop, modules, sysGE, doTimeOnly, isLastBlockInSegment, useDefaultSegments)
 
 rho = []; th = []; gx = []; gy = []; gz = [];
 max_pg_iamp = 2^15-2;
@@ -296,7 +298,6 @@ raster = sysGE.raster;  % us
 for n = blockStart : blockStop
 
     p = loop(n,1);   % module id
-    i = loop(n,28);  % block group id
     w = loop(n,16);  % waveform index
 
     dur = 0;
@@ -351,7 +352,8 @@ for n = blockStart : blockStop
     end
 
     % pad to desired duration and add to running waveform
-    dur = modules{p}.dur;
+    minimumModuleDuration = modules{p}.res*raster;  % us
+    dur = max(modules{p}.dur, minimumModuleDuration);
     if isLastBlockInSegment(n)
         dur = dur + sysGE.segmentRingdownTime;
     end
