@@ -10,6 +10,7 @@ function plotmod(fname, varargin)
 %  printPNS    [boolean]   print pns numbers to console. Default: false.
 %  sys         struct      system hardware parameters, see toppe.systemspecs()
 %  gradient    [string]    gradient subsystem (see pns.m). Default: 'xrm'
+%                          Overrides sys.gradient
 
 arg.plotPNS = true;
 arg.printPNS = false;
