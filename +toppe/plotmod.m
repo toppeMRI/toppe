@@ -8,17 +8,20 @@ function plotmod(fname, varargin)
 % Options:
 %  plotPNS     [boolean]   default: true
 %  printPNS    [boolean]   print pns numbers to console. Default: false.
+%  sys         struct      system hardware parameters, see toppe.systemspecs()
 %  gradient    [string]    gradient subsystem (see pns.m). Default: 'xrm'
+%                          Overrides sys.gradient
 
 arg.plotPNS = true;
 arg.printPNS = false;
 arg.gradcoil = [];         % for backward compatibility
-arg.gradient = 'xrm';
+arg.gradient = [];
+arg.sys = toppe.systemspecs();
 
 arg = toppe.utils.vararg_pair(arg, varargin);
 
-if ~isempty(arg.gradcoil)
-    arg.gradient = arg.gradcoil;
+if isempty(arg.gradient)
+    arg.gradient = arg.sys.gradient;
 end
 
 if strcmp(fname, 'all')
