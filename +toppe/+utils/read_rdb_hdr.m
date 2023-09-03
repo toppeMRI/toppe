@@ -18,6 +18,8 @@ function a = read_rdb_hdr( my_file,rdbm_rev )
 %    a - structure with header values
 %
 
+import toppe.utils.*
+
 if rdbm_rev < 9
     a.rdbm_rev          = fread( my_file, 1, 'float32');
     a.run_int           = fread( my_file, 1, 'int32');
