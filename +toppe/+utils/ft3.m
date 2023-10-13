@@ -1,10 +1,7 @@
 function [im imsos] = ft3(D, varargin)
-% Centered inverse 3DFT of a 3D/2D single- or multi-coil data matrix.
+% Centered forward 3DFT of a 3D/2D single- or multi-coil data matrix.
 %
 % function [im imsos] = ft3(D)
-%
-% $Id: ft3.m,v 1.1 2018/11/11 21:25:45 jfnielse Exp $
-% $Source: /export/home/jfnielse/Private/cvs/projects/psd/toppe/matlab/+toppe/+utils/ft3.m,v $
 
 import toppe.*
 import toppe.utils.*
