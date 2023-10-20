@@ -216,11 +216,10 @@ end
 
 rf = rho.*exp(1i*th);
 
-%% Add segment start time for plotting
-T = T + arg.segmentStart;
-
 %% plot
 if arg.doDisplay
+    T = T + arg.segmentStart;
+
     T = T*1e-3;  % ms
     
     % start/end of time axis (for plotting)
