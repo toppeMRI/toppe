@@ -1,4 +1,10 @@
 function p = calcsequencepns(sysGE, varargin)
+% function p = calcsequencepns(sysGE, varargin)
+% 
+% Input options with defaults:
+%   timeRange = [0 inf];  % the whole sequence
+%   plot = true;
+%   print = true;
 
 % defaults
 arg.timeRange = [0 inf];  % the whole sequence

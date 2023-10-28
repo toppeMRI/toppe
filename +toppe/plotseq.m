@@ -54,6 +54,7 @@ arg.doTimeOnly      = false;
 arg.gmax            = [];  % Gauss/cm
 arg.rhomax          = [];  % Gauss
 arg.printTime       = false;
+arg.segmentStart    = 12;    % earliest start time for gradient events inside segment
 
 arg = toppe.utils.vararg_pair(arg, varargin);
 
@@ -145,7 +146,7 @@ else
 
     % find blocks containing start and stop times
     n = 1;
-    t = 0;  % time counter (us)
+    t = 0;  % time counter (us). Earliest start time is 16us.
     dur = [];
     while t <= tic 
         if n == size(loop,1)-1
@@ -217,6 +218,8 @@ rf = rho.*exp(1i*th);
 
 %% plot
 if arg.doDisplay
+    T = T + arg.segmentStart;
+
     T = T*1e-3;  % ms
     
     % start/end of time axis (for plotting)

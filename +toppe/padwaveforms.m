@@ -67,7 +67,8 @@ for ii = 1:length(fields)
     wavnew = zeros(ndat, npulses);
 
     for ic = 1:ncols
-        wavnew(:,ic) = [wav(:,ic); wav(end,ic)*ones(ndat-nrows, 1)];
+        %wavnew(:,ic) = [wav(:,ic); wav(end,ic)*ones(ndat-nrows, 1)];
+        wavnew(:,ic) = [wav(:,ic); zeros(ndat-nrows, 1)];
     end
 
     cmd = sprintf('%s = wavnew;', channel) ;

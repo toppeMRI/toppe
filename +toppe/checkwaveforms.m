@@ -74,6 +74,7 @@ if maxRF > sysGE.maxRF
 end
 
 %% Check PNS. Warnings if >80% of threshold.
+%{
 for jj = 1:size(gx,2)   % loop through all waveforms (pulses)
     clear gtm;
     gtm(1,:) = gx(:,jj)'*1d-2;    % T/m
@@ -90,6 +91,7 @@ for jj = 1:size(gx,2)   % loop through all waveforms (pulses)
         end
     end
 end
+%}
 
 %% do all waveforms start and end at zero?
 %if any([gx(1,:) gx(end,:) gy(1,:) gy(end,:) gz(1,:) gz(end,:) rf(1,:) rf(end,:)] ~= 0)
