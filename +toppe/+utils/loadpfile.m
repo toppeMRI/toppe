@@ -3,36 +3,24 @@ function [dat, rdb_hdr] = loadpfile(pfile,echo,slicestart,sliceend,varargin)
 %
 % Load data for one echo (or all) from Pfile, EXCEPT dabslice=0 slot (which can contain corrupt data).
 %
-% Input options:
-%  echo          only get data for this echo (default: load all echoes)
-%  slicestart    get data starting from this slice index (1:N slices, default: 2)
-%  sliceend      "" except ending slice (default: N)
+% Inputs:
+%  pfile         string    P-file name
+%  echo          [1]       only get data for this echo (default: load all echoes). To use default value, set to [].
+%  slicestart    [1]       get data starting from this slice index (1:N slices, default: 2) To use default value, set to [].
+%  sliceend      [1]       "" except ending slice (default: N) To use default value, set to [].
+%
+% Kwarg input options:
+%  acqOrder      true/false   If true, data is sorted in the order of acquisition. (default: false)
 %
 % Output dimensions of dat:
-%  [ndat,ncoil,nslice,nechos,nview]
-%
-% This file is part of the TOPPE development environment for platform-independent MR pulse programming.
-%
-% TOPPE is free software: you can redistribute it and/or modify
-% it under the terms of the GNU Library General Public License as published by
-% the Free Software Foundation version 2.0 of the License.
-%
-% TOPPE is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU Library General Public License for more details.
-%
-% You should have received a copy of the GNU Library General Public License
-% along with TOPPE. If not, see <http://www.gnu.org/licenses/old-licenses/lgpl-2.0.html>.
-% 
-% (c) 2016 The Regents of the University of Michigan
-% Jon-Fredrik Nielsen, jfnielse@umich.edu
+%  [nFID, nc, nDabSlice, 1, maxView]
 
 import toppe.utils.*
 
 %% Load input arguments
 % Set defaults and parse varargin
 arg.quiet        = false;
+arg.acqOrder     = false;
 arg = vararg_pair(arg, varargin);
 
 %% Loadpfile code
@@ -57,11 +45,11 @@ if exist('echo','var') && ~isempty(echo)
 else
 	ECHOES = 1:nechoes;
 end
-if nargin < 3
+if nargin < 3 | isempty(slicestart)
 	slicestart = 2;
 end
 
-if nargin < 4
+if nargin < 4 | isempty(sliceend)
     sliceend = nslices;
 end
 
@@ -160,5 +148,13 @@ dat = complex(datr,dati); % Combine data in one step
 clearvars datr dati % Free up some memory
 dat = double(dat);  % Convert to double in place
 fclose(fid);
+
+%% Sort data in order of acquisition
+if arg.acqOrder
+    dat = permute(dat, [1 2 5 3 4]);   % [nFID nc maxView nDabSlice]
+    [nFID nc maxView nDabSlice] = size(dat);
+    dat = reshape(dat, nFID, nc, maxView*nDabSlice);
+end
+
 if ~arg.quiet; textprogressbar(' done.'); end
 return
