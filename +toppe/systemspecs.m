@@ -34,7 +34,7 @@ sys.adcDeadTime = 40;        % us. Must be >= 40us
 
 % The following determine the slice/echo/view indexing in the data file
 sys.maxSlice = 2048;           % max dabslice. UI won't allow more than this to be entered
-sys.maxView  = 2048;
+sys.maxView  = 600;
 sys.maxEcho  = 1;             % actual value seems to be 16, but we won't use this dimension so only allow 1 here
 
 
@@ -56,6 +56,12 @@ switch sys.gradient
     otherwise, error('Gradient coil (%s) unkown', sys.gradient);
 end
 
+if sys.maxView > 2048
+    error('maxView exceeds max value (2048)');
+end
+if sys.maxEcho > 1
+    error('maxEcho exceeds max value (1)');
+end
 
 return
 
