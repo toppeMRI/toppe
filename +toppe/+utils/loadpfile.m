@@ -21,6 +21,7 @@ import toppe.utils.*
 % Set defaults and parse varargin
 arg.quiet        = false;
 arg.acqOrder     = false;
+arg.returnAsDouble = true;
 arg = vararg_pair(arg, varargin);
 
 %% Loadpfile code
@@ -146,7 +147,9 @@ end
 
 dat = complex(datr,dati); % Combine data in one step
 clearvars datr dati % Free up some memory
-dat = double(dat);  % Convert to double in place
+if arg.returnAsDouble
+    dat = double(dat);  % Convert to double in place
+end
 fclose(fid);
 
 %% Sort data in order of acquisition
