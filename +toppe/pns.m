@@ -13,20 +13,12 @@ function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
 %      grad  gradient matrix (dimensions,points,repetitions) [T/m]
 %            (for 2D also dim=1 + complex data possible)
 %            also possible: (points,repetitions,dimensions)
-%      coil  'xrm', 'xrmw', 'whole', 'zoom' (take values from list below)
+%      coil  'xrm', 'xrmw', 'whole', 'zoom', 'hrmb', 'hrmw', 'magnus' (take values from list below)
 %
 % Input options:
 %      print    (bool) print a few relevant output values to console
 %      plt      (bool) plot
 %      gdt      (sec) Gradient update time (default=4d-6)
-
-% Old inputs:
-% chronaxie  Chronaxie time constant   [s]     (cfrfact [us])
-%  rheobase  Rheobase scale factor     [T/s]   (cfrinf [T/s])
-%     alpha  Effective coil length     [m]     (cfdbdtdx/y/z [cm])
-%            SRmin=rheobase/alpha
-%       gdt  Gradient update time      [s] (default=4d-6)
-%       plt  Plotting + print output (default=true)
 %
 % Scanner  Gradient coil   chronaxie rheobase alpha  gmax  smax
 % MR750w   XRMW            360d-6    20.0     0.324  33    120
@@ -40,7 +32,15 @@ function [PThresh,pt,PTmax,gmax,smax,t,f] = pns(grad,coil,varargin)
 % values on scanner from /w/config/Scandbdt.cfg or GRSubsystemHWO.xml
 % (e.g., /export/home/mx/host/config/current/GRSubsystemHWO.xml)
 % (alpha = EffectivedBdTlength<X,Y,Z>/100)
-%
+
+% Old inputs:
+% chronaxie  Chronaxie time constant   [s]     (cfrfact [us])
+%  rheobase  Rheobase scale factor     [T/s]   (cfrinf [T/s])
+%     alpha  Effective coil length     [m]     (cfdbdtdx/y/z [cm])
+%            SRmin=rheobase/alpha
+%       gdt  Gradient update time      [s] (default=4d-6)
+%       plt  Plotting + print output (default=true)
+
 % Literature: "Introduction to dB/dt" presentation by Toni Linz; 6/8/06
 %             DIN EN 60601-2-33
 % 2/2014 Rolf Schulte
