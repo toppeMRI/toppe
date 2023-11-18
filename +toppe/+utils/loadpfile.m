@@ -126,7 +126,9 @@ for icoil = 1:ncoils
             for iview = 1:nviews
                 offsetres = (icoil-1)*coilres + (islice-1)*sliceres + (echo-1)*echores + iview*ndat;
                 offsetbytes = 2*ptsize*offsetres;
-                fseek(fid, rdb_hdr.off_data+offsetbytes, 'bof');
+                if(fseek(fid, rdb_hdr.off_data+offsetbytes, 'bof') == -1) 
+                    error('Attempting to move past end of P-file');
+                end
                 switch ptsize
                     case 2,
                         dtmp = fread(fid, 2*ndat, 'int16=>int16');
