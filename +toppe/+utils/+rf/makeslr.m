@@ -281,12 +281,9 @@ rf = rf / gamma / dt /2/pi;          % Gauss
 rf = [rf(:); zeros(mod(length(rf),2),1)];
 npix = length(rf);
 
-% find center (peak) of RF pulse. Smooth pulse first to reduce risk of picking an outlier
-I = find(rf==max(rf));              % approximate peak
-I = I(1);                           % in case length(I) > 1
-s = rf((I-20):(I+19));
-s = smooth(s);
-iref = find(s==max(s)) + I - 20;
+% find center (peak) of RF pulse
+I = find(abs(rf) > max(abs(rf(:)))-eps);
+iref= round(mean(I));
 
 %% make slice-select gradient waveform 
 bw = tbw / dur;                    % kHz
@@ -314,7 +311,7 @@ iref = iref + numel(gss_ramp);
 % slice-select rephaser gradient
 switch type
 	case {'ex', 'st', 'sat'}
-		arearep = sum(gss_trap((iref):end)) * dt * 1e-3;            % G/cm*s
+		arearep = (gss_trap(iref)/2+sum(gss_trap((iref+1):end))) * dt * 1e-3;            % G/cm*s
 		gzrep = -trapwave2(arearep, mxg, spoilDerate*mxs, dt);
 	case 'se'
 		gzrep = [];
