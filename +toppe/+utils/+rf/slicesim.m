@@ -46,7 +46,7 @@ Bz = gz*Z'*1e-4;     % [nstep nz], Tesla
 nstep = length(rf);
 
 for ii = 1:length(Z)
-	Beff = [real(rf)*1e-4 imag(rf)*1e-4 Bz(:,ii)];                % [nstep 3], Tesla
+	Beff = [real(rf)*1e-4 -imag(rf)*1e-4 Bz(:,ii)];                % [nstep 3], Tesla
 	mtmp = toppe.utils.rf.blochsim(m0, Beff, T1, T2, dt, nstep);
 	m(ii) = mtmp(end,1) + 1i*mtmp(end,2);
 end

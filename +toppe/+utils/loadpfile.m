@@ -12,6 +12,9 @@ function [dat, rdb_hdr] = loadpfile(pfile,echo,slicestart,sliceend,varargin)
 % Kwarg input options:
 %  acqOrder      true/false   If true, data is sorted in the order of acquisition. (default: false)
 %
+% To load data in order it was acquired, do:
+%    d = toppe.utils.loadpfile(pfile, [], [], [], 'acqOrder', true);
+%
 % Output dimensions of dat:
 %  [nFID, nc, nDabSlice, 1, maxView]
 
