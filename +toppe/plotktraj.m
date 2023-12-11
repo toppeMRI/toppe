@@ -53,7 +53,7 @@ end
 %%% gamma/2pi in Hz/Gauss, and raters is in s. If gradients are in other
 %%% units would need to change these values.
 sys = toppe.systemspecs();
-gamma = sys.gamma;   % gamma/2pi in Hz/Gauss
+gamma = sys.gamma*1e-4;   % gamma/2pi in Hz/Gauss
 raster = 1e-6*sys.raster; % sampling time in s
 
 % calculate and plot ktraj
