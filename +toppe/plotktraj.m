@@ -54,7 +54,7 @@ end
 %%% units would need to change these values.
 sys = toppe.systemspecs();
 gamma = sys.gamma;   % gamma/2pi in Hz/Gauss
-raster = sys.raster; % sampling time in s
+raster = 1e-6*sys.raster; % sampling time in s
 
 % calculate and plot ktraj
 figure;
