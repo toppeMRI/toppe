@@ -144,7 +144,8 @@ area          = abs(sum(b1)) / abs(sum(hardpulse));
 dtycyc        = length(find(abs(b1)>0.2236*max(abs(b1)))) / length(b1);
 maxpw         = dtycyc;
 num           = 1;
-max_b1        = sysGE.maxRF;                       	% Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
+%max_b1        = sysGE.maxRF;        % Gauss. Full instruction amplitude (32766) should produce max_b1 RF amplitude,
+max_b1        = max(abs(b1(:)));     % Gauss
 																		% as long as other RF .mod files (if any) use the same max_b1.
 max_int_b1_sq = max( cumsum(abs(b1).^2)*dt*1e3 );   	% Gauss^2 - ms
 max_rms_b1    = sqrt(mean(abs(b1).^2));              	% Gauss
