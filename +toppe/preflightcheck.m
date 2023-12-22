@@ -196,7 +196,7 @@ fprintf(fout, '%d\t%d\t%d\n', round(powerx), round(powery), round(powerz));   % 
 fprintf(fout, '%.4f\n', max(abs(rf)));  % needed to scale max_seqsar in .e file
 fprintf(fout, '%.4f\n', gmax);          % max gradient across all .mod files (Gauss)
 fprintf(fout, '%.4f\n', slewmax);       % max slew across all .mod files (G/cm/ms)
-fprintf(fout, '%.4f\n', b1limit);       % hardware b1 limit (Gauss) 
+fprintf(fout, '%.4f\n', b1limit);       % peak B1 in sequence (Gauss)
 
 fclose(fout);
 
