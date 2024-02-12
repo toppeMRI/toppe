@@ -298,7 +298,6 @@ for n = blockStart : blockStop
 
     p = loop(n,1);   % module id
     w = loop(n,16);  % waveform index
-
     dur = 0;
 
     % Pure delay block
@@ -330,7 +329,7 @@ for n = blockStart : blockStop
 
     % Calculate RF and gradient waveforms for this block
     rho1 = [ia_rf/max_pg_iamp*abs(modules{p}.rf(:,w))];
-    th1 = [ia_rf/max_pg_iamp*angle(modules{p}.rf(:,w))];
+    th1 = angle(modules{p}.rf(:,w));
     gxit = ia_gx/max_pg_iamp*modules{p}.gx(:,w);
     gyit = ia_gy/max_pg_iamp*modules{p}.gy(:,w);
     gzit = ia_gz/max_pg_iamp*modules{p}.gz(:,w);
