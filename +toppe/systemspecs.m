@@ -27,7 +27,7 @@ sys.tminwait   = 12;              % minimum duration of wait pulse in EPIC code 
 % Design choices (need not equal scanner limits)
 sys.maxGrad  = 4;      % Gauss/cm
 sys.maxSlew  = 15;     % Gauss/cm/ms
-sys.maxRF    = 0.25; 
+sys.maxRF    = 0.15; 
 sys.rfDeadTime = 72;         % us. Must be >= 72us
 sys.rfRingdownTime = 54;     % us. Must be >= 54us
 sys.adcDeadTime = 40;        % us. Must be >= 40us
