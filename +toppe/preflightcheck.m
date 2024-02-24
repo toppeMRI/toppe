@@ -69,7 +69,7 @@ end
 modArr = toppe.tryread(@toppe.readmodulelistfile, moduleListFile);
 
 % Check that:
-%  - all .mod files use the same peak RF limit (e.g., 0.25 Gauss)
+%  - b1CheckFile represents the RF pulse with peak RF amplitude across the whole the sequence
 %  - all .mod files used to acquire data have the same number of ADC samples as readoutFilterFile.
 [~,~,~,~,~,~,~,hdr] = toppe.readmod(b1CheckFile);
 b1limit = hdr.b1max;
@@ -82,8 +82,8 @@ for ii = 1:length(modArr)
         error(sprintf('Number of samples in %s and %s do not match (must be same across all .mod files containing ADC windows)', ...
             readoutFilterFile, modArr{ii}.fname));
     end
-    if hdr.b1max ~= b1limit 
-        error(sprintf('B1 limit in %s does not match %s (must be the same across all .mod files)', ...
+    if modArr{ii}.hasRF & hdr.b1max > b1limit 
+        error(sprintf('Peak B1 limit in %s cannot exceed the b1 scaling .mod file in %s', ...
             modArr{ii}.fname, entryFile));
     end
 end
@@ -196,7 +196,7 @@ fprintf(fout, '%d\t%d\t%d\n', round(powerx), round(powery), round(powerz));   % 
 fprintf(fout, '%.4f\n', max(abs(rf)));  % needed to scale max_seqsar in .e file
 fprintf(fout, '%.4f\n', gmax);          % max gradient across all .mod files (Gauss)
 fprintf(fout, '%.4f\n', slewmax);       % max slew across all .mod files (G/cm/ms)
-fprintf(fout, '%.4f\n', b1limit);       % hardware b1 limit (Gauss) 
+fprintf(fout, '%.4f\n', b1limit);       % peak B1 in sequence (Gauss)
 
 fclose(fout);
 
