@@ -10,10 +10,10 @@ function [dat, rdb_hdr] = loadpfile(pfile,echo,slicestart,sliceend,varargin)
 %  sliceend      [1]       "" except ending slice (default: N) To use default value, set to [].
 %
 % Kwarg input options:
-%  acqOrder      true/false   If true, data is sorted in the order of acquisition. (default: false)
+%  acq_order      true/false   If true, data is sorted in the order of acquisition. (default: false)
 %
 % To load data in order it was acquired, do:
-%    d = toppe.utils.loadpfile(pfile, [], [], [], 'acqOrder', true);
+%    d = toppe.utils.loadpfile(pfile, [], [], [], 'acq_order', true);
 %
 % Output dimensions of dat:
 %  [nFID, nc, nDabSlice, 1, maxView]
@@ -23,7 +23,7 @@ import toppe.utils.*
 %% Load input arguments
 % Set defaults and parse varargin
 arg.quiet        = false;
-arg.acqOrder     = false;
+arg.acq_order     = false;
 arg.returnAsDouble = true;
 arg = vararg_pair(arg, varargin);
 
@@ -158,7 +158,7 @@ end
 fclose(fid);
 
 %% Sort data in order of acquisition
-if arg.acqOrder
+if arg.acq_order
     dat = permute(dat, [1 2 5 3 4]);   % [nFID nc maxView nDabSlice]
     [nFID nc maxView nDabSlice] = size(dat);
     dat = reshape(dat, nFID, nc, maxView*nDabSlice);
