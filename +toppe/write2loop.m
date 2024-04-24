@@ -313,6 +313,8 @@ elseif module.hasDAQ % Write DAQ module
     end
     dabecho = arg.echo-1; % Index echo from 0 to n-1
     dabview = arg.view;
+    % Xiaoxi: update for adc freq offset
+    f = arg.RFoffset;
     
     % receive phase
     if arg.RFspoil % If spoil is called, replace RF phase with spoil phase
@@ -320,13 +322,14 @@ elseif module.hasDAQ % Write DAQ module
     else
        idaqphase = phase2int(arg.DAQphase);
     end
+    % Xiaoxi: save adc freq offset in rf freq offset column
     switch toppeVer
         case {4} 
-            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig];
+            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us f arg.waveform drot trig];
         case {5} 
-            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig trigout];
+            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us f arg.waveform drot trig trigout];
         case {6} 
-            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us 0 arg.waveform drot trig trigout arg.core];
+            d(d_index,:) = [iModule 0 0 ia_gx ia_gy ia_gz dabslice dabecho dabview dabval(arg.dabmode) iphi idaqphase idaqphase textra_us f arg.waveform drot trig trigout arg.core];
     end    
 
     d_index = d_index + 1;
