@@ -1,9 +1,9 @@
 function R = angleaxis2rotmat(alpha, u)
-% function R = angleaxis2rotmat(theta, n)
+% function R = angleaxis2rotmat(alpha, u)
 %
 % Inputs
-%  theta   [1 1]            Rotation angle (radians)
-%  n       [3 1] or [1 3]   Vector lying along the axis of rotation
+%  alpha   [1]              Rotation angle (radians)
+%  u       [3 1] or [1 3]   Vector lying along the axis of rotation
 %
 % Output
 %  R       [3 3] rotation matrix
