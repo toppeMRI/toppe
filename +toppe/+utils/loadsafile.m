@@ -35,6 +35,7 @@ arg.quiet        = false;
 arg.acq_order    = false;
 arg.header_only  = false;
 arg.echo         = 'all'; % return all echos by default, but can be indexed
+arg.version      = 'tv6';
 arg = vararg_pair(arg, varargin);
 
 
@@ -55,6 +56,9 @@ ndat = archive.DownloadData.rdb_hdr_rec.rdb_hdr_frame_size;
 ncoil = archive.DownloadData.rdb_hdr_rec.rdb_hdr_dab(1).stop_rcv - ...
     archive.DownloadData.rdb_hdr_rec.rdb_hdr_dab(1).start_rcv + 1;
 nsli = archive.DownloadData.rdb_hdr_rec.rdb_hdr_nslices - 1; % "- 1"  for TOPPE slice issue
+if strcmp(arg.version, 'tv7')
+    nsli = nsli + 1;
+end
 necho = archive.DownloadData.rdb_hdr_rec.rdb_hdr_nechoes;
 nview = archive.DownloadData.rdb_hdr_rec.rdb_hdr_nframes;
 nframe = archive.FrameCount;
