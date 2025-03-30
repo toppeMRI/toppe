@@ -34,12 +34,19 @@ function coppe(varargin)
     arg.use_pw  = 0;
     arg.cv = [];
     arg.dir = 'auto';
-    arg.version = 6; %Toppe version
+    arg.version = 7; %Toppe version
     arg = vararg_pair(arg, varargin);
+
+    % set interpreter type
+    if arg.version <=6
+        interp_type = 'toppe';
+    else % version 7 uses pge
+        interp_type = 'pge';
+    end
 
     % set the default target directory
     if strcmpi(arg.dir,'auto')
-        arg.dir = sprintf('%s/toppe%d', arg.user, arg.cv);
+        arg.dir = sprintf('%s/%s%d', arg.user, interp_type, arg.cv);
     end
 
     % get the host IP address
@@ -47,10 +54,35 @@ function coppe(varargin)
     
     % zip the sequence using tar
     fprintf('Zipping toppe files using tar...');
-    if(arg.version < 6)
+    if arg.version < 6
         [status,cmdout] = system('tar czf toppe-scanfiles.tgz modules.txt seqstamp.txt scanloop.txt *.mod');
-    else
+    elseif arg.version == 6
         [status,cmdout] = system('tar czf toppe-scanfiles.tgz modules.txt seqstamp.txt scanloop.txt cores.txt toppeN.entry *.mod');
+    else % version 7
+        % find .pge file in directory
+        d = dir('*.pge');
+        if isempty(d)
+            error('no .pge files found in working directory');
+        elseif length(d)>1
+            fprintf('multiple .pge files found:\n');
+            for i = 1:length(d)
+                fprintf('\t(%d) %s\n', i, d(i).name);
+            end
+            pgesel = input('select one: ');
+            if pgesel < 1 || pgesel > length(d)
+                error('invalid option: %d', pgesel);
+            else
+                pgefile = d(pgesel).name;
+            end
+        else
+            pgefile = d(1).name;
+        end
+
+        % create a default entry file
+        toppe.writeentryfile('pgeN.entry','version',7);
+
+        % zip the files
+        [status,cmdout] = system(sprintf('tar czf toppe-scanfiles.tgz pgeN.entry %s', pgefile));
     end
     if status
         error(cmdout)
@@ -72,8 +104,8 @@ function coppe(varargin)
     cmd_scanner = [];
     if ~arg.force
         % check for existing entry file
-        cmd_scanner = sprintf('%s if [[ -f %s/pulseq/toppe%d.entry ]]; then exit 15; fi;', ...
-            cmd_scanner, basedir, arg.cv);
+        cmd_scanner = sprintf('%s if [[ -f %s/pulseq/v%d/%s%d.entry ]]; then exit 15; fi;', ...
+            cmd_scanner, basedir, arg.version, interp_type, arg.cv);
     end
     % check if directory exists, if it doesn't, create it
     cmd_scanner = sprintf('%s if [ ! -d %s/%s ]; then mkdir -p %s/%s; fi;', ...
@@ -88,12 +120,15 @@ function coppe(varargin)
     cmd_scanner = sprintf('%s if ! tar -xzf toppe-scanfiles.tgz; then exit 18; fi; rm toppe-scanfiles.tgz;', ...
         cmd_scanner);
     % rename the entry file and move it to pulseq directory
-    cmd_scanner = sprintf('%s if ! mv toppeN.entry %s/pulseq/v%d/toppe%d.entry; then exit 19; fi;', ...
-        cmd_scanner, basedir, arg.version,arg.cv);
-    % replace the first line with the right directory
-    cmd_scanner = sprintf('%s if ! sed -i "1s#.*#%s/%s/#" %s/pulseq/v%d/toppe%d.entry; then exit 20; fi;', ...
-        cmd_scanner, basedir, arg.dir, basedir, arg.version, arg.cv);
-
+    cmd_scanner = sprintf('%s if ! mv %sN.entry %s/pulseq/v%d/%s%d.entry; then exit 19; fi;', ...
+        cmd_scanner, interp_type, basedir, arg.version, interp_type, arg.cv);
+    if arg.version <=6 % replace the first line with the right directory
+        cmd_scanner = sprintf('%s if ! sed -i "1s#.*#%s/%s/#" %s/pulseq/v%d/toppe%d.entry; then exit 20; fi;', ...
+            cmd_scanner, basedir, arg.dir, basedir, arg.version, arg.cv);
+    else % v7 - replace 2nd line with path to .pge file
+        cmd_scanner = sprintf('%s if ! sed -i "2s#.*#%s/%s/%s#" %s/pulseq/v%d/pge%d.entry; then exit 20; fi;', ...
+            cmd_scanner, basedir, arg.dir, pgefile, basedir, arg.version, arg.cv);
+    end
     % ssh into server, then into scanner, and run the scanner commands using bash
     cmd_host = sprintf('ssh -q %s@%s ssh -q sdc@10.0.1.1 /bin/bash << EOF\n%s\nEOF', ...
         arg.user, server_str, cmd_scanner);
@@ -106,7 +141,7 @@ function coppe(varargin)
     end
 
     % Copy the file to the scanner and unzip
-    fprintf('Copying to scanner and unzipping...');
+    fprintf('Copying to scanner and unzipping (keep an eye out for a duo push)...');
     [out,msg] = system(eval_args{:});
     switch out
         case 15
